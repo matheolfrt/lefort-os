@@ -42,3 +42,4 @@ next-env.d.ts
 !.env.example
 /lefort-os.bundle
 /lefort-os-code.zip
+/apercu
