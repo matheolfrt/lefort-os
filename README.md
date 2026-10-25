@@ -22,7 +22,7 @@ Stack : Next.js 15 (App Router, TypeScript, Tailwind) · Supabase (Postgres, Aut
 
 1. **Créer un projet Supabase** sur https://supabase.com (région Europe, ex. Paris `eu-west-3`).
 2. **Appliquer les migrations** : SQL Editor → coller puis exécuter, dans l'ordre, les fichiers de
-   `supabase/migrations/`. (Ou avec la CLI : `npx supabase link` puis `npx supabase db push`.)
+   `supabase/migrations/`. (Ou avec la CLI : `npx supabase@latest link` puis `npx supabase@latest db push`.)
 3. **Variables d'environnement** : copier `.env.example` en `.env.local` et renseigner l'URL et la clé
    `anon` (Supabase → Project Settings → API).
 4. **Lancer** : `npm install` puis `npm run dev` → http://localhost:3000.
