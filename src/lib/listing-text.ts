@@ -23,7 +23,7 @@ export function buildListingText(
     material?.toLowerCase(),
     color?.toLowerCase(),
     pattern && pattern !== "Uni" ? pattern.toLowerCase() : null,
-    item.size_label ? `T${item.size_label}` : null,
+    item.size_label ? (/^\d/.test(item.size_label) ? `T${item.size_label}` : `taille ${item.size_label}`) : null,
   ]
     .filter(Boolean)
     .join(" ")
