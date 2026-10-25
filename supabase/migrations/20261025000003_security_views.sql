@@ -306,7 +306,7 @@ select c.id as category_id, c.name as category_name,
 -- ───────────────────────── Compliance (micro-entreprise) ─────────────────────────
 -- Livre des recettes: receipts at the date money is received; refunds as negative entries
 create view v_livre_recettes with (security_invoker = true) as
-select o.org_id, o.paid_at::date as date_encaissement, 'V-' || o.number as reference,
+select o.org_id, (o.paid_at at time zone 'Europe/Paris')::date as date_encaissement, 'V-' || o.number as reference,
        o.channel, o.buyer_handle as client,
        (select string_agg(i.sku, ', ' order by i.sku) from order_lines ol join items i on i.id = ol.item_id
          where ol.order_id = o.id and ol.status <> 'cancelled') as nature,
@@ -314,7 +314,7 @@ select o.org_id, o.paid_at::date as date_encaissement, 'V-' || o.number as refer
   from orders o
  where o.paid_at is not null and o.status <> 'cancelled'
 union all
-select r.org_id, r.refunded_at::date, 'R-' || o.number, o.channel, o.buyer_handle,
+select r.org_id, (r.refunded_at at time zone 'Europe/Paris')::date, 'R-' || o.number, o.channel, o.buyer_handle,
        'Remboursement : ' || r.reason, -r.amount_cents, o.payment_method
   from refunds r join orders o on o.id = r.order_id
  where o.paid_at is not null;
@@ -327,7 +327,7 @@ select b.org_id, b.purchased_at as date_achat, s.name as fournisseur, b.invoice_
        b.payment_method as mode_reglement
   from batches b join suppliers s on s.id = b.supplier_id
 union all
-select a.org_id, a.created_at::date, s.name, null, 'Ajustement lot ' || b.code || ' : ' || a.reason, a.amount_cents, null
+select a.org_id, (a.created_at at time zone 'Europe/Paris')::date, s.name, null, 'Ajustement lot ' || b.code || ' : ' || a.reason, a.amount_cents, null
   from batch_cost_adjustments a join batches b on b.id = a.batch_id join suppliers s on s.id = b.supplier_id
 union all
 select e.org_id, e.spent_on, e.supplier, e.invoice_number, 'Frais : ' || e.category, e.amount_cents, e.payment_method

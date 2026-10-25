@@ -41,7 +41,7 @@ export default async function Sales() {
                       const cost = lines.filter((l) => l.status !== "cancelled").reduce((s, l) => s + l.cost_snapshot_cents, 0);
                       return (
                         <tr key={o.id} className={o.status === "cancelled" ? "opacity-50" : ""}>
-                          <td className="font-mono">V-{o.number}</td>
+                          <td className="whitespace-nowrap font-mono">V-{o.number}</td>
                           <td className="whitespace-nowrap">{dateTime(o.sold_at)}<div className="text-xs text-muted">{o.buyer_handle}</div></td>
                           <td>{lines.map((l) => <div key={l.id}><SkuLink sku={l.items.sku} />{l.status === "returned" && <span className="text-xs text-rose-600"> retourné</span>}</div>)}</td>
                           <td className="num">{money(o.gross_cents)}{refunded > 0 && <div className="text-xs text-rose-600">-{money(refunded)}</div>}</td>

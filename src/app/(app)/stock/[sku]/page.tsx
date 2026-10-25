@@ -95,7 +95,7 @@ export default async function ItemPage({ params }: { params: Promise<{ sku: stri
         </div>
 
         <div className="space-y-4">
-          <Card title="Actions"><ItemActions item={it} isManager={ctx.isManager} /></Card>
+          {!["sold", "shipped", "completed"].includes(it.status) && <Card title="Actions"><ItemActions item={it} isManager={ctx.isManager} /></Card>}
           {ctx.isManager && (
             <Card title="Rentabilité">
               <dl className="space-y-1 text-sm">

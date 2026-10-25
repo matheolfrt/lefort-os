@@ -143,6 +143,15 @@ do $$ begin assert public.claim_next_item('photo') is null, 'no other photo item
 select t.expect_error($$select public.record_sale(array[t.v('i2')], 4000)$$, 'non vendables');
 select t.put('o1', public.record_sale(array[t.v('i1')], 4000, '2026-10-20 10:00+02', 'vinted', 'VNT-1', 'acheteur1',
                                        null, 0, 0, 50)::text);
+-- an item sold before the whole batch is received follows the allocation until the batch closes
+reset role;
+insert into batch_cost_lines(org_id, batch_id, kind, amount_cents) values (t.v('org'), t.v('batch'), 'other', 3);
+do $$ begin
+  assert (select cost_snapshot_cents from order_lines where order_id = t.v('o1'))
+       = (select allocated_cost_cents from item_costs where item_id = t.v('i1')), 'snapshot follows open batch';
+end $$;
+delete from batch_cost_lines where amount_cents = 3;
+set role authenticated;
 select t.expect_error($$select public.record_sale(array[t.v('i1')], 4000)$$, 'non vendables');
 do $$ begin
   assert (select status from items where id = t.v('i1')) = 'sold';

@@ -127,11 +127,14 @@ create trigger price_changes_no_change before update or delete on price_changes 
 create trigger audit_log_no_change before update or delete on audit_log for each row execute function private.forbid();
 create trigger adjustments_no_change before update or delete on batch_cost_adjustments for each row execute function private.forbid();
 
+-- The cost snapshot follows the batch allocation while the batch is open (items can sell before the
+-- whole batch is received); it is frozen for good once the batch is closed.
 create function private.order_lines_guard() returns trigger language plpgsql as $$
 begin
   if new.item_id <> old.item_id or new.order_id <> old.order_id
      or new.sale_price_cents <> old.sale_price_cents
-     or new.cost_snapshot_cents <> old.cost_snapshot_cents then
+     or (new.cost_snapshot_cents <> old.cost_snapshot_cents and exists (
+           select 1 from items i join batches b on b.id = i.batch_id where i.id = new.item_id and b.status = 'closed')) then
     raise exception using errcode = 'LF409', message = 'Historique protégé : le prix de vente et le coût d''une vente ne peuvent pas être modifiés.';
   end if;
   return new;
@@ -216,12 +219,19 @@ begin
     left join categories c on c.id = it.category_id
    where it.batch_id = p_batch_id and it.deleted_at is null and not ic.manual;
 
-  if v_ids is null then return; end if;
-  v_amt := private.allocate_cents(greatest(v_total - v_manual, 0), v_w);
-  for i in 1..array_length(v_ids, 1) loop
-    update item_costs set allocated_cost_cents = v_amt[i], updated_at = now()
-     where item_id = v_ids[i] and allocated_cost_cents <> v_amt[i];
-  end loop;
+  if v_ids is not null then
+    v_amt := private.allocate_cents(greatest(v_total - v_manual, 0), v_w);
+    for i in 1..array_length(v_ids, 1) loop
+      update item_costs set allocated_cost_cents = v_amt[i], updated_at = now()
+       where item_id = v_ids[i] and allocated_cost_cents <> v_amt[i];
+    end loop;
+  end if;
+
+  -- items already sold from this (still open) batch carry the up-to-date cost
+  update order_lines ol set cost_snapshot_cents = ic.allocated_cost_cents
+    from item_costs ic join items it on it.id = ic.item_id
+   where ol.item_id = ic.item_id and it.batch_id = p_batch_id and ol.status <> 'cancelled'
+     and ol.cost_snapshot_cents <> ic.allocated_cost_cents;
 end $$;
 
 create function private.items_cost_trigger() returns trigger language plpgsql security definer set search_path = public as $$
