@@ -136,3 +136,169 @@ export async function readWardrobe(options) {
     sampleKeys: raw[0] ? Object.keys(raw[0]).sort() : [],
   };
 }
+
+// Reads the seller's Vinted orders (sales). Injected into the vinted.fr tab like readWardrobe, so self-contained.
+// options.skip: transaction ids already up to date in Lefort OS — their details are not fetched again.
+export async function readSales(options) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const progress = (text) => {
+    try { chrome.runtime.sendMessage({ type: "vinted-progress", text }); } catch { /* app tab closed */ }
+  };
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+  const headers = { Accept: "application/json", ...(csrf ? { "X-CSRF-Token": csrf } : {}) };
+  const getJson = async (path) => {
+    const res = await fetch(path, { credentials: "include", headers });
+    if (!res.ok) throw new Error(`${res.status} sur ${path.split("?")[0]}`);
+    return res.json();
+  };
+  const cents = (p) => {
+    const v = p?.amount ?? p;
+    const n = parseFloat(String(v ?? "").replace(",", "."));
+    return Number.isFinite(n) ? Math.round(n * 100) : null;
+  };
+  const toIso = (v) => {
+    if (v == null || v === "") return null;
+    const d = typeof v === "number" ? new Date(v < 1e12 ? v * 1000 : v) : new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  };
+  const text = (v) => (v == null ? "" : typeof v === "object" ? v.title ?? v.name ?? v.text ?? "" : String(v));
+  // Field names (and the names inside nested objects), never values: for the diagnostic
+  const shape = (o) => (o && typeof o === "object"
+    ? Object.keys(o).sort().map((k) => (o[k] && typeof o[k] === "object" && !Array.isArray(o[k])
+      ? `${k}{${Object.keys(o[k]).sort().join(",")}}` : Array.isArray(o[k]) ? `${k}[]` : k))
+    : []);
+
+  // ── List of sold orders
+  const listEndpoints = [
+    (p) => `/api/v2/my_orders?type=sold&status=all&page=${p}&per_page=100`,
+    (p) => `/api/v2/my_orders?type=sold&page=${p}&per_page=100`,
+    (p) => `/api/v2/transactions?type=sold&page=${p}&per_page=100`,
+  ];
+  let raw = [];
+  let listEndpoint = null;
+  let complete = false;
+  const tried = [];
+  for (const build of listEndpoints) {
+    raw = [];
+    try {
+      for (let page = 1; page <= 50; page++) {
+        const j = await getJson(build(page));
+        const rows = j.my_orders ?? j.orders ?? j.transactions ?? [];
+        if (!Array.isArray(rows)) throw new Error("format inconnu");
+        raw.push(...rows);
+        progress(`Lecture des ventes : ${raw.length}…`);
+        const totalPages = j.pagination?.total_pages;
+        if (!rows.length || (totalPages && page >= totalPages)) { complete = true; break; }
+        await sleep(900);
+      }
+      if (raw.length || complete) { listEndpoint = build(1).split("?")[0]; break; }
+    } catch (e) {
+      tried.push(e.message);
+    }
+  }
+  if (!listEndpoint) {
+    return { error: `Impossible de lire vos ventes Vinted (${tried.join(" ; ")}). Vérifiez que vous êtes connecté à Vinted.`, tried };
+  }
+
+  // Vinted states, in words: keep the furthest step reached
+  const stateOf = (...labels) => {
+    const s = labels.map(text).join(" ").toLowerCase();
+    if (/annul|cancel|rembours|refund|fail|échou|echou|expir/.test(s)) return "cancelled";
+    if (/termin|complet|finalis|confirm/.test(s)) return "completed";
+    if (/livr|deliver|envoy|expédi|expedi|shipped|transit|en route|point relais|pick/.test(s)) return "shipped";
+    return "pending";
+  };
+
+  const skip = new Set((options?.skip ?? []).map(String));
+  const sales = [];
+  const statusWords = {};
+  let detailEndpoint = null;
+  let detailShape = [];
+  const detailErrors = [];
+  for (let i = 0; i < raw.length; i++) {
+    const o = raw[i];
+    const tid = String(o.transaction_id ?? o.transaction?.id ?? o.id ?? "");
+    if (!tid) continue;
+    const listState = stateOf(o.status, o.transaction_user_status, o.status_title);
+    const word = [text(o.status), text(o.transaction_user_status)].filter(Boolean).join(" / ") || "?";
+    statusWords[word] = (statusWords[word] ?? 0) + 1;
+    const sale = {
+      transaction_id: tid,
+      title: text(o.title ?? o.item_title),
+      price_cents: cents(o.price ?? o.item_price ?? o.total_item_price ?? o.amount),
+      sold_at: toIso(o.date ?? o.created_at ?? o.created_at_ts),
+      state: listState,
+      item_ids: [],
+      items: [],
+      buyer: null,
+      shipped_at: null,
+      completed_at: listState === "completed" ? toIso(o.status_updated_at ?? o.updated_at) : null,
+    };
+    if (!skip.has(tid)) {
+      progress(`Détail des ventes : ${i + 1} / ${raw.length}…`);
+      const paths = [`/api/v2/transactions/${tid}`];
+      if (o.conversation_id) paths.push(`/api/v2/conversations/${o.conversation_id}`);
+      for (const path of paths) {
+        try {
+          const j = await getJson(path);
+          const t = j.transaction ?? j.conversation?.transaction ?? null;
+          if (!t) continue;
+          detailEndpoint ??= path.replace(/\d+$/, "{id}");
+          if (!detailShape.length) detailShape = shape(t);
+          const items = t.items ?? t.order?.items ?? (t.item ? [t.item] : []);
+          sale.item_ids = [...new Set([
+            ...(Array.isArray(t.item_ids) ? t.item_ids : []),
+            ...items.map((it) => it?.id ?? it?.item_id),
+            t.item_id,
+          ].filter(Boolean).map(String))];
+          sale.items = items.map((it) => ({
+            id: String(it?.id ?? it?.item_id ?? ""),
+            title: text(it?.title),
+            price_cents: cents(it?.price ?? it?.item_price),
+            brand: text(it?.brand_title ?? it?.brand),
+            size: text(it?.size_title ?? it?.size),
+          }));
+          sale.title ||= text(t.item_title ?? t.title ?? items[0]?.title);
+          sale.price_cents = cents(t.offer?.price ?? t.offer_price ?? t.item_price ?? t.total_item_price) ?? sale.price_cents;
+          sale.buyer = text(t.buyer?.login ?? t.buyer_login ?? t.opposite_user?.login ?? o.opposite_user?.login) || null;
+          sale.sold_at = toIso(t.created_at ?? t.created_at_ts) ?? sale.sold_at;
+          const detailState = stateOf(t.status_title, t.status_text, t.transaction_user_status, t.status_message,
+            typeof t.status === "string" ? t.status : "");
+          const rank = { pending: 0, shipped: 1, completed: 2, cancelled: 3 };
+          sale.state = rank[detailState] > rank[sale.state] ? detailState : sale.state;
+          const sh = t.shipment ?? {};
+          sale.shipped_at = toIso(sh.shipped_at ?? sh.sent_at ?? sh.status_updated_at) ?? null;
+          if (sale.state === "completed") {
+            sale.completed_at = toIso(t.completed_at ?? t.status_updated_at ?? sh.delivered_at) ?? sale.completed_at;
+          }
+          break;
+        } catch (e) {
+          if (detailErrors.length < 3) detailErrors.push(e.message);
+        }
+      }
+      await sleep(700);
+    }
+    sales.push(sale);
+  }
+
+  return {
+    listEndpoint,
+    detailEndpoint,
+    complete,
+    sales,
+    diagnostic: {
+      list_endpoint: listEndpoint,
+      detail_endpoint: detailEndpoint,
+      complete,
+      orders: raw.length,
+      states: sales.reduce((a, s) => ({ ...a, [s.state]: (a[s.state] ?? 0) + 1 }), {}),
+      vinted_status_words: statusWords,
+      without_items: sales.filter((s) => !skip.has(s.transaction_id) && !s.item_ids.length).length,
+      without_price: sales.filter((s) => s.price_cents == null).length,
+      without_date: sales.filter((s) => !s.sold_at).length,
+      detail_errors: detailErrors,
+      list_fields: shape(raw[0]),
+      detail_fields: detailShape,
+    },
+  };
+}

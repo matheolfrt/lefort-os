@@ -80,6 +80,55 @@
           <button id="copy-diag" class="secondary">Copier</button>
         </details>
       </div>
+
+      <div class="card">
+        <h1>Ventes Vinted</h1>
+        <p class="muted">Lit vos commandes Vinted et les enregistre dans Lefort OS avec le prix réel, l'acheteur, les dates et l'état
+          (à expédier, expédiée, terminée). Les articles absents de Lefort OS sont créés automatiquement. Rien n'est modifié sur Vinted.</p>
+        <p class="hint">La première lecture prend quelques minutes (une pause entre chaque commande, comme un humain). Les suivantes sont rapides.</p>
+        <button id="read-sales" class="primary big">Lire mes ventes Vinted</button>
+        <p id="sales-progress" class="muted" hidden></p>
+        <p id="sales-error" class="error" hidden></p>
+      </div>
+
+      <div id="sales-results" hidden>
+        <div class="summary" id="sales-summary"></div>
+
+        <div class="card" id="block-sales-new" hidden>
+          <h2>Ventes à enregistrer <span class="count" id="sales-new-count"></span></h2>
+          <fieldset class="acct">
+            <legend>Comptabilité (livre des recettes, CA URSSAF)</legend>
+            <label class="check"><input type="radio" name="acct" value="before" checked>
+              Ventes encaissées avant le <input id="acct-date" type="date"> : déjà déclarées (historique), les suivantes à comptabiliser</label>
+            <label class="check"><input type="radio" name="acct" value="all"> Toutes déjà déclarées (historique)</label>
+            <label class="check"><input type="radio" name="acct" value="none"> Toutes à comptabiliser</label>
+          </fieldset>
+          <p class="hint">Une vente historique compte dans les statistiques et les marges, mais pas dans le livre des recettes : rien n'est déclaré deux fois.</p>
+          <table class="table"><tbody id="sales-new-list"></tbody></table>
+          <p id="sales-new-more" class="muted" hidden></p>
+          <button id="import-sales" class="primary">Enregistrer</button>
+          <div id="import-sales-progress" class="bar" hidden><div></div></div>
+          <p id="import-sales-status" class="muted" hidden></p>
+        </div>
+
+        <div class="card" id="block-sales-updates" hidden>
+          <h2>Commandes à faire avancer <span class="count" id="sales-updates-count"></span></h2>
+          <p class="muted">Expédiées ou terminées sur Vinted, pas encore dans Lefort OS.</p>
+          <ul id="sales-updates-list" class="list"></ul>
+          <button id="apply-sales-updates" class="primary">Mettre à jour dans Lefort OS</button>
+        </div>
+
+        <div class="card" id="block-sales-check" hidden>
+          <h2>À vérifier <span class="count" id="sales-check-count"></span></h2>
+          <ul id="sales-check-list" class="list"></ul>
+        </div>
+
+        <details class="card diag">
+          <summary>Diagnostic des ventes</summary>
+          <pre id="sales-diag"></pre>
+          <button id="copy-sales-diag" class="secondary">Copier</button>
+        </details>
+      </div>
     </section>
   </main>
   <div id="toast" class="toast" hidden></div>

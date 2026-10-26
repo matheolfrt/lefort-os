@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Lefort OS – Vinted",
-  "version": "1.0.1",
-  "description": "Importe votre dressing Vinted dans Lefort OS et le resynchronise (ventes, prix, réservations).",
+  "version": "1.1.0",
+  "description": "Importe votre dressing et vos ventes Vinted dans Lefort OS et les resynchronise.",
   "action": {
     "default_title": "Lefort OS – Vinted",
     "default_icon": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" }

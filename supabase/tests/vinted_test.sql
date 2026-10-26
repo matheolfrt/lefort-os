@@ -225,8 +225,29 @@ do $$ declare r jsonb; v_n int; v_ledger int; v_o uuid; begin
             join items i on i.id = ol.item_id where i.sku = 'HIST-03');
   assert (select code from locations l join items i on i.current_location_id = l.id where i.sku = 'HIST-03') = 'EMP-A-ETIQUETER';
 end $$;
+-- Vinted orders: matched by transaction id or by item, then moved forward to the Vinted state
+do $$ declare r jsonb; v_o uuid; begin
+  r := public.import_sales('[{"sold_at":"2026-09-01T10:00:00Z","lines":[{"title":"Veste","price_cents":3000,"vinted_url":"https://www.vinted.fr/items/8080-veste"}]}]', false, 'pending');
+  assert (r->>'orders')::int = 1, r::text;
+  select ol.order_id into v_o from order_lines ol join listings l on l.item_id = ol.item_id where l.external_id = '8080';
+  r := public.vinted_orders_preview('[{"transaction_id":"T1","item_ids":["8080"]},{"transaction_id":"T2","item_ids":["999999"]},
+                                      {"transaction_id":"V-H1","item_ids":[]}]');
+  assert (r->0->'order'->>'id')::uuid = v_o and r->0->'order'->>'status' = 'pending' and r->0->'items'->0->>'status' = 'sold', r::text;
+  assert r->1->'order' = 'null'::jsonb and r->1->'items' = '[]'::jsonb, r::text;
+  assert r->2->'order'->>'status' = 'completed', 'matched by transaction id';
+  r := public.vinted_orders_sync(jsonb_build_array(jsonb_build_object('order_id', v_o, 'transaction_id', 'T1', 'state', 'completed',
+         'shipped_at', '2026-09-02T10:00:00Z', 'paid_at', '2026-09-05T10:00:00Z')));
+  assert (r->>'shipped')::int = 1 and (r->>'completed')::int = 1, r::text;
+  assert (select status = 'completed' and external_order_id = 'T1' and paid_at = '2026-09-05T10:00:00Z' from orders where id = v_o);
+  assert (select shipped_at from shipments where order_id = v_o) = '2026-09-02T10:00:00Z';
+  -- now found by its transaction id; never moved backwards
+  assert public.vinted_orders_preview('[{"transaction_id":"T1"}]')->0->'order'->>'id' = v_o::text;
+  r := public.vinted_orders_sync(jsonb_build_array(jsonb_build_object('order_id', v_o, 'state', 'shipped')));
+  assert (r->>'shipped')::int = 0 and (select status from orders where id = v_o) = 'completed', r::text;
+end $$;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
 select t.expect_error($$select public.import_sales('[]', true)$$, 'non autorisée');
+select t.expect_error($$select public.vinted_orders_preview('[]')$$, 'non autorisée');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 
 -- an outsider reaches nothing

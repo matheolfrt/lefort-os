@@ -1,5 +1,5 @@
-import { LefortError, insert, loadConfig, rpc, signIn, signOut, uploadPhoto } from "./lefort.js";
-import { readWardrobe } from "./vinted.js";
+import { LefortError, insert, loadConfig, rpc, select, signIn, signOut, uploadPhoto } from "./lefort.js";
+import { readSales, readWardrobe } from "./vinted.js";
 
 const $ = (id) => document.getElementById(id);
 const show = (id, on = true) => { $(id).hidden = !on; };
@@ -54,10 +54,11 @@ $("logout").addEventListener("click", async () => {
 });
 
 // ── Read the wardrobe from the open Vinted tab ───────────
+let progressTarget = "progress";
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "vinted-progress") {
-    $("progress").textContent = msg.text;
-    show("progress");
+    $(progressTarget).textContent = msg.text;
+    show(progressTarget);
   }
 });
 
@@ -76,6 +77,7 @@ $("read").addEventListener("click", async () => {
     return;
   }
   $("read").disabled = true;
+  progressTarget = "progress";
   $("progress").textContent = "Lecture du dressing…";
   show("progress");
   try {
@@ -286,6 +288,233 @@ $("unpublish").addEventListener("click", async () => {
 $("copy-diag").addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText($("diag").textContent);
+    toast("Diagnostic copié", "ok");
+  } catch {
+    toast("Copie impossible : sélectionnez le texte", "err");
+  }
+});
+
+// ── Vinted orders ────────────────────────────────────────
+const SELLABLE = ["listing_ready", "listed", "reserved"];
+const RANK = { pending: 0, shipped: 1, completed: 2 };
+const STATE_LABEL = { pending: "à expédier", shipped: "expédiée", completed: "terminée", cancelled: "annulée" };
+const ORDER_LABEL = { pending: "à expédier", shipped: "expédiée", completed: "terminée" };
+const day = (iso) => (iso ? new Date(iso).toLocaleDateString("fr-FR") : "—");
+let salesSnapshot = null;
+let salesPlan = null;
+
+// default cut-off: past months are already declared
+{
+  const d = new Date();
+  $("acct-date").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+$("read-sales").addEventListener("click", async () => {
+  show("sales-error", false);
+  show("sales-results", false);
+  const tab = await findVintedTab();
+  if (!tab) {
+    $("sales-error").textContent = "Aucun onglet vinted.fr ouvert. Ouvrez vinted.fr (connecté) dans un autre onglet.";
+    show("sales-error");
+    return;
+  }
+  $("read-sales").disabled = true;
+  progressTarget = "sales-progress";
+  $("sales-progress").textContent = "Lecture des ventes…";
+  show("sales-progress");
+  try {
+    // orders already finished in Lefort OS: no need to open them again on Vinted
+    const done = await select("orders", "select=external_order_id&channel=eq.vinted&external_order_id=not.is.null&status=in.(completed,cancelled)");
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: readSales,
+      args: [{ skip: done.map((o) => o.external_order_id) }],
+    });
+    if (!result || result.error) {
+      if (result?.tried) $("sales-diag").textContent = JSON.stringify({ tried: result.tried }, null, 2);
+      throw new LefortError(result?.error ?? "Lecture impossible.");
+    }
+    salesSnapshot = result;
+    $("sales-diag").textContent = JSON.stringify(result.diagnostic, null, 2);
+    await planSales();
+  } catch (err) {
+    $("sales-error").textContent = err.message;
+    show("sales-error");
+  } finally {
+    $("read-sales").disabled = false;
+    show("sales-progress", false);
+  }
+});
+
+async function planSales() {
+  const sales = salesSnapshot.sales;
+  const preview = await rpc("vinted_orders_preview", {
+    p_orders: sales.map((s) => ({ transaction_id: s.transaction_id, item_ids: s.item_ids })),
+  });
+  const byTid = new Map(preview.map((p) => [p.transaction_id, p]));
+  const plan = { toImport: [], updates: [], check: [], upToDate: 0, cancelled: 0 };
+  for (const sale of sales) {
+    const p = byTid.get(sale.transaction_id) ?? { order: null, items: [] };
+    const name = sale.title || `commande ${sale.transaction_id}`;
+    if (p.order) {
+      if (sale.state === "cancelled") {
+        if (p.order.status === "pending") plan.check.push(`${name} : annulée sur Vinted, V-${p.order.number} est encore « à expédier » dans Lefort OS (annulez-la dans Ventes).`);
+        else plan.upToDate++;
+      } else if (RANK[sale.state] > RANK[p.order.status] || !p.order.has_ref) {
+        plan.updates.push({ sale, order: p.order, moves: RANK[sale.state] > RANK[p.order.status] });
+      } else {
+        plan.upToDate++;
+      }
+      continue;
+    }
+    if (sale.state === "cancelled") { plan.cancelled++; continue; }
+    const bad = p.items.find((i) => i.deleted || !SELLABLE.includes(i.status));
+    if (bad) {
+      plan.check.push(`${name} : ${bad.sku} est ${bad.deleted ? "dans la corbeille" : `« ${bad.status} »`} sans commande Vinted liée. Vérifiez-le dans Lefort OS.`);
+    } else if (sale.price_cents == null) {
+      plan.check.push(`${name} : prix illisible, à saisir à la main.`);
+    } else {
+      plan.toImport.push({ sale, known: p.items.map((i) => i.sku) });
+    }
+  }
+  salesPlan = plan;
+  renderSales();
+}
+
+function renderSales() {
+  const plan = salesPlan;
+  $("sales-summary").innerHTML = [
+    ["Ventes Vinted lues", salesSnapshot.sales.length],
+    ["Déjà à jour", plan.upToDate],
+    ["À enregistrer", plan.toImport.length],
+    ["À faire avancer", plan.updates.filter((u) => u.moves).length],
+  ].map(([label, n]) => `<div class="stat"><b>${n}</b><span>${label}</span></div>`).join("");
+
+  $("sales-new-count").textContent = plan.toImport.length;
+  $("sales-new-list").innerHTML = plan.toImport.slice(0, 150).map(({ sale, known }) => `
+    <tr>
+      <td>${day(sale.sold_at)}</td>
+      <td>${esc(sale.title || "—")}${known.length ? ` <span class="sku">${known.map(esc).join(" + ")}</span>` : ' <span class="tag">nouvel article</span>'}</td>
+      <td>${esc(sale.buyer ?? "")}</td>
+      <td>${STATE_LABEL[sale.state]}</td>
+      <td style="text-align:right">${euros(sale.price_cents)}</td>
+    </tr>`).join("");
+  $("sales-new-more").textContent = plan.toImport.length > 150 ? `… et ${plan.toImport.length - 150} autres` : "";
+  show("sales-new-more", plan.toImport.length > 150);
+  $("import-sales").textContent = `Enregistrer ${plan.toImport.length} vente${plan.toImport.length > 1 ? "s" : ""}`;
+  show("import-sales-status", false);
+  show("import-sales-progress", false);
+  show("block-sales-new", plan.toImport.length > 0);
+
+  const moving = plan.updates.filter((u) => u.moves);
+  $("sales-updates-count").textContent = moving.length;
+  $("sales-updates-list").innerHTML = moving.map(({ sale, order }) =>
+    `<li>V-${order.number} ${esc(sale.title)} : ${ORDER_LABEL[order.status]} → <b>${STATE_LABEL[sale.state]}</b>${sale.state === "completed" && sale.completed_at ? ` (encaissée le ${day(sale.completed_at)})` : ""}</li>`).join("");
+  show("block-sales-updates", plan.updates.length > 0);
+  if (!moving.length) $("sales-updates-list").innerHTML = "<li>Liaison des commandes saisies à la main avec Vinted.</li>";
+
+  $("sales-check-count").textContent = plan.check.length;
+  $("sales-check-list").innerHTML = plan.check.map((c) => `<li>${esc(c)}</li>`).join("");
+  show("block-sales-check", plan.check.length > 0);
+  show("sales-results");
+}
+
+/** One line per item; a bundle's price is shared by the items' Vinted prices (evenly when unknown) */
+function linesOf(sale) {
+  const items = sale.items.length ? sale.items : sale.item_ids.map((id) => ({ id, title: "", price_cents: null }));
+  if (!items.length) return [{ sku: "", title: sale.title, price_cents: sale.price_cents }];
+  const weights = items.map((i) => (items.every((x) => x.price_cents > 0) ? i.price_cents : 1));
+  const total = weights.reduce((a, b) => a + b, 0);
+  const shares = weights.map((w) => Math.floor((sale.price_cents * w) / total));
+  shares[0] += sale.price_cents - shares.reduce((a, b) => a + b, 0);
+  return items.map((it, i) => ({
+    sku: "",
+    title: it.title || (items.length === 1 ? sale.title : `${sale.title} (${i + 1}/${items.length})`),
+    brand: it.brand || null,
+    size: it.size || null,
+    price_cents: shares[i],
+    vinted_url: it.id ? `https://www.vinted.fr/items/${it.id}` : null,
+  }));
+}
+
+$("import-sales").addEventListener("click", async () => {
+  const mode = document.querySelector("input[name=acct]:checked").value;
+  const cutoff = $("acct-date").value ? new Date(`${$("acct-date").value}T00:00:00`).toISOString() : null;
+  if (mode === "before" && !cutoff) return toast("Choisissez la date", "err");
+  const historical = (s) => mode === "all" || (mode === "before" && (s.completed_at ?? s.sold_at ?? "") < cutoff);
+
+  // one call per (state, historical) group, in chunks
+  const groups = new Map();
+  for (const { sale } of salesPlan.toImport) {
+    const key = `${sale.state}|${historical(sale)}`;
+    groups.set(key, [...(groups.get(key) ?? []), sale]);
+  }
+  const total = salesPlan.toImport.length;
+  let done = 0, orders = 0, created = 0;
+  const errors = [];
+  $("import-sales").disabled = true;
+  show("import-sales-progress");
+  const step = () => {
+    $("import-sales-progress").firstElementChild.style.width = `${total ? (done / total) * 100 : 100}%`;
+    $("import-sales-status").textContent = `Enregistrement : ${done} / ${total}…`;
+    show("import-sales-status");
+  };
+  step();
+  for (const [key, list] of groups) {
+    const [state, hist] = key.split("|");
+    for (let i = 0; i < list.length; i += 100) {
+      const chunk = list.slice(i, i + 100);
+      try {
+        const r = await rpc("import_sales", {
+          p_sales: chunk.map((s) => ({
+            sold_at: s.sold_at, paid_at: s.completed_at, buyer: s.buyer, order_ref: s.transaction_id,
+            shipping_cents: 0, packaging_cents: 0, platform_fee_cents: null, lines: linesOf(s),
+          })),
+          p_historical: hist === "true",
+          p_state: state,
+        });
+        orders += r.orders;
+        created += r.items_created;
+        r.errors.forEach((e) => errors.push(`${chunk[e.sale - 1].title || chunk[e.sale - 1].transaction_id} : ${e.error}`));
+      } catch (err) {
+        errors.push(err.message);
+      }
+      done += chunk.length;
+      step();
+    }
+  }
+  $("import-sales").disabled = false;
+  toast(`${orders} vente(s) enregistrée(s), ${created} article(s) créé(s)${errors.length ? `, ${errors.length} erreur(s)` : ""}`, errors.length ? "err" : "ok");
+  await planSales();
+  salesPlan.check.push(...errors);
+  renderSales();
+  $("import-sales-status").textContent = `${orders} vente(s) enregistrée(s), ${created} article(s) créé(s).`;
+  show("import-sales-status");
+});
+
+$("apply-sales-updates").addEventListener("click", async () => {
+  $("apply-sales-updates").disabled = true;
+  try {
+    const r = await rpc("vinted_orders_sync", {
+      p_updates: salesPlan.updates.map(({ sale, order }) => ({
+        order_id: order.id, transaction_id: sale.transaction_id, state: sale.state,
+        shipped_at: sale.shipped_at, paid_at: sale.completed_at,
+      })),
+    });
+    toast(`${r.shipped} expédiée(s), ${r.completed} terminée(s)${r.errors.length ? `, ${r.errors.length} erreur(s)` : ""}`, r.errors.length ? "err" : "ok");
+    await planSales();
+    salesPlan.check.push(...r.errors.map((e) => e.error));
+    renderSales();
+  } catch (err) {
+    toast(err.message, "err");
+  } finally {
+    $("apply-sales-updates").disabled = false;
+  }
+});
+
+$("copy-sales-diag").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("sales-diag").textContent);
     toast("Diagnostic copié", "ok");
   } catch {
     toast("Copie impossible : sélectionnez le texte", "err");

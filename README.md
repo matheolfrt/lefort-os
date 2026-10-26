@@ -60,7 +60,12 @@ Le dossier `extension/` contient une extension Chrome (Manifest V3, sans étape 
 - importe les annonces inconnues de Lefort OS (statut « En ligne », SKU, photos, emplacement `EMP-A-ETIQUETER`,
   lot « stock existant » exclu du registre des achats) ;
 - resynchronise : prix et réservations modifiés sur Vinted, ventes faites sur Vinted à saisir,
-  annonces disparues de Vinted.
+  annonces disparues de Vinted ;
+- lit les **commandes Vinted** (ventes) : prix réel après offre, acheteur, dates, état. Les ventes inconnues sont
+  enregistrées (`import_sales`, référence = numéro de transaction Vinted ; articles inconnus créés), les commandes
+  déjà saisies sont reconnues par leur numéro ou leurs articles et avancées à l'état Vinted (`vinted_orders_preview`,
+  `vinted_orders_sync`, `supabase/migrations/20261028000009_vinted_orders.sql`). Une date de coupure choisit les
+  ventes historiques (déjà déclarées). Les commandes terminées ne sont plus rouvertes aux lectures suivantes.
 
 Les annonces sont identifiées par leur numéro Vinted : relancer un import ne crée jamais de doublon.
 Fonctions SQL : `vinted_sync_preview`, `vinted_apply_updates`, `vinted_import`
