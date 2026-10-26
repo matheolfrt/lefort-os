@@ -39,6 +39,11 @@ const TARGETS: { value: string; label: string }[] = [
   { value: "sorted", label: "Trié (refaire photos — responsable)" },
 ];
 
+/** Label format last chosen on a batch page (planche 102 × 152 by default) */
+const labelFormat = () => {
+  try { return localStorage.getItem("labelFormat") || "4x6-max"; } catch { return "4x6-max"; }
+};
+
 const SOLD: ItemStatus[] = ["sold", "shipped", "completed"];
 
 // Items still on sale age; sold/discarded ones don't
@@ -265,7 +270,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
               <button className="flex size-9 items-center justify-center rounded-full opacity-70 hover:bg-white/10 hover:opacity-100"
                 onClick={() => setSelected(new Set())} aria-label="Désélectionner"><X size={18} /></button>
               <a className="ml-auto inline-flex min-h-10 items-center gap-1.5 rounded-md border border-white/20 px-3 text-sm font-medium md:ml-0"
-                href={`/etiquettes/articles?skus=${skus.join(",")}`} target="_blank"><Printer size={16} /> Étiquettes</a>
+                href={`/etiquettes/articles?skus=${skus.join(",")}&format=${labelFormat()}`} target="_blank"><Printer size={16} /> Étiquettes</a>
             </div>
 
             {trash ? (

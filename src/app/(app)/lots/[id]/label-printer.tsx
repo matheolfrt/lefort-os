@@ -6,16 +6,18 @@ import { btn, input } from "@/components/ui";
 import { issueLabels } from "./actions";
 
 const FORMATS = [
-  { value: "57x32", label: "57 × 32 mm" },
-  { value: "50x30", label: "50 × 30 mm" },
-  { value: "4x6", label: "4 × 6 (4 par feuille)" },
+  { value: "4x6-max", label: "102 × 152 mm · maximum par planche (code-barres)" },
+  { value: "4x6-qr", label: "102 × 152 mm · encore plus par planche (QR)" },
+  { value: "4x6", label: "102 × 152 mm · 4 grandes étiquettes" },
+  { value: "57x32", label: "Rouleau 57 × 32 mm" },
+  { value: "50x30", label: "Rouleau 50 × 30 mm" },
 ];
 
 export function LabelPrinter({ batchId, unused, suggested, open, total = 0 }: {
   batchId: string; unused: number; suggested: number; open: boolean; total?: number;
 }) {
   const [qty, setQty] = useState(suggested || 10);
-  const [format, setFormat] = useState(() => (typeof window !== "undefined" && localStorage.getItem("labelFormat")) || "57x32");
+  const [format, setFormat] = useState(() => (typeof window !== "undefined" && localStorage.getItem("labelFormat")) || "4x6-max");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -58,6 +60,9 @@ export function LabelPrinter({ batchId, unused, suggested, open, total = 0 }: {
         <a className={`${btn.secondary} w-full`} href={pdfUrl("&scope=all")} target="_blank">
           Imprimer toutes les étiquettes du lot ({total})
         </a>
+      )}
+      {format === "4x6-qr" && (
+        <p className="text-xs text-highlight">QR : lisible avec l&apos;appareil photo dans Lefort OS ou une douchette 2D. Une douchette laser classique ne lit que les codes-barres.</p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
       <p className="text-xs text-muted">

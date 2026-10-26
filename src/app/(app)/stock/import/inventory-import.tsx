@@ -164,7 +164,7 @@ export function InventoryImport({ batches }: { batches: { id: string; code: stri
             )}
             <div className="mt-3 flex flex-wrap gap-2">
               {created.length > 0 && created.length <= 300 && (
-                <a className={btn.primary} href={`/etiquettes/articles?skus=${created.join(",")}`} target="_blank"><Printer size={16} /> Étiquettes des {created.length} articles créés</a>
+                <a className={btn.primary} href={`/etiquettes/articles?skus=${created.join(",")}&format=4x6-max`} target="_blank"><Printer size={16} /> Étiquettes des {created.length} articles créés</a>
               )}
               <Link className={btn.secondary} href="/stock">Voir le stock</Link>
             </div>
