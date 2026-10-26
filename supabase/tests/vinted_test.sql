@@ -92,6 +92,26 @@ do $$ declare p jsonb; r jsonb; begin
   assert jsonb_array_length(public.vinted_sync_preview((select j from snap))->'sold_on_vinted') = 0;
 end $$;
 
+-- bulk actions from the Stock list
+do $$ declare ids uuid[]; r jsonb; begin
+  select array_agg(i.id order by i.sku) into ids from items i where i.status in ('listed', 'reserved', 'sold');
+  -- sold item is refused, the others go back to "prêt à publier" and their Vinted listing is closed
+  r := public.bulk_transition(ids, 'listing_ready');
+  assert (r->>'updated')::int = 2 and jsonb_array_length(r->'errors') = 1, r::text;
+  assert r->'errors'->0->>'error' like 'Article vendu%', r::text;
+  assert not exists (select 1 from listings l join items i on i.id = l.item_id
+                      where i.status = 'listing_ready' and l.status in ('active', 'reserved'));
+  r := public.bulk_transition(ids, 'on_hold', '{"hold_reason":"cleaning"}');
+  assert (r->>'updated')::int = 2, r::text;
+  r := public.bulk_transition(ids, null);
+  assert (r->>'updated')::int = 2 and (select count(*) from items where status = 'on_hold') = 0, r::text;
+  r := public.bulk_move(ids, 'emp-a-01-01');
+  assert (r->>'updated')::int = 3, r::text;
+end $$;
+select t.expect_error($$select public.bulk_transition(array[gen_random_uuid()], 'sold')$$, 'Ventes');
+select t.expect_error($$select public.transition_item((select id from items where status = 'sold' limit 1), 'listing_ready')$$, 'Article vendu');
+select t.expect_error($$select public.bulk_move(array[gen_random_uuid()], 'EMP-NOPE')$$, 'inconnu');
+
 -- an outsider reaches nothing
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select t.expect_error($$select public.vinted_sync_preview('[]')$$, 'aucun compte actif');
