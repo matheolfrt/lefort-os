@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import {
   AlertTriangle, Camera, ChevronRight, PackageCheck, PackageOpen, Ruler, Send, Tag, Warehouse, type LucideIcon,
 } from "lucide-react";
@@ -20,13 +20,7 @@ const eur = (cents: number | null | undefined) => (cents == null ? "—" : euro0
 export default async function Dashboard() {
   const ctx = await getContext();
   const supabase = await createClient();
-  const [d, facts] = await Promise.all([
-    loadDashboard(supabase, ctx.org, ctx.isManager),
-    // advice is for managers; a database without the advisor migration simply shows no card
-    ctx.isManager ? supabase.rpc("advisor_facts").then((r) => (r.error ? null : (r.data as Facts))) : Promise.resolve(null),
-  ]);
-  const advice = facts ? buildAdvice(facts, new Date(), ctx.org.declaration_frequency === "quarterly") : null;
-  const topAdvice: Advice[] = advice ? [...advice.tasks.slice(0, 3), ...advice.advice.slice(0, 2)] : [];
+  const d = await loadDashboard(supabase, ctx.org, ctx.isManager);
   const f = d.finance;
   const q = (s: ItemStatus) => d.pipeline[s] ?? { count: 0, oldestDays: null };
   const toStore = q("measured").count + q("returned").count;
@@ -80,29 +74,11 @@ export default async function Dashboard() {
         </div>
       </Section>
 
-      {/* ── Advice */}
-      {topAdvice.length > 0 && (
-        <Section title="Conseils" aside={
-          <Link href="/conseils" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline">
-            Tous les conseils <ChevronRight size={16} />
-          </Link>
-        }>
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-panel/80" data-testid="dashboard-advice">
-            {topAdvice.map((a) => (
-              <li key={a.id}>
-                <Link href={a.href?.startsWith("#") ? `/conseils${a.href}` : a.href ?? "/conseils"} className="flex min-h-12 items-center gap-3 px-4 py-2.5 transition hover:bg-fg/[0.03]">
-                  <span className={`size-2.5 shrink-0 rounded-full ${a.tone === "urgent" ? "bg-red-500" : a.tone === "high" ? "bg-orange-400" : "bg-accent"}`} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{a.title}</span>
-                    <span className="block truncate text-xs text-muted">{a.detail}</span>
-                  </span>
-                  {a.impactCents != null && a.impactCents > 0 && <span className="hidden font-mono text-sm sm:block">{eur0(a.impactCents)}</span>}
-                  <ChevronRight size={18} className="shrink-0 text-muted/60" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Section>
+      {/* ── Advice: the heaviest figures, streamed in after the rest of the page */}
+      {ctx.isManager && (
+        <Suspense fallback={<AdviceSkeleton />}>
+          <AdviceCard quarterly={ctx.org.declaration_frequency === "quarterly"} />
+        </Suspense>
       )}
 
       {/* ── KPI */}
@@ -365,5 +341,48 @@ function Gauge({ label, value, max }: { label: string; value: number; max: numbe
         <div className={`h-2 rounded-full ${tone}`} style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 1 : 0)}%` }} />
       </div>
     </div>
+  );
+}
+
+async function AdviceCard({ quarterly }: { quarterly: boolean }) {
+  const supabase = await createClient();
+  // a database without the advisor migration simply shows no card
+  const { data, error } = await supabase.rpc("advisor_facts");
+  if (error || !data) return null;
+  const advice = buildAdvice(data as Facts, new Date(), quarterly);
+  const top: Advice[] = [...advice.tasks.slice(0, 3), ...advice.advice.slice(0, 2)];
+  if (!top.length) return null;
+  return (
+    <Section title="Conseils" aside={
+      <Link href="/conseils" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline">
+        Tous les conseils <ChevronRight size={16} />
+      </Link>
+    }>
+      <ul className="page-in divide-y divide-line rounded-2xl border border-line bg-panel/80" data-testid="dashboard-advice">
+        {top.map((a) => (
+          <li key={a.id}>
+            <Link href={a.href?.startsWith("#") ? `/conseils${a.href}` : a.href ?? "/conseils"} className="flex min-h-12 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-fg/[0.03]">
+              <span className={`size-2.5 shrink-0 rounded-full ${a.tone === "urgent" ? "bg-red-500" : a.tone === "high" ? "bg-orange-400" : "bg-accent"}`} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{a.title}</span>
+                <span className="block truncate text-xs text-muted">{a.detail}</span>
+              </span>
+              {a.impactCents != null && a.impactCents > 0 && <span className="hidden font-mono text-sm sm:block">{eur0(a.impactCents)}</span>}
+              <ChevronRight size={18} className="shrink-0 text-muted/60" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
+function AdviceSkeleton() {
+  return (
+    <Section title="Conseils">
+      <div className="space-y-px overflow-hidden rounded-2xl border border-line bg-panel/80">
+        {[0, 1, 2].map((i) => <div key={i} className="flex items-center gap-3 px-4 py-3"><div className="skeleton size-2.5 rounded-full" /><div className="flex-1 space-y-1.5"><div className="skeleton h-4 w-1/3 rounded" /><div className="skeleton h-3 w-2/3 rounded" /></div></div>)}
+      </div>
+    </Section>
   );
 }

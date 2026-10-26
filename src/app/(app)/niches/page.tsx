@@ -33,7 +33,7 @@ export default async function Niches({ searchParams }: { searchParams: Promise<{
 
   if (loadError) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div>
         <PageHeader title="Niches" />
         <Card>{/niches|relation|schema cache/i.test(loadError.message)
           ? "La mise à jour « 20261102000014_niches.sql » n'a pas encore été exécutée dans Supabase (SQL Editor)."
@@ -57,7 +57,7 @@ export default async function Niches({ searchParams }: { searchParams: Promise<{
   const library = LIBRARY.filter((i) => !names.has(i.name.toLowerCase()));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="space-y-5">
       <PageHeader title="Niches"
         subtitle="Testez de nouvelles niches avec un petit lot, mesurez leurs vrais résultats, gardez celles qui rapportent."
         actions={<Link href="/niches/nouvelle" className={btn.primary}><Plus size={18} /> Nouvelle niche</Link>} />
@@ -82,7 +82,7 @@ export default async function Niches({ searchParams }: { searchParams: Promise<{
               const v = judge(m, ref, n.test_items ?? undefined);
               const needed = n.test_items ?? 5;
               return (
-                <Link key={n.id} href={`/niches/${n.id}`} data-niche={n.name}
+                <Link prefetch={false} key={n.id} href={`/niches/${n.id}`} data-niche={n.name}
                   className="group block rounded-2xl border border-line bg-panel/80 p-4 transition hover:border-fg/30">
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">

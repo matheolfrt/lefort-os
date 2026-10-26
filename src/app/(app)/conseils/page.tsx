@@ -33,7 +33,7 @@ export default async function Conseils() {
 
   if (error || !data) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div>
         <PageHeader title="Conseils" />
         <Card>
           {/advisor_facts|function/i.test(error?.message ?? "")
@@ -48,7 +48,7 @@ export default async function Conseils() {
   const r = buildAdvice(f, new Date(), org?.declaration_frequency === "quarterly");
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="space-y-5">
       <PageHeader title="Conseils"
         subtitle="Calculés à partir de vos ventes, de votre stock et de votre production. Pas d'IA : chaque conseil montre les chiffres d'où il vient." />
 
@@ -155,7 +155,7 @@ function AdviceCard({ a, n, compact }: { a: Advice; n?: number; compact?: boolea
               <ul className="mt-2 divide-y divide-line rounded-xl border border-line text-sm">
                 {a.items.map((it) => (
                   <li key={it.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2">
-                    <Link href={`/stock/${encodeURIComponent(it.sku)}`} className="font-mono font-semibold hover:text-accent">{it.sku}</Link>
+                    <Link prefetch={false} href={`/stock/${encodeURIComponent(it.sku)}`} className="font-mono font-semibold hover:text-accent">{it.sku}</Link>
                     <span className="min-w-0 flex-1 truncate text-muted">{it.label}</span>
                     {it.extra && <span className="font-mono text-xs text-fg/85">{it.extra}</span>}
                   </li>

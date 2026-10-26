@@ -67,13 +67,13 @@ function Kpi({ label, value, delta, hint }: { label: string; value: string; delt
     <div className="rounded-2xl border border-line bg-panel/80 p-3">
       <div className="eyebrow-tight text-muted">{label}</div>
       <div className="mt-1 text-2xl font-bold tabular-nums tracking-tight">{value}</div>
-      <div className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted">
         {delta && (
-          <span className={`inline-flex items-center font-semibold ${delta.up ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-            {delta.up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}{delta.text}
+          <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-1.5 py-px font-semibold ${delta.up ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"}`}>
+            {delta.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{delta.text}
           </span>
         )}
-        <span className="truncate">{delta ? hint : "pas de comparaison"}</span>
+        <span className="min-w-0 truncate">{delta ? hint : "pas de comparaison"}</span>
       </div>
     </div>
   );

@@ -243,7 +243,7 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
             <ul className="divide-y divide-line">
               {done.map((d) => (
                 <li key={d.sku} className="flex min-h-10 items-center justify-between">
-                  <Link href={`/stock/${d.sku}`} className="font-mono text-sm font-semibold hover:text-accent">{d.sku}</Link>
+                  <Link prefetch={false} href={`/stock/${d.sku}`} className="font-mono text-sm font-semibold hover:text-accent">{d.sku}</Link>
                   <span className="text-xs text-muted">{d.status === "sorted" ? "→ photo" : d.status === "on_hold" ? "en attente" : "écarté"}</span>
                 </li>
               ))}

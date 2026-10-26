@@ -45,7 +45,7 @@ export default async function NichePage({ params, searchParams }: { params: Prom
   const v = judge(main, ref, needed);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4">
+    <div className="space-y-4">
       <PageHeader back="/niches" title={n.name}
         subtitle={<span className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS[n.status].cls}`}>{STATUS[n.status].label}</span>
@@ -91,7 +91,7 @@ export default async function NichePage({ params, searchParams }: { params: Prom
           <ul className="mb-3 divide-y divide-line rounded-xl border border-line">
             {(linked ?? []).map((b) => (
               <li key={b.id} className="flex items-center gap-3 px-3 py-2">
-                <Link href={`/lots/${b.id}`} className="font-mono font-semibold hover:text-accent">{b.code}</Link>
+                <Link prefetch={false} href={`/lots/${b.id}`} className="font-mono font-semibold hover:text-accent">{b.code}</Link>
                 <span className="flex-1 text-sm text-muted">acheté le {date(b.purchased_at)}</span>
                 <form action={linkBatch}>
                   <input type="hidden" name="id" value={n.id} /><input type="hidden" name="batch_id" value={b.id} /><input type="hidden" name="unlink" value="1" />
@@ -120,7 +120,7 @@ export default async function NichePage({ params, searchParams }: { params: Prom
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.item_id}>
-                    <td><Link href={`/stock/${encodeURIComponent(r.sku)}`} className="font-mono font-semibold hover:text-accent">{r.sku}</Link></td>
+                    <td><Link prefetch={false} href={`/stock/${encodeURIComponent(r.sku)}`} className="font-mono font-semibold hover:text-accent">{r.sku}</Link></td>
                     <td className="max-w-64 truncate">{[r.brand, r.title, r.size_label && `T${r.size_label}`].filter(Boolean).join(" · ") || "—"}</td>
                     <td><StatusChip status={r.status} /></td>
                     <td className="num">{eur(r.is_sold ? r.revenue_cents : r.list_price_cents)}</td>

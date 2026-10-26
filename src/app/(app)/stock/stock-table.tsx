@@ -205,7 +205,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
           {rows.map((r, i) => (
             <li key={r.id} className={`flex items-center gap-1 ${isManager ? "pr-1" : "pr-3"} ${selected.has(r.id) ? "bg-accent/10" : ""}`}>
               <Box checked={selected.has(r.id)} onClick={() => toggle(i, false)} label={`Sélectionner ${r.sku}`} />
-              <Link href={`/stock/${r.sku}`} className="min-w-0 flex-1 py-2.5">
+              <Link prefetch={false} href={`/stock/${r.sku}`} className="min-w-0 flex-1 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-sm font-bold">{r.sku}</span>
                   <StatusChip status={r.status} />
@@ -238,7 +238,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
             {rows.map((r, i) => (
               <tr key={r.id} className={selected.has(r.id) ? "!bg-accent/10" : ""}>
                 <td className="!px-1 !py-0"><Box checked={selected.has(r.id)} onClick={(e) => toggle(i, e.shiftKey)} label={`Sélectionner ${r.sku}`} /></td>
-                <td><Link href={`/stock/${r.sku}`} className="font-mono font-semibold text-fg hover:text-accent">{r.sku}</Link></td>
+                <td><Link prefetch={false} href={`/stock/${r.sku}`} className="font-mono font-semibold text-fg hover:text-accent">{r.sku}</Link></td>
                 <td><StatusChip status={r.status} /></td>
                 <td className="max-w-96 truncate">{r.label}</td>
                 <td>{r.size ?? "—"}</td>

@@ -15,9 +15,9 @@ export async function middleware(request: NextRequest) {
       },
     },
   });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // refreshes the session cookie when needed; verifies the token locally when the project uses asymmetric keys
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims.sub;
   if (!user && !PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

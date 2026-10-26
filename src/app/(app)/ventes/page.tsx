@@ -146,7 +146,7 @@ export default async function Sales({ searchParams }: { searchParams: Promise<Pa
                             <td className="num">{money(r.fees)}</td>
                             <td className={`num font-semibold ${r.margin != null && r.margin < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{r.margin == null ? "—" : money(r.margin)}</td>
                             <td className="whitespace-nowrap"><OrderBadge status={o.status} historical={o.is_historical} />{o.paid_at && <div className="mt-0.5 text-xs text-muted">encaissé {dateTime(o.paid_at)}</div>}</td>
-                            <td><OrderActions orderId={o.id} status={o.status} items={r.lines.filter((l) => l.status === "active").map((l) => ({ id: l.items.id, sku: l.items.sku }))} /></td>
+                            <td className="w-10"><OrderActions compact orderId={o.id} status={o.status} items={r.lines.filter((l) => l.status === "active").map((l) => ({ id: l.items.id, sku: l.items.sku }))} /></td>
                           </tr>
                         );
                       })}

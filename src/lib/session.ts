@@ -12,27 +12,37 @@ export interface AppContext {
   isManager: boolean;
 }
 
+/** Payload of a JWT (not verified here: see getContext) */
+function tokenClaims(token: string): { sub?: string; email?: string } | null {
+  try {
+    return JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+  } catch {
+    return null;
+  }
+}
+
 /** Loads the signed-in user's membership; redirects to login/onboarding when missing. */
 export const getContext = cache(async (): Promise<AppContext> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // The middleware has already verified this request's token (getClaims). Here the session is read from the cookie
+  // without another network round trip: it only decides which page to show, and every query below is checked by the
+  // database itself, which rejects a token that is not genuine.
+  const { data: { session } } = await supabase.auth.getSession();
+  const claims = session ? tokenClaims(session.access_token) : null;
+  const userId = claims?.sub;
+  if (!userId) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("role, organizations(*)")
-    .eq("user_id", user.id)
-    .eq("active", true)
-    .maybeSingle();
+  // membership and profile in parallel: one round trip instead of two
+  const [{ data: membership }, { data: profile }] = await Promise.all([
+    supabase.from("memberships").select("role, organizations(*)").eq("user_id", userId).eq("active", true).maybeSingle(),
+    supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+  ]);
   if (!membership) redirect("/onboarding");
 
-  const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
   const role = membership.role as AppRole;
   return {
-    userId: user.id,
-    email: user.email ?? "",
+    userId,
+    email: claims?.email ?? "",
     fullName: profile?.full_name ?? "",
     role,
     org: membership.organizations as unknown as Organization,

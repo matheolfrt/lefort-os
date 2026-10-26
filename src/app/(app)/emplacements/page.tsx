@@ -57,7 +57,7 @@ export default async function Locations({ searchParams }: { searchParams: Promis
           <Card title="Zones de travail">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {staging.map((l) => (
-                <Link key={l.id} href={`/emplacements/${l.code}`} className="rounded-md border border-line p-3 hover:border-accent">
+                <Link prefetch={false} key={l.id} href={`/emplacements/${l.code}`} className="rounded-md border border-line p-3 hover:border-accent">
                   <div className="text-sm font-semibold">{l.label}</div>
                   <div className="text-2xl font-mono font-semibold tabular-nums">{count.get(l.id) ?? 0}</div>
                 </Link>
@@ -70,7 +70,7 @@ export default async function Locations({ searchParams }: { searchParams: Promis
                 const n = count.get(l.id) ?? 0;
                 const full = l.capacity && n >= l.capacity;
                 return (
-                  <Link key={l.id} href={`/emplacements/${l.code}`}
+                  <Link prefetch={false} key={l.id} href={`/emplacements/${l.code}`}
                     className={`rounded-md border p-2 text-center hover:border-accent ${full ? "border-red-500 bg-red-500/15 text-red-200" : n ? "border-line bg-panel" : "border-dashed border-line"}`}>
                     <div className="break-words font-mono text-xs font-semibold">{l.code.replace("EMP-", "")}</div>
                     {l.label && <div className="truncate text-[10px] text-muted">{l.label}</div>}

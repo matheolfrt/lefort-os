@@ -76,3 +76,49 @@ table.data tr:hover td { background: color-mix(in srgb, var(--fg) 4%, transparen
 @keyframes panel-fade { from { opacity: 0; } to { opacity: 1; } }
 .panel-fade { animation: panel-fade 0.2s ease-out; }
 @media (prefers-reduced-motion: reduce) { .card-in, .panel-in, .panel-fade { animation: none; } }
+
+/* ── Loading and motion ─────────────────────────────────────────────────── */
+/* Placeholder blocks while a page loads: a soft light sweep, no spinner */
+.skeleton {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fg) 5%, transparent) 0%, color-mix(in srgb, var(--fg) 10%, transparent) 50%, color-mix(in srgb, var(--fg) 5%, transparent) 100%);
+  background-size: 200% 100%;
+  animation: skeleton 1.3s ease-in-out infinite;
+}
+@keyframes skeleton { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* Thin bar at the top of the screen while a page loads */
+.nav-progress { position: fixed; inset: 0 0 auto 0; z-index: 60; height: 2px; overflow: hidden; pointer-events: none; }
+.nav-progress::after {
+  content: ""; position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 12px var(--accent);
+  animation: nav-progress 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes nav-progress { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+
+/* Each page fades in gently */
+@keyframes page-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.page-in { animation: page-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* Small menus and popovers */
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+.pop-in { animation: pop-in 0.14s ease-out; transform-origin: top right; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton, .nav-progress::after, .page-in, .pop-in { animation: none; }
+}
+
+/* ── Finish ─────────────────────────────────────────────────────────────── */
+/* Visible keyboard focus everywhere, never on mouse clicks */
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 2px; border-radius: 6px; }
+
+/* Discreet scrollbars in the dark theme */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fg) 18%, transparent) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--fg) 16%, transparent); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--fg) 28%, transparent); }
+
+table.data tbody tr { transition: background-color 0.12s; }
+
+/* Numbers line up in every table and figure */
+.num, .font-mono { font-variant-numeric: tabular-nums; }

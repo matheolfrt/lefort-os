@@ -1,13 +1,20 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, ScanLine, Search, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { NAV } from "@/lib/nav";
+import { NAV, type NavGroup } from "@/lib/nav";
 import { useScanApi } from "./scan-provider";
 
 const MOBILE = ["/", "/postes", "/stock", "/ventes"];
+const GROUPS: NavGroup[] = ["Pilotage", "Opérations", "Gestion"];
+
+/** A small pulse on the link being opened, until the page is there */
+function Pending() {
+  const { pending } = useLinkStatus();
+  return <span aria-hidden className={`size-1.5 rounded-full bg-accent transition-opacity duration-200 ${pending ? "animate-pulse opacity-100" : "opacity-0"}`} />;
+}
 
 export function Shell({ children, isManager, orgName, userName }: {
   children: ReactNode; isManager: boolean; orgName: string; userName: string;
@@ -38,18 +45,32 @@ export function Shell({ children, isManager, orgName, userName }: {
             <kbd className="rounded-md border border-line px-1.5 font-mono text-[10px]">⌘K</kbd>
           </button>
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
-          {items.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                active(href) ? "bg-accent/12 text-accent ring-1 ring-inset ring-accent/25" : "text-fg/75 hover:bg-fg/5 hover:text-fg"
-              }`}
-            >
-              <Icon size={18} /> {label}
-            </Link>
-          ))}
+        <nav className="flex-1 overflow-y-auto px-3 pb-3">
+          {GROUPS.map((group) => {
+            const links = items.filter((i) => i.group === group);
+            if (!links.length) return null;
+            return (
+              <div key={group} className="mt-3 first:mt-0">
+                {isManager && <div className="eyebrow-tight px-3 pb-1.5 text-[10px] text-muted/70">{group}</div>}
+                <div className="space-y-0.5">
+                  {links.map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      aria-current={active(href) ? "page" : undefined}
+                      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+                        active(href) ? "bg-accent/12 text-accent" : "text-fg/70 hover:bg-fg/5 hover:text-fg"
+                      }`}
+                    >
+                      {active(href) && <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" />}
+                      <Icon size={18} className="shrink-0" /> <span className="flex-1">{label}</span>
+                      <Pending />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
         <div className="border-t border-line px-5 py-4 text-xs text-muted">
           {userName}
@@ -97,7 +118,7 @@ export function Shell({ children, isManager, orgName, userName }: {
         </div>
       )}
 
-      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div className="mx-auto max-w-7xl">{children}</div></main>
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div key={path} className="page-in mx-auto max-w-7xl">{children}</div></main>
 
       {/* Phone: bottom bar with a central scan button */}
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-ink/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
@@ -115,7 +136,8 @@ function MobileLink({ href, active }: { href: string; active: boolean }) {
   const item = NAV.find((n) => n.href === href)!;
   const Icon = item.icon;
   return (
-    <Link href={href} className={`flex flex-col items-center gap-0.5 py-2 text-[11px] ${active ? "text-accent" : "text-muted"}`}>
+    <Link href={href} className={`relative flex flex-col items-center gap-0.5 py-2 text-[11px] transition-colors ${active ? "text-accent" : "text-muted"}`}>
+      <span className="absolute right-[30%] top-1.5"><Pending /></span>
       <Icon size={22} />
       {item.label.split(" ")[0]}
     </Link>

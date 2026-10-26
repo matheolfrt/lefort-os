@@ -2,23 +2,24 @@ import {
   BarChart3, Boxes, Calculator, Compass, Factory, FlaskConical, LayoutDashboard, Lightbulb, MapPin, Package, Settings, ShoppingBag, Truck, type LucideIcon,
 } from "lucide-react";
 
-export interface NavItem { href: string; label: string; icon: LucideIcon; manager: boolean; keywords?: string }
+export type NavGroup = "Pilotage" | "Opérations" | "Gestion";
+export interface NavItem { href: string; label: string; icon: LucideIcon; manager: boolean; keywords?: string; group: NavGroup }
 
 /** Every page of the app, in menu order; also the targets of the search palette */
 export const NAV: NavItem[] = [
-  { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard" },
-  { href: "/conseils", label: "Conseils", icon: Lightbulb, manager: true, keywords: "priorités rentabilité recommandations à faire acheter" },
-  { href: "/niches", label: "Niches", icon: Compass, manager: true, keywords: "tester nouvelles niches marques idées essai lot de test" },
-  { href: "/statistiques", label: "Statistiques", icon: BarChart3, manager: true, keywords: "kpi graphiques marge chiffre" },
-  { href: "/scenarios", label: "Scénarios", icon: FlaskConical, manager: true, keywords: "simulation prévision business plan hypothèses" },
-  { href: "/postes", label: "Postes", icon: Factory, manager: false, keywords: "travail production kanban" },
-  { href: "/stock", label: "Stock", icon: Package, manager: false, keywords: "articles inventaire" },
-  { href: "/lots", label: "Lots", icon: Boxes, manager: false, keywords: "achats batch" },
-  { href: "/ventes", label: "Ventes", icon: ShoppingBag, manager: false, keywords: "commandes nouvelle vente" },
-  { href: "/emplacements", label: "Emplacements", icon: MapPin, manager: false, keywords: "rangement étagères" },
-  { href: "/fournisseurs", label: "Fournisseurs", icon: Truck, manager: true },
-  { href: "/compta", label: "Compta & URSSAF", icon: Calculator, manager: true, keywords: "livre recettes déclaration" },
-  { href: "/parametres", label: "Paramètres", icon: Settings, manager: true, keywords: "réglages équipe extension" },
+  { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard", group: "Pilotage" },
+  { href: "/conseils", label: "Conseils", icon: Lightbulb, manager: true, keywords: "priorités rentabilité recommandations à faire acheter", group: "Pilotage" },
+  { href: "/niches", label: "Niches", icon: Compass, manager: true, keywords: "tester nouvelles niches marques idées essai lot de test", group: "Pilotage" },
+  { href: "/statistiques", label: "Statistiques", icon: BarChart3, manager: true, keywords: "kpi graphiques marge chiffre", group: "Pilotage" },
+  { href: "/scenarios", label: "Scénarios", icon: FlaskConical, manager: true, keywords: "simulation prévision business plan hypothèses", group: "Pilotage" },
+  { href: "/postes", label: "Postes", icon: Factory, manager: false, keywords: "travail production kanban", group: "Opérations" },
+  { href: "/stock", label: "Stock", icon: Package, manager: false, keywords: "articles inventaire", group: "Opérations" },
+  { href: "/lots", label: "Lots", icon: Boxes, manager: false, keywords: "achats batch", group: "Opérations" },
+  { href: "/ventes", label: "Ventes", icon: ShoppingBag, manager: false, keywords: "commandes nouvelle vente", group: "Opérations" },
+  { href: "/emplacements", label: "Emplacements", icon: MapPin, manager: false, keywords: "rangement étagères", group: "Opérations" },
+  { href: "/fournisseurs", label: "Fournisseurs", icon: Truck, manager: true, group: "Gestion" },
+  { href: "/compta", label: "Compta & URSSAF", icon: Calculator, manager: true, keywords: "livre recettes déclaration", group: "Gestion" },
+  { href: "/parametres", label: "Paramètres", icon: Settings, manager: true, keywords: "réglages équipe extension", group: "Gestion" },
 ];
 
 /** Shortcuts to the stations and frequent screens */

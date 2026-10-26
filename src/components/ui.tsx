@@ -86,7 +86,7 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 
 export function SkuLink({ sku }: { sku: string }) {
   return (
-    <Link href={`/stock/${sku}`} className="font-mono font-semibold text-fg underline-offset-2 hover:text-accent hover:underline">
+    <Link prefetch={false} href={`/stock/${sku}`} className="font-mono font-semibold text-fg underline-offset-2 hover:text-accent hover:underline">
       {sku}
     </Link>
   );

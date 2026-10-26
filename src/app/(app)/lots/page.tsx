@@ -36,7 +36,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
               const e = econById.get(b.batch_id);
               return (
                 <li key={b.batch_id}>
-                  <Link href={`/lots/${b.batch_id}`} className="block rounded-2xl border border-line bg-panel/80 p-4 active:scale-[0.99]">
+                  <Link prefetch={false} href={`/lots/${b.batch_id}`} className="block rounded-2xl border border-line bg-panel/80 p-4 active:scale-[0.99]">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-mono font-bold">{b.code}</span>
                       <span className="text-xs text-muted">{b.status === "closed" ? "clôturé · " : ""}{date(b.purchased_at)}</span>
@@ -70,7 +70,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
                     return (
                       <tr key={b.batch_id}>
                         <td>
-                          <Link href={`/lots/${b.batch_id}`} className="font-mono font-semibold hover:text-accent hover:underline">{b.code}</Link>
+                          <Link prefetch={false} href={`/lots/${b.batch_id}`} className="font-mono font-semibold hover:text-accent hover:underline">{b.code}</Link>
                           {b.status === "closed" && <span className="ml-2 text-xs text-muted">clôturé</span>}
                         </td>
                         <td>{b.supplier_name}</td>
