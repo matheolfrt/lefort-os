@@ -5,14 +5,18 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, PageHeader, SkuLink, Stat, StatusChip, btn, input } from "@/components/ui";
 import { date, money, pct } from "@/lib/format";
 import type { ItemStatus } from "@/lib/types";
-import { addAdjustment, addCostLine, deleteCostLine, setAllocation } from "./actions";
+import { addAdjustment, addCostLine, createSkus, deleteCostLine, setAllocation } from "./actions";
+import { SkuFields } from "../sku-fields";
 import { LabelPrinter } from "./label-printer";
 import { CloseBatchButton } from "./close-batch";
 
 const COST_KIND: Record<string, string> = { goods: "Marchandise", transport: "Transport", customs: "Douane", fees: "Frais", other: "Autre" };
 
-export default async function BatchDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function BatchDetail({ params, searchParams }: {
+  params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; ok?: string }>;
+}) {
   const { id } = await params;
+  const notice = await searchParams;
   const ctx = await getContext();
   const supabase = await createClient();
 
@@ -21,13 +25,15 @@ export default async function BatchDetail({ params }: { params: Promise<{ id: st
 
   const [{ data: progress }, { data: items }, { data: labels }, econ, lines, adjustments, costs] = await Promise.all([
     supabase.from("v_batch_progress").select("*").eq("batch_id", id).single(),
-    supabase.from("items").select("id, sku, status, size_label, categories(name), brands(name)").eq("batch_id", id).is("deleted_at", null).order("sku"),
+    supabase.from("items").select("id, sku, status, size_label, categories(name), brands(name)").eq("batch_id", id).is("deleted_at", null),
     supabase.from("sku_labels").select("sku").eq("batch_id", id),
     ctx.isManager ? supabase.from("v_batch_profitability").select("*").eq("batch_id", id).maybeSingle() : null,
     ctx.isManager ? supabase.from("batch_cost_lines").select("*").eq("batch_id", id).order("created_at") : null,
     ctx.isManager ? supabase.from("batch_cost_adjustments").select("*").eq("batch_id", id).order("created_at") : null,
     ctx.isManager ? supabase.from("item_costs").select("item_id, allocated_cost_cents, manual") : null,
   ]);
+  // natural order: M-2 before M-10
+  items?.sort((a, b) => a.sku.localeCompare(b.sku, "fr", { numeric: true }));
   const costById = new Map((costs?.data ?? []).map((c) => [c.item_id, c]));
   const e = econ?.data;
   const open = batch.status === "open";
@@ -48,6 +54,8 @@ export default async function BatchDetail({ params }: { params: Promise<{ id: st
         }
       />
 
+      {notice.error && <p className="mb-4 rounded-xl bg-red-500/10 p-3 text-sm text-red-200 ring-1 ring-inset ring-red-400/30">{notice.error}</p>}
+      {notice.ok && <p className="mb-4 rounded-xl bg-accent/10 p-3 text-sm text-accent ring-1 ring-inset ring-accent/25">{notice.ok}</p>}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label="Reçus" value={`${progress?.items ?? 0}${batch.expected_qty ? ` / ${batch.expected_qty}` : ""}`} />
         <Stat label="Photographiés" value={progress?.photographed ?? 0} />
@@ -93,8 +101,17 @@ export default async function BatchDetail({ params }: { params: Promise<{ id: st
         <div className="space-y-4">
           <Card title="Étiquettes">
             <p className="mb-3 text-sm text-muted">{labels?.length ?? 0} générées · {Math.max(unused, 0)} non utilisées</p>
-            <LabelPrinter batchId={batch.id} unused={Math.max(unused, 0)} suggested={suggested} open={open} />
+            <LabelPrinter batchId={batch.id} unused={Math.max(unused, 0)} suggested={suggested} open={open} total={labels?.length ?? 0} />
           </Card>
+
+          {open && (
+            <Card title="Créer des SKU personnalisés">
+              <form action={createSkus.bind(null, batch.id)} className="space-y-3">
+                <SkuFields defaultCount={suggested} />
+                <button className={`${btn.primary} w-full`}>Créer les SKU</button>
+              </form>
+            </Card>
+          )}
 
           {ctx.isManager && (
             <Card title="Coûts">

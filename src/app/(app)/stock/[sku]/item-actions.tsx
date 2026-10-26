@@ -34,6 +34,18 @@ export function ItemActions({ item, isManager }: { item: Item; isManager: boolea
       {item.status === "on_hold" && item.status_before_hold && (
         <button className={btn.primary} onClick={() => to(item.status_before_hold!)}>Reprendre le traitement</button>
       )}
+      {(PRE_SALE.includes(item.status) || item.status === "on_hold") && (
+        <button className={btn.primary} onClick={async () => {
+          try {
+            const r = await rpc<{ updated: number; errors: { error: string }[] }>("bulk_put_on_sale", { p_item_ids: [item.id] });
+            if (r.errors.length) return toast(r.errors[0].error, "error");
+            toast(`${item.sku} mis en vente`, "ok");
+            router.refresh();
+          } catch (e) {
+            toast((e as Error).message, "error");
+          }
+        }}>Mettre en vente</button>
+      )}
       {PRE_SALE.includes(item.status) && (
         <details>
           <summary className={`${btn.secondary} w-full cursor-pointer list-none`}>Mettre en attente…</summary>

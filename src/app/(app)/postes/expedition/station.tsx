@@ -45,6 +45,11 @@ export function ShippingStation() {
   useScan((scan) => {
     if (scan.kind === "item") {
       const row = rows.find((r) => r.sku === scan.code);
+      // a carrier number can look like a SKU (MR12345678): with an order open, it is the tracking number
+      if (!row && active) {
+        setTracking(scan.code);
+        return true;
+      }
       if (!row) {
         toast(`${scan.code} n'est dans aucune commande à expédier`, "error");
         return true;

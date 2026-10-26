@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireManager, getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { parseEuros } from "@/lib/format";
@@ -15,6 +16,20 @@ export async function issueLabels(batchId: string, qty: number): Promise<ActionR
   if (error) return { error: errorMessage(error) };
   revalidatePath(`/lots/${batchId}`);
   return { skus: data as string[] };
+}
+
+export async function createSkus(batchId: string, formData: FormData): Promise<void> {
+  await getContext();
+  const supabase = await createClient();
+  const f = (k: string) => String(formData.get(k) ?? "").trim();
+  const { data, error } = await supabase.rpc("create_batch_skus", {
+    p_batch_id: batchId, p_prefix: f("sku_prefix"), p_start: Number(f("sku_start")) || 0,
+    p_count: Number(f("sku_count")) || 0, p_create_items: !!formData.get("sku_items"),
+  });
+  if (error) redirect(`/lots/${batchId}?error=${encodeURIComponent(errorMessage(error))}`);
+  const r = data as { first: string; last: string; count: number; items_created: number };
+  revalidatePath(`/lots/${batchId}`);
+  redirect(`/lots/${batchId}?ok=${encodeURIComponent(`${r.count} SKU créés (${r.first} → ${r.last})${r.items_created ? ", articles ajoutés au stock" : ""}`)}`);
 }
 
 export async function addCostLine(batchId: string, formData: FormData): Promise<void> {

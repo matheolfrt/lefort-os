@@ -12,6 +12,8 @@ export function classifyScan(raw: string): ScanResult {
   if (/^LOT-[A-Z0-9-]+$/.test(code)) return { kind: "batch", code };
   if (/^CMD-[A-Z]+$/.test(code)) return { kind: "command", code };
   if (/^[A-Z]{2,5}\d{5,}$/.test(code)) return { kind: "item", code };
+  // SKUs chosen per batch (M-1, BLZ12) and imported ones (CSV-100): letters, optional dash, number
+  if (/^[A-Z]{1,6}-?\d{1,8}$/.test(code)) return { kind: "item", code };
   return { kind: "unknown", code };
 }
 

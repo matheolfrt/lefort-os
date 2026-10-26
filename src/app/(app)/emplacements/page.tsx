@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { errorMessage } from "@/lib/errors";
 import { getContext, requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Field, PageHeader, btn, input } from "@/components/ui";
@@ -17,7 +19,21 @@ async function createRange(formData: FormData) {
   revalidatePath("/emplacements");
 }
 
-export default async function Locations() {
+async function createOne(formData: FormData) {
+  "use server";
+  await requireManager();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("save_location", {
+    p_id: null, p_name: String(formData.get("name") ?? ""), p_label: String(formData.get("label") ?? "") || null,
+    p_capacity: Number(formData.get("capacity")) || null,
+  });
+  if (error) redirect(`/emplacements?error=${encodeURIComponent(errorMessage(error))}`);
+  revalidatePath("/emplacements");
+  redirect(`/emplacements/${(data as { code: string }).code}`);
+}
+
+export default async function Locations({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
   const ctx = await getContext();
   const supabase = await createClient();
   const [{ data: locations }, { data: items }] = await Promise.all([
@@ -33,7 +49,7 @@ export default async function Locations() {
     <>
       <PageHeader
         title="Emplacements"
-        subtitle="Zone-étagère-bac. Un article est toujours dans un seul emplacement."
+        subtitle="Nommez vos emplacements comme dans votre vrai stockage. Un article est toujours dans un seul emplacement."
         actions={<a className={btn.secondary} href="/etiquettes/emplacements" target="_blank">Imprimer toutes les étiquettes (4×6)</a>}
       />
       <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
@@ -56,7 +72,8 @@ export default async function Locations() {
                 return (
                   <Link key={l.id} href={`/emplacements/${l.code}`}
                     className={`rounded-md border p-2 text-center hover:border-accent ${full ? "border-red-500 bg-red-500/15 text-red-200" : n ? "border-line bg-panel" : "border-dashed border-line"}`}>
-                    <div className="font-mono text-xs font-semibold">{l.code.replace("EMP-", "")}</div>
+                    <div className="break-words font-mono text-xs font-semibold">{l.code.replace("EMP-", "")}</div>
+                    {l.label && <div className="truncate text-[10px] text-muted">{l.label}</div>}
                     <div className="text-lg font-mono font-semibold tabular-nums">{n}{l.capacity ? <span className="text-xs font-normal">/{l.capacity}</span> : null}</div>
                   </Link>
                 );
@@ -65,7 +82,18 @@ export default async function Locations() {
           </Card>
         </div>
         {ctx.isManager && (
-          <Card title="Créer des emplacements">
+          <div className="space-y-4">
+          {error && <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-200 ring-1 ring-inset ring-red-400/30">{error}</p>}
+          <Card title="Nouvel emplacement">
+            <form action={createOne} className="space-y-3">
+              <Field label="Nom"><input className={input} name="name" placeholder="Portant hiver, Carton 3…" required /></Field>
+              <Field label="Description (facultatif)"><input className={input} name="label" /></Field>
+              <Field label="Capacité (facultatif)"><input className={input} name="capacity" type="number" min={1} /></Field>
+              <button className={`${btn.primary} w-full`}>Créer</button>
+              <p className="text-xs text-muted">Pour renommer un emplacement existant, ouvrez-le puis « Renommer / modifier ».</p>
+            </form>
+          </Card>
+          <Card title="Créer une série (zone-étagère-bac)">
             <form action={createRange} className="space-y-3">
               <Field label="Zone (lettre)"><input className={`${input} uppercase`} name="zone" defaultValue="A" maxLength={3} required /></Field>
               <div className="grid grid-cols-2 gap-2">
@@ -74,9 +102,10 @@ export default async function Locations() {
               </div>
               <Field label="Capacité par bac (optionnel)"><input className={input} name="capacity" type="number" min={1} /></Field>
               <button className={`${btn.primary} w-full`}>Créer</button>
-              <p className="text-xs text-muted">Ex. zone A, 4 étagères × 5 bacs → EMP-A-01-01 … EMP-A-04-05. Les existants sont ignorés.</p>
+              <p className="text-xs text-muted">Ex. zone A, 4 étagères × 5 bacs → A-01-01 … A-04-05. Les existants sont ignorés.</p>
             </form>
           </Card>
+          </div>
         )}
       </div>
     </>

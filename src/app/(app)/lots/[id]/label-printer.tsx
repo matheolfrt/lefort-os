@@ -11,8 +11,8 @@ const FORMATS = [
   { value: "4x6", label: "4 × 6 (4 par feuille)" },
 ];
 
-export function LabelPrinter({ batchId, unused, suggested, open }: {
-  batchId: string; unused: number; suggested: number; open: boolean;
+export function LabelPrinter({ batchId, unused, suggested, open, total = 0 }: {
+  batchId: string; unused: number; suggested: number; open: boolean; total?: number;
 }) {
   const [qty, setQty] = useState(suggested || 10);
   const [format, setFormat] = useState(() => (typeof window !== "undefined" && localStorage.getItem("labelFormat")) || "57x32");
@@ -52,6 +52,11 @@ export function LabelPrinter({ batchId, unused, suggested, open }: {
       {unused > 0 && (
         <a className={`${btn.secondary} w-full`} href={pdfUrl("&scope=unused")} target="_blank">
           Réimprimer les {unused} étiquettes non utilisées
+        </a>
+      )}
+      {total > 0 && (
+        <a className={`${btn.secondary} w-full`} href={pdfUrl("&scope=all")} target="_blank">
+          Imprimer toutes les étiquettes du lot ({total})
         </a>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}

@@ -3,6 +3,8 @@ import { requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Field, PageHeader, btn, input } from "@/components/ui";
 import { parseEuros } from "@/lib/format";
+import { errorMessage } from "@/lib/errors";
+import { SkuFields } from "../sku-fields";
 
 async function createBatch(formData: FormData) {
   "use server";
@@ -32,6 +34,14 @@ async function createBatch(formData: FormData) {
     .filter((l) => l.amount_cents)
     .map((l) => ({ ...l, org_id: ctx.org.id, batch_id: batch.id, created_by: ctx.userId }));
   if (lines.length) await supabase.from("batch_cost_lines").insert(lines);
+  if (formData.get("sku_custom")) {
+    const { error: skuError } = await supabase.rpc("create_batch_skus", {
+      p_batch_id: batch.id, p_prefix: f("sku_prefix"), p_start: Number(f("sku_start")) || 0,
+      p_count: Number(f("sku_count")) || 0, p_create_items: !!formData.get("sku_items"),
+    });
+    // the batch exists either way: show the problem on its page, where SKUs can be created again
+    if (skuError) redirect(`/lots/${batch.id}?error=${encodeURIComponent(errorMessage(skuError))}`);
+  }
   redirect(`/lots/${batch.id}`);
 }
 
@@ -85,7 +95,10 @@ export default async function NewBatch({ searchParams }: { searchParams: Promise
             <Field label="Notes"><textarea className={`${input} min-h-20 py-2`} name="notes" /></Field>
           </div>
         </Card>
-        {error && <p className="text-red-600 md:col-span-2">{error}</p>}
+        <Card title="SKU des articles" className="md:col-span-2">
+          <SkuFields optional />
+        </Card>
+        {error && <p className="text-red-300 md:col-span-2">{error}</p>}
         <button className={`${btn.primary} md:col-span-2`}>Créer le lot</button>
       </form>
     </>

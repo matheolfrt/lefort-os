@@ -278,6 +278,43 @@ do $$ declare r jsonb; v_o uuid; v_item uuid; v_bundle uuid; v_other uuid; v_led
   r := public.restore_items(array[v_item]);
   assert (select status from items where id = v_item) = 'listing_ready';
 end $$;
+-- custom SKUs created with a batch, bulk "put on sale", named locations
+do $$ declare r jsonb; v_batch uuid; v_item items; v_loc locations; v_ids uuid[]; begin
+  insert into batches(org_id, code, supplier_id, purchased_at, allocation_method, created_by)
+  select org_id, 'LOT-SKU-TEST', id, current_date, 'equal', auth.uid() from suppliers limit 1 returning id into v_batch;
+  r := public.create_batch_skus(v_batch, 'm-', 1, 37);
+  assert r->>'first' = 'M-1' and r->>'last' = 'M-37' and (r->>'items_created')::int = 37, r::text;
+  assert (select count(*) from items where batch_id = v_batch and status = 'received') = 37;
+  assert (select count(*) from item_costs ic join items i on i.id = ic.item_id where i.batch_id = v_batch) = 37, 'costs follow';
+  perform t.expect_error(format('select public.create_batch_skus(%L, ''M-'', 30, 10)', v_batch), 'déjà utilisés');
+  perform t.expect_error(format('select public.create_batch_skus(%L, ''M1-'', 1, 1)', v_batch), 'Préfixe invalide');
+  -- labels only (no items), with a prefix without dash
+  r := public.create_batch_skus(v_batch, 'BLZ', 100, 2, false);
+  assert r->>'first' = 'BLZ100' and (select count(*) from items where sku like 'BLZ1%') = 0, r::text;
+  -- reception completes an item created in advance instead of refusing it
+  v_item := public.receive_item(v_batch, 'm-5', jsonb_build_object('category_id', (select id from categories limit 1), 'size_label', '50'), 'sorted');
+  assert v_item.sku = 'M-5' and v_item.status = 'sorted' and v_item.size_label = '50', v_item::text;
+  perform t.expect_error(format('select public.receive_item(%L, ''M-5'')', v_batch), 'déjà utilisée');
+  -- put on sale in bulk, from any step before the sale
+  v_ids := array(select id from items where sku in ('M-1', 'M-2', 'M-5'));
+  v_ids := v_ids || (select item_id from order_lines ol join orders o on o.id = ol.order_id where o.status <> 'cancelled' and ol.status = 'active' limit 1);
+  r := public.bulk_put_on_sale(v_ids, 3500);
+  assert (r->>'updated')::int = 3 and jsonb_array_length(r->'errors') = 1, r::text;
+  assert (select bool_and(status = 'listed' and list_price_cents = 3500 and listed_at is not null) from items where sku in ('M-1', 'M-2', 'M-5'));
+  -- named locations
+  v_loc := public.save_location(null, 'Portant hiver', 'Près de la fenêtre', 40);
+  assert v_loc.code = 'EMP-PORTANT-HIVER' and v_loc.capacity = 40, v_loc::text;
+  v_loc := public.save_location(v_loc.id, 'Étagère  été #2');
+  assert v_loc.code = 'EMP-ETAGERE-ETE-2', v_loc::text;
+  perform t.expect_error(format('select public.save_location(null, %L)', 'etagere ete 2'), 'déjà');
+  r := public.bulk_move(array(select id from items where sku = 'M-1'), v_loc.code);
+  assert (r->>'updated')::int = 1, r::text;
+  perform t.expect_error(format('select public.archive_location(%L)', v_loc.id), 'non vide');
+  r := public.bulk_move(array(select id from items where sku = 'M-1'), 'EMP-A-01-02');
+  assert (r->>'updated')::int = 1, r::text;
+  perform public.archive_location(v_loc.id);
+  assert not (select active from locations where id = v_loc.id);
+end $$;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
 select t.expect_error($$select public.import_sales('[]', true)$$, 'non autorisée');
 select t.expect_error($$select public.vinted_orders_preview('[]')$$, 'non autorisée');

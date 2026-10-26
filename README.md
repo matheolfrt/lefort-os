@@ -99,3 +99,11 @@ niveaux de stock, comparateur. « Mes chiffres réels » part des 90 derniers jo
 le moteur est `src/lib/scenario.ts`. Les scénarios sont enregistrés dans la table `scenarios` (lecture et écriture
 réservées aux responsables).
 
+## SKU par lot, mise en vente groupée, emplacements nommés
+
+- `create_batch_skus` : à la création d'un lot (ou depuis sa page), préfixe + numéros consécutifs (M-1 … M-37),
+  articles créés d'avance au statut « Reçu ». `receive_item` complète ensuite un article créé d'avance.
+- `bulk_put_on_sale` : passe directement « En ligne » depuis toute étape avant la vente (prix facultatif).
+- `save_location` / `archive_location` : emplacements de stockage nommés librement (le nom devient le code
+  de l'étiquette, ex. EMP-PORTANT-HIVER), suppression d'un emplacement vide.
+

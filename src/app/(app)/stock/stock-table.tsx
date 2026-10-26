@@ -30,8 +30,8 @@ interface BulkResult { updated: number; errors: { sku: string; error: string }[]
 
 // Statuses a person may set by hand; sold/shipped/completed/returned are handled in Ventes
 const TARGETS: { value: string; label: string }[] = [
+  { value: "listed", label: "Mettre en vente (en ligne), directement" },
   { value: "listing_ready", label: "Prêt à publier (retirer l'annonce)" },
-  { value: "listed", label: "En ligne" },
   { value: "reserved", label: "Réservé" },
   { value: "on_hold", label: "En attente…" },
   { value: "release", label: "Reprendre (sortir de l'attente)" },
@@ -62,6 +62,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
   const [target, setTarget] = useState("");
   const [holdReason, setHoldReason] = useState<HoldReason>("cleaning");
   const [location, setLocation] = useState("");
+  const [salePrice, setSalePrice] = useState("");
   const [category, setCategory] = useState("");
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<BulkResult["errors"]>([]);
@@ -105,6 +106,11 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
 
   const applyStatus = () => {
     if (!target) return;
+    if (target === "listed") {
+      const cents = salePrice.trim() ? Math.round(Number(salePrice.replace(",", ".")) * 100) : null;
+      if (cents != null && !(cents > 0)) return toast("Prix invalide", "error");
+      return run("Mise en vente", () => rpc<BulkResult>("bulk_put_on_sale", { p_item_ids: ids, p_price_cents: cents }));
+    }
     run("Statut", () =>
       rpc<BulkResult>("bulk_transition", {
         p_item_ids: ids,
@@ -270,6 +276,10 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
                 <option value="">Changer le statut…</option>
                 {TARGETS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
+              {target === "listed" && (
+                <input className={`${input} w-28 bg-panel text-fg`} inputMode="decimal" placeholder="Prix € (opt.)" value={salePrice}
+                  onChange={(e) => setSalePrice(e.target.value)} aria-label="Prix de vente (facultatif)" />
+              )}
               {target === "on_hold" && (
                 <select className={`${input} w-auto bg-panel text-fg`} value={holdReason} onChange={(e) => setHoldReason(e.target.value as HoldReason)} aria-label="Motif">
                   {(Object.keys(HOLD_LABEL) as HoldReason[]).map((h) => <option key={h} value={h}>{HOLD_LABEL[h]}</option>)}

@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
     }
   }
   if (!skus.length) return NextResponse.json({ error: "Aucune étiquette à imprimer" }, { status: 404 });
+  // natural order: M-2 before M-10
+  if (!p.get("skus")) skus.sort((a, b) => a.localeCompare(b, "fr", { numeric: true }));
 
   const [{ data: items }, { data: org }] = await Promise.all([
     supabase.from("items").select("sku, size_label, brands(name)").in("sku", skus),
