@@ -205,7 +205,7 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
                 setMode(m);
                 try { localStorage.setItem("photoMode", m); } catch {}
               }}
-              className={`min-h-10 whitespace-nowrap rounded-md px-3 text-sm font-semibold transition ${mode === m ? "bg-ink text-ink-fg" : "text-muted hover:text-fg"}`}
+              className={`min-h-10 whitespace-nowrap rounded-md px-3 text-sm font-semibold transition ${mode === m ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}
             >
               {m === "photo_measure" ? "Les deux" : m === "photo" ? "Photo" : "Mesures"}
             </button>
@@ -214,7 +214,7 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
       </StationHeader>
 
       {!item ? (
-        <div className="space-y-3 rounded-xl border border-line bg-panel p-6 text-center">
+        <div className="space-y-3 rounded-2xl border border-line bg-panel/80 p-6 text-center">
           <p className="text-muted">
             {empty ? "File vide pour ce poste." : "Prenez l'article suivant de la file, ou scannez une étiquette pour ouvrir un article précis."}
           </p>
@@ -222,7 +222,7 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
         </div>
       ) : (
         <>
-          <div className="rounded-xl bg-ink p-4 text-ink-fg">
+          <div className="rounded-2xl bg-panel-2 p-4 text-fg ring-1 ring-inset ring-line">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <Link href={`/stock/${item.sku}`} className="font-mono text-3xl font-black">{item.sku}</Link>
@@ -234,8 +234,8 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
           </div>
 
           {showPhotos && (
-            <section className="rounded-xl border border-line bg-panel p-4">
-              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Photos</h2>
+            <section className="rounded-2xl border border-line bg-panel/80 p-4">
+              <h2 className="mb-2 eyebrow text-muted">Photos</h2>
               <div className="mb-3 flex flex-wrap gap-1.5">
                 {shots.map((s) => {
                   const ok = photos.some((p) => p.shot_key === s.key && p.state !== "error");
@@ -287,8 +287,8 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
           )}
 
           {showMeasures && defs.length > 0 && (
-            <section className="rounded-xl border border-line bg-panel p-4">
-              <h2 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-muted">Mesures à plat (cm)</h2>
+            <section className="rounded-2xl border border-line bg-panel/80 p-4">
+              <h2 className="mb-3 eyebrow text-muted">Mesures à plat (cm)</h2>
               <div className="grid grid-cols-2 gap-3">
                 {defs.map((d, i) => (
                   <label key={d.id} className="block">

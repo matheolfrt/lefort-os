@@ -10,7 +10,7 @@ const days = (n: number) => `${Math.round(n)} j`;
 
 function ChartCard({ title, sub, legend, children }: { title: string; sub?: string; legend?: Series[]; children: React.ReactNode }) {
   return (
-    <section className="min-w-0 rounded-xl border border-line bg-panel p-4">
+    <section className="min-w-0 rounded-2xl border border-line bg-panel/80 p-4">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <h2 className="font-semibold">{title}</h2>

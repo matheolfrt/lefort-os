@@ -3,7 +3,7 @@ import { Download, Search, Trash2, Upload } from "lucide-react";
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Empty, input } from "@/components/ui";
-import { STATUS_LABEL, STATUS_TONE } from "@/i18n/fr";
+import { STATUS_LABEL, STATUS_DOT } from "@/i18n/fr";
 import type { ItemStatus } from "@/lib/types";
 import { StockTable, type StockRow } from "./stock-table";
 
@@ -60,7 +60,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
     <div className="mx-auto max-w-7xl space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight">{trash ? "Corbeille" : "Stock"}</h1>
+          <h1 className="text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-[28px]">{trash ? "Corbeille" : "Stock"}</h1>
           <p className="text-sm text-muted">
             {count ?? 0} article{(count ?? 0) > 1 ? "s" : ""}
             {sp.status && ` · ${STATUS_LABEL[sp.status as ItemStatus]}`}
@@ -87,7 +87,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
           <Chip href={trash ? "/stock" : href({ status: undefined, page: undefined })} active={!sp.status && !trash} label="Tous" count={total} />
           {!trash && CHIP_ORDER.filter((s) => byStatus.get(s)).map((s) => (
             <Chip key={s} href={href({ status: s, page: undefined })} active={sp.status === s} label={STATUS_LABEL[s]}
-              count={byStatus.get(s) ?? 0} dot={STATUS_TONE[s].split(" ")[0]} />
+              count={byStatus.get(s) ?? 0} dot={STATUS_DOT[s]} />
           ))}
           {ctx.isManager && (trashCount ?? 0) > 0 && (
             <Chip href={trash ? "/stock" : "/stock?deleted=1"} active={trash} label="Corbeille" count={trashCount ?? 0} icon />
@@ -109,7 +109,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
         <select className={`${input} hidden sm:block`} name="size" defaultValue={String(PAGE)} aria-label="Articles par page">
           {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} / page</option>)}
         </select>
-        <button className="min-h-11 rounded-md bg-ink px-4 font-semibold text-ink-fg hover:opacity-90">Filtrer</button>
+        <button className="min-h-11 rounded-xl bg-fg px-4 font-semibold text-bg hover:opacity-90">Filtrer</button>
       </form>
 
       {!items?.length ? (
@@ -152,7 +152,7 @@ function Chip({ href, active, label, count, dot, icon }: { href: string; active:
         href={href}
         aria-current={active ? "true" : undefined}
         className={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition ${
-          active ? "border-ink bg-ink text-ink-fg" : "border-line bg-panel hover:border-fg/30"
+          active ? "border-fg bg-fg text-bg" : "border-line bg-panel hover:border-fg/30"
         }`}
       >
         {dot && <span className={`size-2 rounded-full ${dot}`} />}

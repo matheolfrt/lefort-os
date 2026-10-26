@@ -156,7 +156,7 @@ function QuickScan({ onSubmit, onCamera, onClose }: { onSubmit: (code: string) =
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[max(4rem,env(safe-area-inset-top))]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm px-4 pt-[max(4rem,env(safe-area-inset-top))]" onClick={onClose}>
       <form
         role="dialog"
         aria-label="Scanner un code"

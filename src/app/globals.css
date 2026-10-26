@@ -1,59 +1,69 @@
 @import "tailwindcss";
 
-/* Industrial palette: high contrast, one strong accent, readable at arm's length */
+/* The app is dark only: every `dark:` variant applies (html carries the .dark class) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Night-green palette: deep green-black surfaces, green for actions, orange for highlights */
 :root {
-  --bg: #f4f4f2;
-  --panel: #ffffff;
-  --line: #d9d9d4;
-  --fg: #141414;
-  --muted: #6b6b66;
-  --accent: #e8590c;
-  --accent-fg: #ffffff;
-  --ink: #18181b;
-  --ink-fg: #fafafa;
-  /* chart series (validated categorical pair: blue, orange) */
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #111112;
-    --panel: #1b1b1d;
-    --line: #2e2e31;
-    --fg: #ededeb;
-    --muted: #9a9a95;
-    --ink: #0a0a0b;
-    --series-1: #3987e5;
-    --series-2: #d95926;
-  }
+  color-scheme: dark;
+  --bg: #0a110e;
+  --panel: #111a16;
+  --panel-2: #16211c;
+  --line: #233029;
+  --fg: #ecf2ee;
+  --muted: #8a998f;
+  --accent: #22c55e;
+  --accent-fg: #03140a;
+  --highlight: #ff8a2a;
+  --ink: #070c0a;
+  --ink-fg: #ecf2ee;
+  /* chart series (validated categorical pair on the panel surface: green, orange) */
+  --series-1: #199e70;
+  --series-2: #d95926;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
   --color-line: var(--line);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-highlight: var(--highlight);
   --color-ink: var(--ink);
   --color-ink-fg: var(--ink-fg);
   --color-series-1: var(--series-1);
   --color-series-2: var(--series-2);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 520px at 70% -120px, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(900px 420px at -10% 0, color-mix(in srgb, var(--highlight) 5%, transparent), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--fg);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Grid children may shrink below their content (wide tables scroll inside their card instead of widening the page) */
+.grid > * { min-width: 0; }
+
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+
+/* Small mono label in capitals, widely spaced (section titles, eyebrows) */
+.eyebrow { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; }
+/* Tighter variant for labels inside tiles and forms */
+.eyebrow-tight { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+
 table.data { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-table.data th { text-align: left; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.data th { text-align: left; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
 table.data td { padding: 0.625rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
 table.data tbody tr:last-child td { border-bottom: 0; }
-table.data tr:hover td { background: color-mix(in srgb, var(--line) 30%, transparent); }
+table.data tr:hover td { background: color-mix(in srgb, var(--fg) 4%, transparent); }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }

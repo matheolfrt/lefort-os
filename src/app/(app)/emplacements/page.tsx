@@ -43,7 +43,7 @@ export default async function Locations() {
               {staging.map((l) => (
                 <Link key={l.id} href={`/emplacements/${l.code}`} className="rounded-md border border-line p-3 hover:border-accent">
                   <div className="text-sm font-semibold">{l.label}</div>
-                  <div className="text-2xl font-black tabular-nums">{count.get(l.id) ?? 0}</div>
+                  <div className="text-2xl font-mono font-semibold tabular-nums">{count.get(l.id) ?? 0}</div>
                 </Link>
               ))}
             </div>
@@ -55,9 +55,9 @@ export default async function Locations() {
                 const full = l.capacity && n >= l.capacity;
                 return (
                   <Link key={l.id} href={`/emplacements/${l.code}`}
-                    className={`rounded-md border p-2 text-center hover:border-accent ${full ? "border-red-500 bg-red-50 text-red-900" : n ? "border-line bg-panel" : "border-dashed border-line"}`}>
+                    className={`rounded-md border p-2 text-center hover:border-accent ${full ? "border-red-500 bg-red-500/15 text-red-200" : n ? "border-line bg-panel" : "border-dashed border-line"}`}>
                     <div className="font-mono text-xs font-semibold">{l.code.replace("EMP-", "")}</div>
-                    <div className="text-lg font-black tabular-nums">{n}{l.capacity ? <span className="text-xs font-normal">/{l.capacity}</span> : null}</div>
+                    <div className="text-lg font-mono font-semibold tabular-nums">{n}{l.capacity ? <span className="text-xs font-normal">/{l.capacity}</span> : null}</div>
                   </Link>
                 );
               })}

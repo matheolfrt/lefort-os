@@ -146,7 +146,7 @@ export function ListingStation({ catalog, signature, isManager, initialSku }: {
     return (
       <div className="mx-auto max-w-3xl">
         <StationHeader title="Publication" />
-        <div className="space-y-3 rounded-xl border border-line bg-panel p-6 text-center">
+        <div className="space-y-3 rounded-2xl border border-line bg-panel/80 p-6 text-center">
           <p className="text-muted">
             {empty ? "Aucun article prêt à publier." : "Prenez l'article suivant, ou scannez une étiquette pour ouvrir un article précis."}
           </p>
@@ -156,8 +156,8 @@ export function ListingStation({ catalog, signature, isManager, initialSku }: {
     );
   }
 
-  const step = "mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-muted";
-  const num = "flex size-5 items-center justify-center rounded-full bg-ink text-[11px] text-ink-fg";
+  const step = "mb-2 flex items-center gap-2 eyebrow text-muted";
+  const num = "flex size-5 items-center justify-center rounded-full bg-fg text-[11px] text-bg";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -167,7 +167,7 @@ export function ListingStation({ catalog, signature, isManager, initialSku }: {
       </StationHeader>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <section className="h-fit rounded-xl border border-line bg-panel p-4">
+        <section className="h-fit rounded-2xl border border-line bg-panel/80 p-4">
           <h2 className={step}><span className={num}>1</span> Photos · {photos.length}</h2>
           <div className="grid grid-cols-3 gap-2">
             {photos.map((p) => (
@@ -184,7 +184,7 @@ export function ListingStation({ catalog, signature, isManager, initialSku }: {
         </section>
 
         <div className="space-y-4">
-          <section className="space-y-3 rounded-xl border border-line bg-panel p-4">
+          <section className="space-y-3 rounded-2xl border border-line bg-panel/80 p-4">
             <h2 className={step}><span className={num}>2</span> Texte et prix</h2>
             <Field label="Titre">
               <div className="flex gap-2">
@@ -209,7 +209,7 @@ export function ListingStation({ catalog, signature, isManager, initialSku }: {
             </div>
           </section>
 
-          <section className="space-y-3 rounded-xl border border-line bg-panel p-4">
+          <section className="space-y-3 rounded-2xl border border-line bg-panel/80 p-4">
             <h2 className={step}><span className={num}>3</span> Publier sur Vinted</h2>
             <a className={`${btn.secondary} w-full`} href="https://www.vinted.fr/items/new" target="_blank" rel="noreferrer">
               <ExternalLink size={18} /> Ouvrir Vinted

@@ -155,7 +155,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
           <Box checked={allChecked} onClick={toggleAll} label="Tout sélectionner" />
           <span>Tout sélectionner ({rows.length})</span>
         </div>
-        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-panel">
+        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-panel/80">
           {rows.map((r, i) => (
             <li key={r.id} className={`flex items-center gap-1 pr-3 ${selected.has(r.id) ? "bg-accent/10" : ""}`}>
               <Box checked={selected.has(r.id)} onClick={() => toggle(i, false)} label={`Sélectionner ${r.sku}`} />
@@ -178,7 +178,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
       </div>
 
       {/* ── Desktop: dense table */}
-      <div className="hidden overflow-x-auto rounded-xl border border-line bg-panel md:block">
+      <div className="hidden overflow-x-auto rounded-2xl border border-line bg-panel/80 md:block">
         <table className="data">
           <thead>
             <tr>
@@ -215,7 +215,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
       {ids.length > 0 && <div className="h-56 md:h-24" aria-hidden />}
       {ids.length > 0 && (
         <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-3 md:bottom-4 md:left-60 md:px-8">
-          <div className="mx-auto grid max-w-6xl gap-2 rounded-2xl bg-ink p-3 text-ink-fg shadow-2xl md:flex md:flex-wrap md:items-center">
+          <div className="mx-auto grid max-w-6xl gap-2 rounded-2xl bg-ink p-3 text-ink-fg shadow-2xl ring-1 ring-line md:flex md:flex-wrap md:items-center">
             <div className="flex items-center gap-2">
               <span className="font-bold">{ids.length} sélectionné{ids.length > 1 ? "s" : ""}</span>
               <button className="flex size-9 items-center justify-center rounded-full opacity-70 hover:bg-white/10 hover:opacity-100"

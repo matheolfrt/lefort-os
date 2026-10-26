@@ -22,13 +22,13 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
     <div className="mx-auto max-w-7xl space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight">Statistiques</h1>
+          <h1 className="text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-[28px]">Statistiques</h1>
           <p className="text-sm text-muted">Toutes les ventes, historiques comprises · {period} derniers mois</p>
         </div>
         <nav aria-label="Période" className="inline-flex rounded-lg border border-line bg-panel p-1">
           {PERIODS.map((n) => (
             <Link key={n} href={`/statistiques?p=${n}`} aria-current={n === period ? "true" : undefined}
-              className={`inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium ${n === period ? "bg-ink text-ink-fg" : "text-muted hover:text-fg"}`}>
+              className={`inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium ${n === period ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}>
               {n} mois
             </Link>
           ))}
@@ -64,8 +64,8 @@ function change(cur: number | null, prev: number | null): { text: string; up: bo
 
 function Kpi({ label, value, delta, hint }: { label: string; value: string; delta: { text: string; up: boolean } | null; hint: string }) {
   return (
-    <div className="rounded-xl border border-line bg-panel p-3">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</div>
+    <div className="rounded-2xl border border-line bg-panel/80 p-3">
+      <div className="eyebrow-tight text-muted">{label}</div>
       <div className="mt-1 text-2xl font-bold tabular-nums tracking-tight">{value}</div>
       <div className="mt-0.5 flex items-center gap-1 text-xs text-muted">
         {delta && (

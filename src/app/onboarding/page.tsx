@@ -16,8 +16,8 @@ async function bootstrap(formData: FormData) {
 export default async function Onboarding({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-ink px-4">
-      <form action={bootstrap} className="w-full max-w-sm space-y-4 rounded-xl bg-panel p-6 shadow-xl">
+    <div className="flex min-h-dvh items-center justify-center px-4">
+      <form action={bootstrap} className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-panel/80 p-6 shadow-2xl backdrop-blur">
         <h1 className="text-xl font-bold">Bienvenue</h1>
         <p className="text-sm text-muted">
           Création de votre espace : catégories, gabarits de mesures, emplacements et taux URSSAF sont préremplis et modifiables.
@@ -28,7 +28,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
         <Field label="Votre nom">
           <input className={input} name="full_name" required />
         </Field>
-        {error && <p className="rounded bg-red-100 p-2 text-sm text-red-800">{error}</p>}
+        {error && <p className="rounded-xl bg-red-500/15 p-2.5 text-sm text-red-200 ring-1 ring-inset ring-red-400/30">{error}</p>}
         <button className={`${btn.primary} w-full`}>Créer l&apos;espace</button>
       </form>
     </div>

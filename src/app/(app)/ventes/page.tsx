@@ -32,7 +32,7 @@ export default async function Sales() {
           </>
         )}
       />
-      <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
         <Card title="Nouvelle vente"><NewSale /></Card>
         {ctx.isManager && (
           <Card title="Commandes">
@@ -115,20 +115,20 @@ function summarise(o: OrderRow) {
 }
 
 const ORDER_TONE: Record<string, string> = {
-  pending: "bg-orange-300 text-orange-950",
-  shipped: "bg-lime-200 text-lime-950",
-  completed: "bg-zinc-300 text-zinc-800",
-  cancelled: "bg-line text-muted",
+  pending: "bg-orange-400/15 text-orange-200 ring-1 ring-inset ring-orange-400/30",
+  shipped: "bg-lime-400/15 text-lime-200 ring-1 ring-inset ring-lime-400/30",
+  completed: "bg-zinc-400/15 text-zinc-300 ring-1 ring-inset ring-zinc-400/30",
+  cancelled: "bg-fg/5 text-muted ring-1 ring-inset ring-line",
 };
 
 function OrderBadge({ status, historical }: { status: string; historical?: boolean }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
-      <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${ORDER_TONE[status]}`}>
+      <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${ORDER_TONE[status]}`}>
         {ORDER_STATUS[status]}
       </span>
       {historical && (
-        <span title="Déjà déclarée ailleurs : hors livre des recettes" className="inline-flex items-center rounded border border-line px-1.5 py-0.5 text-[11px] font-medium text-muted">
+        <span title="Déjà déclarée ailleurs : hors livre des recettes" className="inline-flex items-center rounded-full border border-line px-2 py-0.5 text-xs font-medium text-muted">
           historique
         </span>
       )}

@@ -110,7 +110,7 @@ export function ShippingStation() {
                 {lines.map((l) => (
                   <li key={l.item_id} className="flex min-h-14 items-center gap-3 px-4 py-2">
                     {picked.has(l.item_id) ? <CheckCircle2 className="shrink-0 text-emerald-600" aria-label="prélevé" /> : <Circle className="shrink-0 text-muted" aria-label="à prélever" />}
-                    <span className="shrink-0 rounded-md bg-ink px-2 py-1 font-mono text-sm font-bold text-ink-fg">{l.location_code?.replace("EMP-", "") ?? "?"}</span>
+                    <span className="shrink-0 rounded-md bg-fg px-2 py-1 font-mono text-sm font-bold text-bg">{l.location_code?.replace("EMP-", "") ?? "?"}</span>
                     <span className="min-w-0">
                       <span className="block font-mono text-sm font-semibold">{l.sku}</span>
                       <span className="block truncate text-xs text-muted">{l.title ?? (l.size_label ? `T${l.size_label}` : "")}</span>

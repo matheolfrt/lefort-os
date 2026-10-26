@@ -6,7 +6,7 @@ import {
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { LOW_SAMPLE, loadDashboard, type PeriodResult } from "@/lib/dashboard";
-import { PIPELINE, STATUS_LABEL, STATUS_TONE } from "@/i18n/fr";
+import { PIPELINE, STATUS_LABEL, STATUS_DOT } from "@/i18n/fr";
 import { money } from "@/lib/format";
 import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/lib/compliance";
 import { StartWork } from "@/components/dashboard/start-work";
@@ -47,8 +47,8 @@ export default async function Dashboard() {
       {/* ── Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight">Tableau de bord</h1>
-          <p className="text-sm capitalize text-muted">{today}</p>
+          <p className="eyebrow text-highlight">{today}</p>
+          <h1 className="mt-1 text-3xl font-bold leading-tight tracking-[-0.04em] sm:text-[40px]">Tableau de bord</h1>
         </div>
         <StartWork counts={{
           receive: q("received").count, photo: q("sorted").count, measure: q("photographed").count,
@@ -57,7 +57,7 @@ export default async function Dashboard() {
       </header>
 
       {lateShip && (
-        <Link href="/postes/expedition" className="flex min-h-12 items-center gap-3 rounded-xl bg-red-600 px-4 py-3 font-semibold text-white">
+        <Link href="/postes/expedition" className="flex min-h-12 items-center gap-3 rounded-2xl bg-red-500/15 px-4 py-3 font-semibold text-red-200 ring-1 ring-inset ring-red-400/40 transition hover:bg-red-500/20">
           <AlertTriangle size={20} className="shrink-0" />
           <span className="flex-1">
             {d.shipping.orders} commande{d.shipping.orders > 1 ? "s" : ""} à expédier, la plus ancienne vendue il y a {d.shipping.oldestDays} j
@@ -115,9 +115,9 @@ export default async function Dashboard() {
       <div className={`grid gap-5 ${f ? "lg:grid-cols-[1.6fr_1fr]" : ""}`}>
         {f && (
           <Section title="Finance">
-            <div className="rounded-xl border border-line bg-panel p-4">
+            <div className="rounded-2xl border border-line bg-panel/80 p-4">
               <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted">CA encaissé · 12 derniers mois</span>
+                <span className="eyebrow text-muted">CA encaissé · 12 derniers mois</span>
                 <Link href="/statistiques" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline">
                   Statistiques <ChevronRight size={16} />
                 </Link>
@@ -133,7 +133,7 @@ export default async function Dashboard() {
           </Section>
           {f && (
             <Section title="Seuils micro-entreprise">
-              <div className="space-y-3 rounded-xl border border-line bg-panel p-4">
+              <div className="space-y-3 rounded-2xl border border-line bg-panel/80 p-4">
                 <Gauge label="Franchise de TVA" value={f.yearCashedCents} max={VAT_FRANCHISE_THRESHOLD_CENTS} />
                 <Gauge label="Plafond micro" value={f.yearCashedCents} max={MICRO_TURNOVER_CEILING_CENTS} />
               </div>
@@ -149,7 +149,7 @@ function Section({ title, aside, children }: { title: string; aside?: ReactNode;
   return (
     <section>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-muted">{title}</h2>
+        <h2 className="eyebrow text-muted">{title}</h2>
         {aside}
       </div>
       {children}
@@ -176,7 +176,7 @@ function TodoTile({ label, icon: Icon, href, count, oldestDays, lateAfter, note 
         <ChevronRight size={16} className="opacity-0 transition group-hover:opacity-100" />
       </div>
       <div>
-        <div className={`text-[28px] font-black leading-none tabular-nums ${count ? "" : "text-muted/40"}`}>{count}</div>
+        <div className={`text-[28px] font-mono font-semibold leading-none tabular-nums ${count ? "" : "text-muted/40"}`}>{count}</div>
         <div className="mt-1 text-sm font-semibold leading-tight">{label}</div>
         <div className={`text-xs ${late ? "font-semibold text-red-600 dark:text-red-400" : "text-muted"}`}>
           {note ?? (count && oldestDays != null ? (late ? `en retard · ${oldestDays} j` : `plus ancien ${oldestDays} j`) : count ? "\u00a0" : "Rien en attente")}
@@ -197,12 +197,12 @@ function SampleSize({ n }: { n: number }) {
 
 function Kpi({ label, value, hint, n, tone }: { label: string; value: string; hint?: string; n?: number; tone?: "bad" }) {
   return (
-    <div className="rounded-xl border border-line bg-panel px-3.5 py-3">
+    <div className="rounded-2xl border border-line bg-panel/80 px-3.5 py-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted">{label}</span>
+        <span className="eyebrow-tight text-muted">{label}</span>
         {n != null && <SampleSize n={n} />}
       </div>
-      <div className={`mt-1 text-[26px] font-black leading-tight tabular-nums tracking-tight ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
+      <div className={`mt-1 text-[26px] font-mono font-semibold leading-tight tabular-nums tracking-tight ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
         {value}
       </div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
@@ -211,7 +211,7 @@ function Kpi({ label, value, hint, n, tone }: { label: string; value: string; hi
 }
 
 // Dots reuse the status colours of the chips used everywhere else in the app
-const dot = (s: ItemStatus) => STATUS_TONE[s].split(" ")[0];
+const dot = (s: ItemStatus) => STATUS_DOT[s];
 
 function Pipeline({ counts }: { counts: { status: ItemStatus; count: number; oldestDays: number | null }[] }) {
   // bottleneck: the busiest step before publication
@@ -230,11 +230,11 @@ function Pipeline({ counts }: { counts: { status: ItemStatus; count: number; old
                   bottleneck ? "border-amber-400 dark:border-amber-500/60" : "border-line"
                 }`}
               >
-                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted">
+                <span className="eyebrow-tight flex items-center gap-1.5 text-[10px] leading-tight text-muted">
                   <span className={`size-2 shrink-0 rounded-full ${dot(c.status)}`} />
                   {STATUS_LABEL[c.status]}
                 </span>
-                <span className={`text-2xl font-black leading-none tabular-nums ${c.count ? "" : "text-muted/40"}`}>{c.count}</span>
+                <span className={`text-2xl font-mono font-semibold leading-none tabular-nums ${c.count ? "" : "text-muted/40"}`}>{c.count}</span>
                 <span className="text-[10px] text-muted">{bottleneck ? "goulot" : " "}</span>
               </Link>
               {i < counts.length - 1 && <ChevronRight size={14} className="shrink-0 text-muted/50 md:hidden" />}
@@ -292,7 +292,7 @@ const AGE_TONE = {
 function StockAge({ buckets, total }: { buckets: { label: string; count: number; tone: keyof typeof AGE_TONE }[]; total: number }) {
   const old = buckets.filter((b) => b.tone === "warn" || b.tone === "alert").reduce((s, b) => s + b.count, 0);
   return (
-    <div className="rounded-xl border border-line bg-panel p-4">
+    <div className="rounded-2xl border border-line bg-panel/80 p-4">
       <div className="mb-3 flex h-3 overflow-hidden rounded-full bg-line">
         {buckets.map((b) => b.count > 0 && (
           <div key={b.label} className={`${AGE_TONE[b.tone]} border-r-2 border-panel last:border-r-0`} style={{ width: `${(b.count / Math.max(total, 1)) * 100}%` }} />
@@ -304,7 +304,7 @@ function StockAge({ buckets, total }: { buckets: { label: string; count: number;
             <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-muted">
               <span className={`size-2 rounded-full ${AGE_TONE[b.tone]}`} />{b.label}
             </dt>
-            <dd className={`text-xl font-black tabular-nums ${b.tone === "alert" && b.count ? "text-red-600 dark:text-red-400" : b.tone === "warn" && b.count ? "text-amber-600 dark:text-amber-400" : ""}`}>
+            <dd className={`text-xl font-mono font-semibold tabular-nums ${b.tone === "alert" && b.count ? "text-red-600 dark:text-red-400" : b.tone === "warn" && b.count ? "text-amber-600 dark:text-amber-400" : ""}`}>
               {b.count}
             </dd>
           </div>

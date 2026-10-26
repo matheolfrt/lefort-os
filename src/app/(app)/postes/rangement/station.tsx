@@ -65,7 +65,7 @@ export function StorageStation({ initialQueue }: { initialQueue: QueueItem[] }) 
     <div className="mx-auto max-w-3xl space-y-4">
       <StationHeader title="Rangement" queue={queue.length} done={log.length} />
 
-      <div aria-live="polite" className={`flex min-h-40 flex-col items-center justify-center rounded-2xl p-6 text-center ${pending ? "bg-accent text-accent-fg" : bin ? "bg-emerald-700 text-white" : "bg-ink text-ink-fg"}`}>
+      <div aria-live="polite" className={`flex min-h-40 flex-col items-center justify-center rounded-2xl p-6 text-center ${pending ? "bg-accent text-accent-fg" : bin ? "bg-emerald-700 text-white" : "bg-panel-2 text-fg ring-1 ring-inset ring-line"}`}>
         <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] opacity-70">
           {pending ? "Étape 2 / 2" : bin ? "Mode remplissage" : "Étape 1 / 2"}
         </div>
@@ -108,8 +108,8 @@ export function StorageStation({ initialQueue }: { initialQueue: QueueItem[] }) 
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-xl border border-line bg-panel p-3">
-          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">À ranger · {queue.length}</h2>
+        <section className="rounded-2xl border border-line bg-panel/80 p-3">
+          <h2 className="mb-2 eyebrow text-muted">À ranger · {queue.length}</h2>
           {queue.length === 0 ? <p className="text-sm text-muted">Rien à ranger.</p> : (
             <ul className="max-h-80 divide-y divide-line overflow-auto text-sm">
               {queue.map((q) => (
@@ -121,8 +121,8 @@ export function StorageStation({ initialQueue }: { initialQueue: QueueItem[] }) 
             </ul>
           )}
         </section>
-        <section className="rounded-xl border border-line bg-panel p-3">
-          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Rangés cette session · {log.length}</h2>
+        <section className="rounded-2xl border border-line bg-panel/80 p-3">
+          <h2 className="mb-2 eyebrow text-muted">Rangés cette session · {log.length}</h2>
           {log.length === 0 ? <p className="text-sm text-muted">Rien pour l&apos;instant.</p> : (
             <ul className="divide-y divide-line font-mono text-sm">{log.map((l, i) => <li key={i} className="flex min-h-10 items-center">{l}</li>)}</ul>
           )}

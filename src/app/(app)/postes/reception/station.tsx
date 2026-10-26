@@ -116,7 +116,7 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
 
   if (!batches.length) {
     return (
-      <div className="mx-auto max-w-md rounded-xl border border-line bg-panel p-6 text-center">
+      <div className="mx-auto max-w-md rounded-2xl border border-line bg-panel/80 p-6 text-center">
         <p className="mb-4 text-lg font-semibold">Aucun lot ouvert.</p>
         <Link href="/lots/nouveau" className={btn.primary}>Créer un lot</Link>
       </div>
@@ -124,7 +124,7 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
   }
 
   const pick = (on: boolean) =>
-    on ? "border-ink bg-ink text-ink-fg" : "border-line bg-panel hover:border-fg/30";
+    on ? "border-fg bg-fg text-bg" : "border-line bg-panel hover:border-fg/30";
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -138,7 +138,7 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <div className="space-y-4">
           <div className="rounded-xl border-2 border-dashed border-fg/25 bg-panel p-4 focus-within:border-accent">
-            <label htmlFor="reception-sku" className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-muted">Étiquette — scannez ou tapez</label>
+            <label htmlFor="reception-sku" className="mb-1 block eyebrow text-muted">Étiquette — scannez ou tapez</label>
             <input
               id="reception-sku"
               ref={skuRef}
@@ -153,8 +153,8 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
             <p className="mt-1.5 text-xs text-muted">Vide = nouveau SKU attribué automatiquement (étiquette à imprimer ensuite).</p>
           </div>
 
-          <section className="rounded-xl border border-line bg-panel p-4">
-            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Catégorie <span className="hidden font-normal normal-case sm:inline">· touches 1 à 9</span></h2>
+          <section className="rounded-2xl border border-line bg-panel/80 p-4">
+            <h2 className="mb-2 eyebrow text-muted">Catégorie <span className="hidden font-normal normal-case sm:inline">· touches 1 à 9</span></h2>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {catalog.categories.map((c) => (
                 <button
@@ -168,14 +168,14 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
             </div>
           </section>
 
-          <section className="grid gap-4 rounded-xl border border-line bg-panel p-4 sm:grid-cols-2">
+          <section className="grid gap-4 rounded-2xl border border-line bg-panel/80 p-4 sm:grid-cols-2">
             <div>
-              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Marque</h2>
+              <h2 className="mb-2 eyebrow text-muted">Marque</h2>
               <BrandPicker brands={brands} value={form.brand_id} onChange={(id) => set("brand_id", id)} orgId={orgId}
                 onCreated={(b) => setBrands((x) => [...x, b].sort((a, z) => a.name.localeCompare(z.name)))} />
             </div>
             <div>
-              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Taille</h2>
+              <h2 className="mb-2 eyebrow text-muted">Taille</h2>
               <input className={input} value={form.size_label} onChange={(e) => set("size_label", e.target.value)} placeholder="50, 40R, M…" aria-label="Taille" />
               <div className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-8">
                 {JACKET_SIZES.map((s) => (
@@ -188,8 +188,8 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
             </div>
           </section>
 
-          <section className="rounded-xl border border-line bg-panel p-4">
-            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">État</h2>
+          <section className="rounded-2xl border border-line bg-panel/80 p-4">
+            <h2 className="mb-2 eyebrow text-muted">État</h2>
             <div className="flex flex-wrap gap-2">
               {CONDITIONS.map((c) => (
                 <button key={c} onClick={() => set("condition", c)}
@@ -229,8 +229,8 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
           </div>
         </div>
 
-        <aside className="h-fit rounded-xl border border-line bg-panel p-3">
-          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Derniers enregistrés {batch && `· ${batch.code}`}</h2>
+        <aside className="h-fit rounded-2xl border border-line bg-panel/80 p-3">
+          <h2 className="mb-2 eyebrow text-muted">Derniers enregistrés {batch && `· ${batch.code}`}</h2>
           {done.length === 0 ? (
             <p className="text-sm text-muted">Rien pour l&apos;instant.</p>
           ) : (

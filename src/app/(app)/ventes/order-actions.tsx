@@ -41,14 +41,14 @@ export function OrderActions({ orderId, status, items }: { orderId: string; stat
       </div>
 
       {panel === "complete" && (
-        <div className="w-64 space-y-2 rounded-xl border border-line bg-panel p-3 shadow-lg">
+        <div className="w-64 space-y-2 rounded-2xl border border-line bg-panel/80 p-3 shadow-lg">
           <label className="block text-xs">Date d&apos;encaissement (argent disponible)</label>
           <input type="date" className={input} value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
           <button className={`${btn.primary} w-full`} onClick={() => run("complete_order", { p_order_id: orderId, p_paid_at: new Date(paidAt + "T12:00:00").toISOString() }, "Commande clôturée")}>Valider</button>
         </div>
       )}
       {panel === "refund" && (
-        <div className="w-64 space-y-2 rounded-xl border border-line bg-panel p-3 shadow-lg">
+        <div className="w-64 space-y-2 rounded-2xl border border-line bg-panel/80 p-3 shadow-lg">
           <input className={input} inputMode="decimal" placeholder="Montant remboursé €" value={amount} onChange={(e) => setAmount(e.target.value)} />
           <input className={input} value={reason} onChange={(e) => setReason(e.target.value)} />
           {items.map((i) => (

@@ -32,11 +32,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-ink px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-xl bg-panel p-6 shadow-xl">
-        <div>
-          <div className="text-2xl font-black tracking-tight">LEFORT OS</div>
-          <div className="text-sm text-muted">Lefort Second Hand</div>
+    <div className="flex min-h-dvh items-center justify-center px-4">
+      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-panel/80 p-6 shadow-2xl backdrop-blur">
+        <div className="flex items-center gap-3">
+          <span className="flex size-11 items-center justify-center rounded-xl bg-accent font-mono text-xl font-bold text-accent-fg shadow-[0_0_28px_-6px_var(--accent)]">L</span>
+          <div>
+            <div className="eyebrow text-highlight">Lefort Second Hand</div>
+            <div className="text-2xl font-bold tracking-[-0.03em]">Lefort OS</div>
+          </div>
         </div>
         <Field label="E-mail">
           <input className={input} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -52,8 +55,8 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
-        {error && <p className="rounded bg-red-100 p-2 text-sm text-red-800">{error}</p>}
-        {info && <p className="rounded bg-emerald-100 p-2 text-sm text-emerald-900">{info}</p>}
+        {error && <p className="rounded-xl bg-red-500/15 p-2.5 text-sm text-red-200 ring-1 ring-inset ring-red-400/30">{error}</p>}
+        {info && <p className="rounded-xl bg-emerald-500/15 p-2.5 text-sm text-emerald-200 ring-1 ring-inset ring-emerald-400/30">{info}</p>}
         <button className={`${btn.primary} w-full`} disabled={busy}>
           {mode === "signin" ? "Se connecter" : "Créer mon compte"}
         </button>

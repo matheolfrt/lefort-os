@@ -76,7 +76,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHeader title="Paramètres" />
-      {error && <p className="mb-4 rounded bg-red-100 p-3 text-red-800">{error}</p>}
+      {error && <p className="mb-4 rounded-xl bg-red-500/15 p-3 text-red-200 ring-1 ring-inset ring-red-400/30">{error}</p>}
       <div className="grid gap-4 xl:grid-cols-2">
         <Card title="Entreprise">
           <form action={saveOrg} className="space-y-3">
@@ -113,7 +113,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
 
         <div className="space-y-4">
           <Card title="Équipe">
-            <table className="data mb-4">
+            <div className="mb-4 overflow-x-auto"><table className="data">
               <tbody>
                 {(members ?? []).map((m) => (
                   <tr key={m.user_id}>
@@ -133,7 +133,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
             {admin && (
               <form action={addMember} className="grid gap-2 sm:grid-cols-2">
                 <input className={input} name="email" type="email" placeholder="E-mail du compte" required />

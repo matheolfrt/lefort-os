@@ -33,34 +33,37 @@ export function Shell({ children, isManager, orgName, userName }: {
 
   return (
     <div className="min-h-dvh md:flex">
-      <aside className="hidden w-60 shrink-0 flex-col bg-ink text-ink-fg md:flex">
-        <div className="px-5 py-5">
-          <div className="text-lg font-black tracking-tight">LEFORT OS</div>
-          <div className="text-xs opacity-60">{orgName}</div>
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-ink/60 backdrop-blur md:flex">
+        <div className="flex items-center gap-2.5 px-5 py-5">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-accent font-mono text-lg font-bold text-accent-fg shadow-[0_0_24px_-6px_var(--accent)]">L</span>
+          <span className="min-w-0">
+            <span className="block text-[17px] font-bold leading-tight tracking-[-0.02em]">Lefort OS</span>
+            <span className="block truncate text-xs text-muted">{orgName}</span>
+          </span>
         </div>
         <div className="px-3 pb-3">
           <button
             onClick={openQuick}
-            className="flex w-full items-center gap-2 rounded-md border border-white/15 px-3 py-2 text-left text-sm text-white/70 hover:border-white/30 hover:text-white"
+            className="flex w-full items-center gap-2 rounded-xl border border-line bg-panel/70 px-3 py-2.5 text-left text-sm text-muted transition hover:border-fg/20 hover:text-fg"
           >
             <ScanLine size={16} /> <span className="flex-1">Scanner un SKU</span>
-            <kbd className="rounded border border-white/20 px-1.5 font-mono text-[10px]">⌘K</kbd>
+            <kbd className="rounded-md border border-line px-1.5 font-mono text-[10px]">⌘K</kbd>
           </button>
         </div>
-        <nav className="flex-1 space-y-0.5 px-2">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
           {items.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium ${
-                active(href) ? "bg-accent text-accent-fg" : "opacity-80 hover:bg-white/10 hover:opacity-100"
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                active(href) ? "bg-accent/12 text-accent ring-1 ring-inset ring-accent/25" : "text-fg/75 hover:bg-fg/5 hover:text-fg"
               }`}
             >
               <Icon size={18} /> {label}
             </Link>
           ))}
         </nav>
-        <div className="border-t border-white/10 px-5 py-4 text-xs opacity-70">
+        <div className="border-t border-line px-5 py-4 text-xs text-muted">
           {userName}
           <form action="/logout" method="post">
             <button className="mt-1 underline">Se déconnecter</button>
@@ -71,10 +74,10 @@ export function Shell({ children, isManager, orgName, userName }: {
       <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div className="mx-auto max-w-7xl">{children}</div></main>
 
       {/* Phone: bottom bar with a central scan button */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-ink/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
         {MOBILE.slice(0, 2).map((href) => <MobileLink key={href} href={href} active={active(href)} />)}
         <button onClick={openCamera} className="-mt-5 flex flex-col items-center" aria-label="Scanner">
-          <span className="rounded-full bg-accent p-4 text-accent-fg shadow-lg"><ScanLine size={28} /></span>
+          <span className="rounded-full bg-accent p-4 text-accent-fg shadow-[0_0_28px_-4px_var(--accent)] ring-4 ring-bg"><ScanLine size={28} /></span>
         </button>
         {MOBILE.slice(2).map((href) => <MobileLink key={href} href={href} active={active(href)} />)}
       </nav>

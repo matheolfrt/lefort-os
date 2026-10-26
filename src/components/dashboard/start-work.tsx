@@ -46,17 +46,17 @@ export function StartWork({ counts }: { counts: StartCounts }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 sm:w-auto text-base font-bold text-accent-fg shadow-sm hover:brightness-110 active:scale-[0.98]"
+        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 sm:w-auto text-base font-bold text-accent-fg shadow-[0_0_28px_-6px_var(--accent)] transition hover:brightness-110 active:scale-[0.98]"
       >
         <Play size={18} fill="currentColor" /> Commencer le travail
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setOpen(false)}>
           <div
             role="dialog"
             aria-label="Commencer le travail"
-            className="w-full max-w-2xl rounded-t-2xl bg-panel p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-5"
+            className="w-full max-w-2xl rounded-t-2xl border border-line bg-panel p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -78,7 +78,7 @@ export function StartWork({ counts }: { counts: StartCounts }) {
                     <div className="flex items-start justify-between">
                       <Icon size={22} className="text-fg/70 group-hover:text-accent" />
                       {n != null && (
-                        <span className={`text-2xl font-black tabular-nums leading-none ${n ? "" : "text-muted/50"}`}>{n}</span>
+                        <span className={`text-2xl font-mono font-semibold tabular-nums leading-none ${n ? "" : "text-muted/50"}`}>{n}</span>
                       )}
                     </div>
                     <div>

@@ -16,7 +16,7 @@ export function StationHeader({ title, queue, done, children }: {
         <ChevronLeft size={22} />
       </Link>
       <div className="min-w-0 flex-1">
-        <h1 className="text-[22px] font-bold leading-tight tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-[28px]">{title}</h1>
         {(queue != null || done != null) && (
           <p className="text-sm text-muted">
             {queue != null && <><b className="tabular-nums text-fg">{queue}</b> en attente</>}
