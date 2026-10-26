@@ -51,3 +51,20 @@ vérifie permissions, répartition des coûts au centime, protection de l'histor
 
 Taux URSSAF et seuils (franchise de TVA, plafond micro) évoluent : Paramètres → Taux URSSAF, et
 `src/lib/compliance.ts` pour les seuils.
+
+## Extension Chrome Vinted
+
+Le dossier `extension/` contient une extension Chrome (Manifest V3, sans étape de build) qui :
+
+- lit le dressing Vinted de l'utilisateur connecté, depuis l'onglet vinted.fr ouvert, uniquement sur clic ;
+- importe les annonces inconnues de Lefort OS (statut « En ligne », SKU, photos, emplacement `EMP-A-ETIQUETER`,
+  lot « stock existant » exclu du registre des achats) ;
+- resynchronise : prix et réservations modifiés sur Vinted, ventes faites sur Vinted à saisir,
+  annonces disparues de Vinted.
+
+Les annonces sont identifiées par leur numéro Vinted : relancer un import ne crée jamais de doublon.
+Fonctions SQL : `vinted_sync_preview`, `vinted_apply_updates`, `vinted_import`
+(`supabase/migrations/20261026000004_vinted_sync.sql`, testées dans `supabase/tests/vinted_test.sql`).
+
+Après toute modification : `npm run build:extension` régénère `public/lefort-os-vinted.zip`,
+téléchargeable depuis Paramètres.

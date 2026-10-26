@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Lefort OS – Vinted</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header>
+    <div class="brand">LEFORT OS <span>· Vinted</span></div>
+    <div id="who" class="who" hidden><span id="who-email"></span> <button id="logout" class="link">Se déconnecter</button></div>
+  </header>
+
+  <main>
+    <section id="login" class="card narrow" hidden>
+      <h1>Connexion à Lefort OS</h1>
+      <p class="muted">Utilisez le même compte que dans l'application.</p>
+      <form id="login-form">
+        <label>Adresse de Lefort OS <input id="login-url" type="url" value="https://lefort-os.vercel.app" required></label>
+        <label>E-mail <input id="login-email" type="email" autocomplete="email" required></label>
+        <label>Mot de passe <input id="login-password" type="password" autocomplete="current-password" required></label>
+        <p id="login-error" class="error" hidden></p>
+        <button class="primary" type="submit">Se connecter</button>
+      </form>
+    </section>
+
+    <section id="sync" hidden>
+      <div class="card">
+        <h1>Synchroniser mon dressing</h1>
+        <ol class="steps">
+          <li>Ouvrez <a href="https://www.vinted.fr" target="_blank" rel="noreferrer">vinted.fr</a> dans un autre onglet, connecté à votre compte.</li>
+          <li>Allez sur <b>votre profil</b> (votre photo → Mon profil).</li>
+          <li>Revenez ici et cliquez sur « Lire mon dressing ». Rien n'est modifié sur Vinted.</li>
+        </ol>
+        <label class="check"><input id="opt-descriptions" type="checkbox"> Récupérer aussi les descriptions (plus lent : environ 2 minutes pour 250 annonces)</label>
+        <button id="read" class="primary big">Lire mon dressing Vinted</button>
+        <p id="progress" class="muted" hidden></p>
+        <p id="read-error" class="error" hidden></p>
+      </div>
+
+      <div id="results" hidden>
+        <div class="summary" id="summary"></div>
+
+        <div class="card" id="block-new" hidden>
+          <h2>Nouvelles annonces à importer <span class="count" id="new-count"></span></h2>
+          <p class="muted">Elles seront créées dans Lefort OS au statut « En ligne », avec un SKU, leurs photos et un emplacement « À étiqueter ».</p>
+          <label class="inline">Coût d'achat estimé par article (€)
+            <input id="cost-each" type="text" inputmode="decimal" value="0" size="6">
+          </label>
+          <p class="hint">Sert au calcul des marges. Mettez votre coût moyen d'achat, même approximatif.</p>
+          <button id="import" class="primary">Importer</button>
+          <div id="import-progress" class="bar" hidden><div></div></div>
+          <p id="import-status" class="muted" hidden></p>
+          <div id="labels" hidden><a id="labels-link" class="secondary" target="_blank">Imprimer les étiquettes des articles importés</a></div>
+        </div>
+
+        <div class="card" id="block-updates" hidden>
+          <h2>Mises à jour depuis Vinted <span class="count" id="updates-count"></span></h2>
+          <ul id="updates-list" class="list"></ul>
+          <button id="apply-updates" class="primary">Appliquer dans Lefort OS</button>
+        </div>
+
+        <div class="card" id="block-sold" hidden>
+          <h2>Vendues sur Vinted, pas encore saisies <span class="count" id="sold-count"></span></h2>
+          <p class="muted">Vérifiez le prix de vente réel (après offre éventuelle) avant d'enregistrer.</p>
+          <table class="table"><tbody id="sold-list"></tbody></table>
+          <button id="record-sales" class="primary">Enregistrer les ventes cochées</button>
+        </div>
+
+        <div class="card" id="block-missing" hidden>
+          <h2>En ligne dans Lefort OS mais absentes de Vinted <span class="count" id="missing-count"></span></h2>
+          <p class="muted">Annonce supprimée ou masquée sur Vinted. Si l'article est toujours en stock, il repassera « Prêt à publier ».</p>
+          <table class="table"><tbody id="missing-list"></tbody></table>
+          <button id="unpublish" class="secondary">Retirer de la vente les articles cochés</button>
+        </div>
+
+        <details class="card diag">
+          <summary>Diagnostic</summary>
+          <pre id="diag"></pre>
+          <button id="copy-diag" class="secondary">Copier</button>
+        </details>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

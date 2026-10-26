@@ -147,6 +147,20 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             )}
           </Card>
 
+          <Card title="Extension Chrome Vinted">
+            <p className="mb-3 text-sm">
+              Importe votre dressing Vinted et le resynchronise : nouvelles annonces, ventes faites sur Vinted, prix et réservations.
+              Elle lit uniquement vos annonces, quand vous cliquez, et ne modifie rien sur Vinted.
+            </p>
+            <a className={`${btn.primary} mb-3`} href="/lefort-os-vinted.zip" download>Télécharger l&apos;extension</a>
+            <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
+              <li>Décompressez le fichier téléchargé (double-clic).</li>
+              <li>Dans Chrome, ouvrez <span className="font-mono">chrome://extensions</span> et activez le « Mode développeur » (en haut à droite).</li>
+              <li>Cliquez sur « Charger l&apos;extension non empaquetée » et choisissez le dossier décompressé.</li>
+              <li>Épinglez l&apos;icône Lefort OS (pièce de puzzle), ouvrez votre profil Vinted, puis cliquez sur l&apos;icône.</li>
+            </ol>
+          </Card>
+
           <Card title="Taux URSSAF (historisés)">
             <table className="data mb-3">
               <tbody>

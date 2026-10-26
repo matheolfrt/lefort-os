@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:db": "scripts/db-test.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:extension": "rm -f public/lefort-os-vinted.zip && cd extension && zip -qr ../public/lefort-os-vinted.zip . -x \"*.DS_Store\""
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
