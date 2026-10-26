@@ -89,3 +89,13 @@ téléchargeable depuis Paramètres.
   supprimé qu'avec `p_with_sales` : sa vente est annulée (`void_order`), jamais effacée. `void_order` annule aussi une
   vente seule (erreur, doublon d'import) : elle sort des totaux et du livre des recettes, ses articles reviennent
   « prêt à publier » et la référence Vinted est libérée (`supabase/migrations/20261029000010_void_sales.sql`).
+
+## Scénarios
+
+`/scenarios` (responsables) : simulateur de l'activité — stock, coût et prix moyens, écoulement mensuel, frais Vinted,
+emballage et port, cotisations URSSAF, équipe, local, charges fixes, croissance du stock. Résultats : compte de résultat
+mensuel, point mort, stock immobilisé, achats nécessaires, équipe nécessaire, projection et trésorerie sur 12 mois,
+niveaux de stock, comparateur. « Mes chiffres réels » part des 90 derniers jours (`src/lib/scenario-baseline.ts`) ;
+le moteur est `src/lib/scenario.ts`. Les scénarios sont enregistrés dans la table `scenarios` (lecture et écriture
+réservées aux responsables).
+

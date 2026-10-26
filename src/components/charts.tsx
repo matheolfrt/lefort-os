@@ -27,7 +27,8 @@ function scale(values: number[]) {
   const niceMax = max > 0 ? Math.ceil(max / step) * step : 0;
   const niceMin = min < 0 ? Math.floor(min / step) * step : 0;
   const y = (v: number) => TOP + ((niceMax - v) / (niceMax - niceMin || 1)) * (H - TOP - BOTTOM);
-  const ticks = niceMin < 0 ? [niceMax, 0, niceMin] : [niceMax, niceMax / 2, 0];
+  // duplicates collapse (all values at 0 gives a single 0 line)
+  const ticks = [...new Set(niceMin < 0 ? [niceMax, 0, niceMin] : [niceMax, niceMax / 2, 0])];
   return { y, ticks };
 }
 

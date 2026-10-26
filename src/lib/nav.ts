@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Factory, LayoutDashboard, MapPin, Package, Settings, ShoppingBag, Truck, type LucideIcon,
+  BarChart3, Boxes, Calculator, Factory, FlaskConical, LayoutDashboard, MapPin, Package, Settings, ShoppingBag, Truck, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem { href: string; label: string; icon: LucideIcon; manager: boolean; keywords?: string }
@@ -8,6 +8,7 @@ export interface NavItem { href: string; label: string; icon: LucideIcon; manage
 export const NAV: NavItem[] = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard" },
   { href: "/statistiques", label: "Statistiques", icon: BarChart3, manager: true, keywords: "kpi graphiques marge chiffre" },
+  { href: "/scenarios", label: "Scénarios", icon: FlaskConical, manager: true, keywords: "simulation prévision business plan hypothèses" },
   { href: "/postes", label: "Postes", icon: Factory, manager: false, keywords: "travail production" },
   { href: "/stock", label: "Stock", icon: Package, manager: false, keywords: "articles inventaire" },
   { href: "/lots", label: "Lots", icon: Boxes, manager: false, keywords: "achats batch" },
