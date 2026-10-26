@@ -17,6 +17,7 @@ export default async function LocationPage({ params }: { params: Promise<{ code:
   return (
     <>
       <PageHeader
+        back="/emplacements"
         title={loc.code.replace("EMP-", "")}
         subtitle={`${loc.label ?? loc.kind} · ${items?.length ?? 0} article(s)${loc.capacity ? ` / ${loc.capacity}` : ""}`}
         actions={<a className={btn.secondary} href={`/etiquettes/emplacements?codes=${loc.code}`} target="_blank">Étiquette</a>}

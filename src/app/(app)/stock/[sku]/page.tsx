@@ -54,11 +54,11 @@ export default async function ItemPage({ params }: { params: Promise<{ sku: stri
   return (
     <>
       <PageHeader
-        title={it.sku}
-        subtitle={<>Lot <Link className="underline" href={`/lots/${batch.data?.id}`}>{batch.data?.code}</Link> · reçu le {dateTime(it.received_at)} · emplacement <b className="font-mono">{location?.data?.code.replace("EMP-", "") ?? "—"}</b></>}
+        back="/stock"
+        title={<span className="flex flex-wrap items-center gap-2"><span className="font-mono">{it.sku}</span><StatusChip status={it.status} large /></span>}
+        subtitle={<>Lot <Link className="-my-3 inline-block py-3 underline" href={`/lots/${batch.data?.id}`}>{batch.data?.code}</Link> · reçu le {dateTime(it.received_at)} · emplacement <b className="font-mono">{location?.data?.code.replace("EMP-", "") ?? "—"}</b></>}
         actions={
           <>
-            <StatusChip status={it.status} large />
             {nextStation && <Link className={btn.primary} href={`${nextStation.href}?sku=${it.sku}`}>{nextStation.label}</Link>}
             <a className={btn.secondary} href={`/etiquettes/articles?skus=${it.sku}`} target="_blank">Étiquette</a>
           </>
@@ -117,7 +117,7 @@ export default async function ItemPage({ params }: { params: Promise<{ sku: stri
             {(listings.data ?? []).length === 0 ? <p className="text-sm text-muted">Aucune.</p> : (
               <ul className="space-y-1 text-sm">
                 {(listings.data ?? []).map((l) => (
-                  <li key={l.id}>{l.channel} · {l.status} · {money(l.price_cents)} {l.url && <a className="text-accent underline" href={l.url} target="_blank" rel="noreferrer">ouvrir</a>}</li>
+                  <li key={l.id}>{l.channel} · {l.status} · {money(l.price_cents)} {l.url && <a className="-my-3 inline-block px-1 py-3 text-accent underline" href={l.url} target="_blank" rel="noreferrer">ouvrir</a>}</li>
                 ))}
               </ul>
             )}

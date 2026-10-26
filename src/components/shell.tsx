@@ -67,7 +67,7 @@ export function Shell({ children, isManager, orgName, userName }: {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6">{children}</main>
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div className="mx-auto max-w-7xl">{children}</div></main>
 
       {/* Phone: bottom bar with a central scan button */}
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] md:hidden">

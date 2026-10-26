@@ -37,6 +37,7 @@ export default async function BatchDetail({ params }: { params: Promise<{ id: st
   return (
     <>
       <PageHeader
+        back="/lots"
         title={batch.code}
         subtitle={<>{(batch.suppliers as unknown as { name: string })?.name} · acheté le {date(batch.purchased_at)} · {open ? "ouvert" : `clôturé le ${date(batch.closed_at)}`}</>}
         actions={

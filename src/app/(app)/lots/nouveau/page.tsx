@@ -50,7 +50,7 @@ export default async function NewBatch({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <PageHeader title="Nouveau lot" subtitle="Montants TTC (en franchise de TVA, la TVA payée fait partie du coût)." />
+      <PageHeader back="/lots" title="Nouveau lot" subtitle="Montants TTC (en franchise de TVA, la TVA payée fait partie du coût)." />
       <form action={createBatch} className="grid max-w-3xl gap-4 md:grid-cols-2">
         <Card title="Achat">
           <div className="space-y-3">
