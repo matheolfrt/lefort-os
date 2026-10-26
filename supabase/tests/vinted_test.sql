@@ -188,6 +188,47 @@ select t.expect_error($$select public.delete_items(array[(select id from items l
 select t.expect_error($$select public.import_items('[]')$$, 'non autorisée');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 
+-- sales import, including items never in stock
+do $$ declare r jsonb; v_n int; v_ledger int; v_o uuid; begin
+  select count(*) into v_ledger from v_livre_recettes;
+  r := public.import_sales($j$[
+    {"sold_at":"2025-03-10T12:00:00Z","paid_at":"2025-03-13T12:00:00Z","buyer":"jean","order_ref":"V-H1","shipping_cents":0,
+     "lines":[{"sku":"","title":"Blazer Hugo Boss bleu","brand":"Hugo Boss","size":"50","price_cents":4500,"cost_cents":1200,
+               "vinted_url":"https://www.vinted.fr/items/9191-blazer"}]},
+    {"sold_at":"2025-03-11T12:00:00Z","lines":[{"sku":"HIST-01","title":"Costume gris","price_cents":6000},
+                                              {"sku":"imp-001","price_cents":2000}]},
+    {"lines":[{"sku":"HIST-02","title":"Sans prix"}]},
+    {"lines":[{"sku":"BAD SKU!","price_cents":100}]}
+  ]$j$, true, 'completed');
+  assert (r->>'orders')::int = 2 and (r->>'items_created')::int = 2 and jsonb_array_length(r->'errors') = 2, r::text;
+  assert (select count(*) from v_livre_recettes) = v_ledger, 'historical sales stay out of the ledger';
+  select id into v_o from orders where external_order_id = 'V-H1';
+  assert (select status from orders where id = v_o) = 'completed';
+  assert (select is_historical and paid_at = '2025-03-13T12:00:00Z' from orders where id = v_o);
+  assert (select cost_snapshot_cents from order_lines where order_id = v_o) = 1200;
+  assert (select l.status from listings l where external_id = '9191') = 'sold';
+  assert (select b.kind from items i join batches b on b.id = i.batch_id where i.sku = 'HIST-01') = 'opening_stock';
+  assert (select sale_price_cents from order_lines ol join items i on i.id = ol.item_id where i.sku = 'HIST-01') = 6000;
+  assert (select status from items where sku = 'IMP-001') = 'completed';
+  assert (select days_to_sell is null from v_item_economics e join items i on i.id = e.item_id where i.sku = 'HIST-01');
+  -- an item already sold cannot be sold again, and a failed-only import leaves no batch behind
+  select count(*) into v_n from batches;
+  r := public.import_sales('[{"lines":[{"sku":"HIST-01","price_cents":100}]},{"lines":[{"sku":"BAD SKU!","price_cents":100}]},
+                             {"order_ref":"V-H1","lines":[{"sku":"","price_cents":4500}]},
+                             {"lines":[{"sku":"","title":"x","price_cents":4500,"vinted_url":"https://www.vinted.fr/items/9191-blazer"}]}]', true);
+  assert (r->>'orders')::int = 0 and jsonb_array_length(r->'errors') = 4 and r->'errors'->2->>'error' like '%déjà enregistrée%'
+     and r->'errors'->3->>'error' like '%pas en vente%' and (select count(*) from batches) = v_n, r::text;
+  -- sales to account for, still to ship
+  r := public.import_sales('[{"sold_at":"2025-04-01T10:00:00Z","lines":[{"sku":"HIST-03","price_cents":3000}]}]', false, 'pending');
+  assert (r->>'orders')::int = 1, r::text;
+  assert (select o.status = 'pending' and not o.is_historical from orders o join order_lines ol on ol.order_id = o.id
+            join items i on i.id = ol.item_id where i.sku = 'HIST-03');
+  assert (select code from locations l join items i on i.current_location_id = l.id where i.sku = 'HIST-03') = 'EMP-A-ETIQUETER';
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
+select t.expect_error($$select public.import_sales('[]', true)$$, 'non autorisée');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+
 -- an outsider reaches nothing
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select t.expect_error($$select public.vinted_sync_preview('[]')$$, 'aucun compte actif');

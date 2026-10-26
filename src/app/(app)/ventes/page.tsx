@@ -48,7 +48,7 @@ export default async function Sales() {
                       <li key={o.id} className={`rounded-xl border border-line p-3 ${o.status === "cancelled" ? "opacity-50" : ""}`}>
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-mono font-bold">V-{o.number}</span>
-                          <OrderBadge status={o.status} />
+                          <OrderBadge status={o.status} historical={o.is_historical} />
                         </div>
                         <div className="text-xs text-muted">{dateTime(o.sold_at)}{o.buyer_handle && ` · ${o.buyer_handle}`}</div>
                         <div className="mt-1 flex flex-wrap gap-x-3">
@@ -82,7 +82,7 @@ export default async function Sales() {
                             <td className="num">{money(o.gross_cents)}{r.refunded > 0 && <div className="text-xs text-rose-600">-{money(r.refunded)}</div>}</td>
                             <td className="num">{money(r.fees)}</td>
                             <td className={`num font-semibold ${r.margin != null && r.margin < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{r.margin == null ? "—" : money(r.margin)}</td>
-                            <td className="whitespace-nowrap"><OrderBadge status={o.status} />{o.paid_at && <div className="mt-0.5 text-xs text-muted">encaissé {dateTime(o.paid_at)}</div>}</td>
+                            <td className="whitespace-nowrap"><OrderBadge status={o.status} historical={o.is_historical} />{o.paid_at && <div className="mt-0.5 text-xs text-muted">encaissé {dateTime(o.paid_at)}</div>}</td>
                             <td><OrderActions orderId={o.id} status={o.status} items={r.lines.filter((l) => l.status === "active").map((l) => ({ id: l.items.id, sku: l.items.sku }))} /></td>
                           </tr>
                         );
@@ -121,10 +121,17 @@ const ORDER_TONE: Record<string, string> = {
   cancelled: "bg-line text-muted",
 };
 
-function OrderBadge({ status }: { status: string }) {
+function OrderBadge({ status, historical }: { status: string; historical?: boolean }) {
   return (
-    <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${ORDER_TONE[status]}`}>
-      {ORDER_STATUS[status]}
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${ORDER_TONE[status]}`}>
+        {ORDER_STATUS[status]}
+      </span>
+      {historical && (
+        <span title="Déjà déclarée ailleurs : hors livre des recettes" className="inline-flex items-center rounded border border-line px-1.5 py-0.5 text-[11px] font-medium text-muted">
+          historique
+        </span>
+      )}
     </span>
   );
 }

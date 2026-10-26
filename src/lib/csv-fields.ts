@@ -25,11 +25,21 @@ export const SALES_ALIASES: Record<string, string[]> = {
   sku: ["ref", "reference_article"],
   price: ["prix", "prix_de_vente", "montant"],
   sold_at: ["date", "date_de_vente", "date_vente"],
+  paid_at: ["date_d_encaissement", "date_encaissement", "encaisse_le"],
   buyer: ["acheteur", "client"],
-  order_ref: ["ref_commande", "reference_commande", "commande", "n_commande"],
+  order_ref: ["ref_commande", "reference_commande", "commande", "id_transaction"],
+  order_number: ["n_commande", "no_commande", "numero_commande"],
   shipping: ["frais_de_port", "frais_port", "port"],
   packaging: ["emballage"],
-  platform_fee: ["frais_plateforme", "frais_vinted", "frais"],
+  platform_fee: ["frais_plateforme", "frais_vinted", "frais_de_protection"],
+  // used only to create items that were never in the stock
+  title: ["titre", "article"],
+  brand: ["marque"],
+  size: ["taille"],
+  category: ["categorie"],
+  condition: ["etat"],
+  cost: ["cout", "cout_de_revient", "cout_d_achat", "prix_d_achat"],
+  vinted_url: ["lien_vinted", "lien", "url"],
 };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();

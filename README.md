@@ -77,6 +77,8 @@ téléchargeable depuis Paramètres.
   existants champ par champ. Un export peut être modifié puis réimporté (articles vendus et statuts ignorés).
   Fonction SQL `import_items`.
 - **Import des ventes** (`/ventes/import`) : une ligne par article vendu ; même « Réf commande » = vente groupée.
-  Chaque vente passe par `record_sale`.
+  Chaque vente passe par `record_sale` (via `import_sales`). Un SKU absent du stock (ou une ligne sans SKU, reconnue
+  par son lien Vinted si elle existe) crée l'article dans un lot « LOT-HISTORIQUE ». Ventes **historiques** (déjà déclarées) :
+  `orders.is_historical`, comptées dans les statistiques mais exclues du livre des recettes et du CA URSSAF.
 - **Suppression** : `delete_items` / `restore_items` (corbeille, responsables uniquement). Un article ayant une vente
   n'est jamais supprimé.

@@ -6,7 +6,7 @@ export default async function Page() {
   await requireManager();
   return (
     <>
-      <PageHeader back="/ventes" title="Importer des ventes" subtitle="Chaque ligne vend un article existant, avec les mêmes contrôles qu'une saisie manuelle." />
+      <PageHeader back="/ventes" title="Importer des ventes" subtitle="Ventes du stock ou d'articles jamais saisis : ils sont créés automatiquement." />
       <SalesImport />
     </>
   );
