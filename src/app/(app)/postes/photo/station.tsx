@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ImagePlus, Camera, RotateCw, Trash2 } from "lucide-react";
 import { useScan } from "@/components/scan-provider";
+import { StationHeader } from "@/components/station-header";
 import { useToast } from "@/components/toast";
 import { StatusChip, btn, input } from "@/components/ui";
 import { CONDITION_LABEL, HOLD_LABEL, STATION_LABEL } from "@/i18n/fr";
@@ -193,21 +194,30 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-xl font-bold">Poste</h1>
-        <select className={`${input} w-auto`} value={mode} onChange={(e) => {
-          const m = e.target.value as Mode;
-          setMode(m);
-          try { localStorage.setItem("photoMode", m); } catch {}
-        }}>
-          {(["photo_measure", "photo", "measure"] as Mode[]).map((m) => <option key={m} value={m}>{STATION_LABEL[m]}</option>)}
-        </select>
-        <span className="text-sm text-muted">{count} validés</span>
-      </div>
+      <StationHeader title={STATION_LABEL[mode]} done={count}>
+        <div role="radiogroup" aria-label="Mode du poste" className="grid w-full grid-cols-3 rounded-lg border border-line bg-panel p-1 sm:w-auto">
+          {(["photo_measure", "photo", "measure"] as Mode[]).map((m) => (
+            <button
+              key={m}
+              role="radio"
+              aria-checked={mode === m}
+              onClick={() => {
+                setMode(m);
+                try { localStorage.setItem("photoMode", m); } catch {}
+              }}
+              className={`min-h-10 whitespace-nowrap rounded-md px-3 text-sm font-semibold transition ${mode === m ? "bg-ink text-ink-fg" : "text-muted hover:text-fg"}`}
+            >
+              {m === "photo_measure" ? "Les deux" : m === "photo" ? "Photo" : "Mesures"}
+            </button>
+          ))}
+        </div>
+      </StationHeader>
 
       {!item ? (
         <div className="space-y-3 rounded-xl border border-line bg-panel p-6 text-center">
-          {empty && <p className="text-muted">File vide pour ce poste. Scannez un article pour l&apos;ouvrir directement.</p>}
+          <p className="text-muted">
+            {empty ? "File vide pour ce poste." : "Prenez l'article suivant de la file, ou scannez une étiquette pour ouvrir un article précis."}
+          </p>
           <button className={btn.huge} onClick={next}>Article suivant</button>
         </div>
       ) : (
@@ -225,16 +235,17 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
 
           {showPhotos && (
             <section className="rounded-xl border border-line bg-panel p-4">
-              <div className="mb-3 flex flex-wrap gap-2">
+              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Photos</h2>
+              <div className="mb-3 flex flex-wrap gap-1.5">
                 {shots.map((s) => {
                   const ok = photos.some((p) => p.shot_key === s.key && p.state !== "error");
                   return (
-                    <span key={s.key} className={`rounded px-2 py-1 text-xs font-semibold ${ok ? "bg-emerald-600 text-white" : s.required ? "bg-red-100 text-red-800" : "bg-line text-muted"}`}>
+                    <span key={s.key} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ok ? "bg-emerald-600 text-white" : s.required ? "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300" : "bg-line/70 text-muted"}`}>
                       {ok ? "✓" : s.required ? "•" : "○"} {s.label}
                     </span>
                   );
                 })}
-                <span className="ml-auto text-xs text-muted">{photos.length} / min. {minPhotos}</span>
+                <span className="ml-auto self-center text-xs tabular-nums text-muted">{photos.length} / min. {minPhotos}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {photos.map((p) => (
@@ -249,12 +260,12 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
                         <RotateCw size={18} /> Réessayer
                       </button>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 flex bg-black/60">
-                      <select className="min-w-0 flex-1 bg-transparent p-1 text-xs text-white" value={p.shot_key ?? ""} onChange={(e) => setShot(p, e.target.value || null)}>
+                    <div className="absolute inset-x-0 bottom-0 flex bg-black/65">
+                      <select aria-label="Type de photo" className="min-h-9 min-w-0 flex-1 bg-transparent px-1 text-xs text-white" value={p.shot_key ?? ""} onChange={(e) => setShot(p, e.target.value || null)}>
                         <option value="">Autre</option>
                         {shots.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                       </select>
-                      <button className="px-2 text-white" onClick={() => remove(p)} aria-label="Supprimer"><Trash2 size={14} /></button>
+                      <button className="flex w-9 items-center justify-center text-white" onClick={() => remove(p)} aria-label="Supprimer la photo"><Trash2 size={15} /></button>
                     </div>
                   </div>
                 ))}
@@ -277,14 +288,14 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
 
           {showMeasures && defs.length > 0 && (
             <section className="rounded-xl border border-line bg-panel p-4">
-              <h2 className="mb-3 text-xs font-semibold uppercase text-muted">Mesures à plat (cm)</h2>
+              <h2 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-muted">Mesures à plat (cm)</h2>
               <div className="grid grid-cols-2 gap-3">
                 {defs.map((d, i) => (
                   <label key={d.id} className="block">
-                    <span className="mb-1 block text-sm">{d.label}{!d.required && <span className="text-muted"> (opt.)</span>}</span>
+                    <span className="mb-1 block text-sm font-medium">{d.label}{!d.required && <span className="text-muted"> (opt.)</span>}</span>
                     <input
                       ref={(el) => { fieldRefs.current[i] = el; }}
-                      className={`${input} text-xl tabular-nums ${outOfRange(d.id) ? "border-amber-500 bg-amber-50 text-amber-900" : ""}`}
+                      className={`${input} text-xl tabular-nums ${outOfRange(d.id) ? "border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200" : ""}`}
                       inputMode="decimal"
                       enterKeyHint={i === defs.length - 1 ? "done" : "next"}
                       value={values[d.id] ?? ""}
@@ -309,10 +320,10 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
             <p className="text-sm text-muted">Pas de gabarit de mesures pour « {category.name} ».</p>
           )}
 
-          <div className="sticky bottom-20 grid grid-cols-[1fr_auto] gap-2 md:bottom-4">
+          <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 grid grid-cols-[1fr_auto] gap-2 rounded-2xl bg-bg/90 py-2 backdrop-blur md:bottom-3">
             <button className={btn.huge} disabled={busy} onClick={validate}>Valider et suivant</button>
             <details className="relative">
-              <summary className={`${btn.secondary} min-h-16 cursor-pointer list-none`}>Autre…</summary>
+              <summary className={`${btn.secondary} min-h-16 cursor-pointer list-none`} aria-label="Autres actions">Autre…</summary>
               <div className="absolute bottom-full right-0 mb-2 w-56 space-y-1 rounded-lg border border-line bg-panel p-2 shadow-xl">
                 <button className={`${btn.secondary} w-full`} onClick={() => { setSkipped((s) => [...s, item.id]); next(); }}>Passer</button>
                 {(Object.keys(HOLD_LABEL) as HoldReason[]).map((r) => (

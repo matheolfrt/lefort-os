@@ -1,15 +1,21 @@
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Card, Empty, PageHeader, btn, input } from "@/components/ui";
-import { STATUS_LABEL } from "@/i18n/fr";
+import { Empty, input } from "@/components/ui";
+import { STATUS_LABEL, STATUS_TONE } from "@/i18n/fr";
 import type { ItemStatus } from "@/lib/types";
 import { StockTable, type StockRow } from "./stock-table";
 
 const PAGE_SIZES = [50, 100, 250];
+// Chip order follows the production line, then the exits
+const CHIP_ORDER: ItemStatus[] = [
+  "received", "sorted", "photographed", "measured", "listing_ready", "listed", "reserved",
+  "on_hold", "returned", "sold", "shipped", "completed", "rejected",
+];
 
-export default async function Stock({ searchParams }: {
-  searchParams: Promise<{ q?: string; status?: string; category?: string; page?: string; size?: string }>;
-}) {
+type Params = { q?: string; status?: string; category?: string; page?: string; size?: string };
+
+export default async function Stock({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
   const page = Math.max(Number(sp.page) || 1, 1);
   const PAGE = PAGE_SIZES.includes(Number(sp.size)) ? Number(sp.size) : 50;
@@ -25,35 +31,64 @@ export default async function Stock({ searchParams }: {
     const q = sp.q.replace(/[%,()]/g, " ").trim();
     query = query.or(`sku.ilike.%${q}%,title.ilike.%${q}%,size_label.eq.${q}`);
   }
-  const [{ data: items, count }, { data: categories }] = await Promise.all([
+  const [{ data: items, count }, { data: categories }, { data: pipeline }] = await Promise.all([
     query.order("received_at", { ascending: false }).range((page - 1) * PAGE, page * PAGE - 1),
     supabase.from("categories").select("id, name").order("name"),
+    supabase.from("v_pipeline").select("status, items"),
   ]);
+  const byStatus = new Map((pipeline ?? []).map((p) => [p.status as ItemStatus, Number(p.items)]));
+  const total = [...byStatus.values()].reduce((a, b) => a + b, 0);
   const pages = Math.ceil((count ?? 0) / PAGE);
-  const link = (p: number) => `/stock?${new URLSearchParams({ ...sp, page: String(p) } as Record<string, string>)}`;
+  const href = (patch: Partial<Params>) => {
+    const next = { ...sp, ...patch } as Record<string, string | undefined>;
+    const qs = new URLSearchParams(Object.entries(next).filter(([, v]) => v) as [string, string][]);
+    return `/stock${qs.size ? `?${qs}` : ""}`;
+  };
 
   return (
-    <>
-      <PageHeader title="Stock" subtitle={`${count ?? 0} article${(count ?? 0) > 1 ? "s" : ""}`} />
-      <form className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px_180px_130px_auto]">
-        <input className={input} name="q" defaultValue={sp.q} placeholder="SKU, titre, taille…" />
-        <select className={input} name="status" defaultValue={sp.status ?? ""}>
-          <option value="">Tous statuts</option>
-          {(Object.keys(STATUS_LABEL) as ItemStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-        </select>
-        <select className={input} name="category" defaultValue={sp.category ?? ""}>
+    <div className="mx-auto max-w-7xl space-y-4">
+      <header className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight">Stock</h1>
+          <p className="text-sm text-muted">
+            {count ?? 0} article{(count ?? 0) > 1 ? "s" : ""}
+            {sp.status && ` · ${STATUS_LABEL[sp.status as ItemStatus]}`}
+            {sp.q && ` · « ${sp.q} »`}
+          </p>
+        </div>
+      </header>
+
+      {/* Status chips with live counts */}
+      <nav aria-label="Filtrer par statut" className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <ul className="flex min-w-max gap-1.5 md:min-w-0 md:flex-wrap">
+          <Chip href={href({ status: undefined, page: undefined })} active={!sp.status} label="Tous" count={total} />
+          {CHIP_ORDER.filter((s) => byStatus.get(s)).map((s) => (
+            <Chip key={s} href={href({ status: s, page: undefined })} active={sp.status === s} label={STATUS_LABEL[s]}
+              count={byStatus.get(s) ?? 0} dot={STATUS_TONE[s].split(" ")[0]} />
+          ))}
+        </ul>
+      </nav>
+
+      <form className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_190px_130px_auto]" action="/stock">
+        {sp.status && <input type="hidden" name="status" value={sp.status} />}
+        <label className="relative col-span-2 sm:col-span-1">
+          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input className={`${input} pl-10`} name="q" defaultValue={sp.q} placeholder="SKU, titre, taille…" aria-label="Rechercher" />
+        </label>
+        <select className={input} name="category" defaultValue={sp.category ?? ""} aria-label="Catégorie">
           <option value="">Toutes catégories</option>
           {(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <select className={input} name="size" defaultValue={String(PAGE)} aria-label="Articles par page">
+        <select className={`${input} hidden sm:block`} name="size" defaultValue={String(PAGE)} aria-label="Articles par page">
           {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} / page</option>)}
         </select>
-        <button className={btn.primary}>Filtrer</button>
+        <button className="min-h-11 rounded-md bg-ink px-4 font-semibold text-ink-fg hover:opacity-90">Filtrer</button>
       </form>
+
       {!items?.length ? (
-        <Empty>Aucun article.</Empty>
+        <Empty>Aucun article ne correspond.</Empty>
       ) : (
-        <Card>
+        <>
           <StockTable
             rows={items.map((i): StockRow => ({
               id: i.id,
@@ -69,14 +104,32 @@ export default async function Stock({ searchParams }: {
             categories={categories ?? []}
           />
           {pages > 1 && (
-            <div className="mt-3 flex items-center justify-center gap-3 text-sm">
-              {page > 1 && <Link href={link(page - 1)} className="underline">← Précédent</Link>}
-              <span>Page {page} / {pages}</span>
-              {page < pages && <Link href={link(page + 1)} className="underline">Suivant →</Link>}
-            </div>
+            <nav className="flex items-center justify-center gap-2 text-sm" aria-label="Pagination">
+              {page > 1 && <Link href={href({ page: String(page - 1) })} className="inline-flex min-h-11 items-center rounded-md border border-line bg-panel px-4 font-medium">← Précédent</Link>}
+              <span className="px-2 tabular-nums text-muted">Page {page} / {pages}</span>
+              {page < pages && <Link href={href({ page: String(page + 1) })} className="inline-flex min-h-11 items-center rounded-md border border-line bg-panel px-4 font-medium">Suivant →</Link>}
+            </nav>
           )}
-        </Card>
+        </>
       )}
-    </>
+    </div>
+  );
+}
+
+function Chip({ href, active, label, count, dot }: { href: string; active: boolean; label: string; count: number; dot?: string }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        aria-current={active ? "true" : undefined}
+        className={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition ${
+          active ? "border-ink bg-ink text-ink-fg" : "border-line bg-panel hover:border-fg/30"
+        }`}
+      >
+        {dot && <span className={`size-2 rounded-full ${dot}`} />}
+        {label}
+        <span className={`tabular-nums ${active ? "opacity-70" : "text-muted"}`}>{count}</span>
+      </Link>
+    </li>
   );
 }

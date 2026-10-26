@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Copy, Download, ExternalLink, Share } from "lucide-react";
 import { useScan } from "@/components/scan-provider";
+import { StationHeader } from "@/components/station-header";
 import { useToast } from "@/components/toast";
 import { Field, StatusChip, btn, input } from "@/components/ui";
 import { asItem, loadMeasurements, loadPhotos, rpc } from "@/lib/client-data";
@@ -143,69 +144,87 @@ export function ListingStation({ catalog, signature, isManager, initialSku }: {
 
   if (!item) {
     return (
-      <div className="mx-auto max-w-md space-y-3 rounded-xl border border-line bg-panel p-6 text-center">
-        <h1 className="text-xl font-bold">Publication</h1>
-        {empty && <p className="text-muted">Aucun article prêt à publier. Scannez un article pour l&apos;ouvrir.</p>}
-        <button className={btn.huge} onClick={next}>Article suivant</button>
+      <div className="mx-auto max-w-3xl">
+        <StationHeader title="Publication" />
+        <div className="space-y-3 rounded-xl border border-line bg-panel p-6 text-center">
+          <p className="text-muted">
+            {empty ? "Aucun article prêt à publier." : "Prenez l'article suivant, ou scannez une étiquette pour ouvrir un article précis."}
+          </p>
+          <button className={btn.huge} onClick={next}>Article suivant</button>
+        </div>
       </div>
     );
   }
 
+  const step = "mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-muted";
+  const num = "flex size-5 items-center justify-center rounded-full bg-ink text-[11px] text-ink-fg";
+
   return (
-    <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[1fr_1.2fr]">
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Link href={`/stock/${item.sku}`} className="font-mono text-2xl font-black">{item.sku}</Link>
-          <StatusChip status={item.status} large />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {photos.map((p) => (
-            <a key={p.id} href={p.url} target="_blank" draggable>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt={p.shot_key ?? ""} className="aspect-[3/4] w-full rounded-lg object-cover" />
-            </a>
-          ))}
-        </div>
-        <button className={`${btn.secondary} w-full`} onClick={sharePhotos} disabled={!photos.length}>
-          <Share size={18} /> Enregistrer les {photos.length} photos sur le téléphone
-        </button>
-        <p className="hidden text-xs text-muted lg:block"><Download size={12} className="inline" /> Sur ordinateur : glissez les photos directement dans le formulaire Vinted.</p>
-      </section>
+    <div className="mx-auto max-w-6xl">
+      <StationHeader title="Publication">
+        <Link href={`/stock/${item.sku}`} className="font-mono text-lg font-black hover:text-accent">{item.sku}</Link>
+        <StatusChip status={item.status} large />
+      </StationHeader>
 
-      <section className="space-y-3">
-        <Field label="Titre">
-          <div className="flex gap-2">
-            <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} onBlur={saveDraft} />
-            <button className={btn.secondary} onClick={() => copy(title, "Titre")} aria-label="Copier le titre"><Copy size={18} /></button>
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <section className="h-fit rounded-xl border border-line bg-panel p-4">
+          <h2 className={step}><span className={num}>1</span> Photos · {photos.length}</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {photos.map((p) => (
+              <a key={p.id} href={p.url} target="_blank" draggable>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt={p.shot_key ?? ""} className="aspect-[3/4] w-full rounded-lg object-cover" />
+              </a>
+            ))}
           </div>
-        </Field>
-        <Field label="Description">
-          <textarea className={`${input} min-h-56 py-2 font-mono text-sm`} value={description} onChange={(e) => setDescription(e.target.value)} onBlur={saveDraft} />
-          <button className={`${btn.secondary} mt-2 w-full`} onClick={() => copy(description, "Description")}><Copy size={18} /> Copier la description</button>
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Prix affiché (€)" hint={cost != null ? `Coût de revient : ${money(cost)}` : undefined}>
-            <div className="flex gap-2">
-              <input className={`${input} text-xl`} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={saveDraft} />
-              <button className={btn.secondary} onClick={() => copy(price, "Prix")} aria-label="Copier le prix"><Copy size={18} /></button>
-            </div>
-          </Field>
-          <Field label="Prix minimum (€)" hint="Offres acceptables jusqu'à">
-            <input className={`${input} text-xl`} inputMode="decimal" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
-          </Field>
-        </div>
+          <button className={`${btn.secondary} mt-3 w-full`} onClick={sharePhotos} disabled={!photos.length}>
+            <Share size={18} /> Enregistrer les {photos.length} photos sur le téléphone
+          </button>
+          <p className="mt-2 hidden text-xs text-muted lg:block"><Download size={12} className="inline" /> Sur ordinateur : glissez les photos directement dans le formulaire Vinted.</p>
+        </section>
 
-        <a className={`${btn.secondary} w-full`} href="https://www.vinted.fr/items/new" target="_blank" rel="noreferrer">
-          <ExternalLink size={18} /> Ouvrir Vinted
-        </a>
-        <Field label="Lien de l'annonce Vinted" hint="Après publication : Partager → Copier le lien, puis collez ici.">
-          <input className={input} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.vinted.fr/items/…" inputMode="url" />
-        </Field>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <button className={btn.huge} disabled={busy} onClick={publish}>Marquer en ligne et suivant</button>
-          <button className={`${btn.secondary} min-h-16`} onClick={next}>Passer</button>
+        <div className="space-y-4">
+          <section className="space-y-3 rounded-xl border border-line bg-panel p-4">
+            <h2 className={step}><span className={num}>2</span> Texte et prix</h2>
+            <Field label="Titre">
+              <div className="flex gap-2">
+                <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} onBlur={saveDraft} />
+                <button className={`${btn.secondary} shrink-0 px-3`} onClick={() => copy(title, "Titre")} aria-label="Copier le titre"><Copy size={18} /></button>
+              </div>
+            </Field>
+            <Field label="Description">
+              <textarea className={`${input} min-h-56 py-2 font-mono text-sm`} value={description} onChange={(e) => setDescription(e.target.value)} onBlur={saveDraft} />
+              <button className={`${btn.secondary} mt-2 w-full`} onClick={() => copy(description, "Description")}><Copy size={18} /> Copier la description</button>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Prix affiché (€)" hint={cost != null ? `Coût de revient : ${money(cost)}` : undefined}>
+                <div className="flex gap-2">
+                  <input className={`${input} min-w-0 text-xl tabular-nums`} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={saveDraft} />
+                  <button className={`${btn.secondary} shrink-0 px-3`} onClick={() => copy(price, "Prix")} aria-label="Copier le prix"><Copy size={18} /></button>
+                </div>
+              </Field>
+              <Field label="Prix minimum (€)" hint="Offres acceptables jusqu'à">
+                <input className={`${input} text-xl tabular-nums`} inputMode="decimal" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
+              </Field>
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-xl border border-line bg-panel p-4">
+            <h2 className={step}><span className={num}>3</span> Publier sur Vinted</h2>
+            <a className={`${btn.secondary} w-full`} href="https://www.vinted.fr/items/new" target="_blank" rel="noreferrer">
+              <ExternalLink size={18} /> Ouvrir Vinted
+            </a>
+            <Field label="Lien de l'annonce Vinted" hint="Après publication : Partager → Copier le lien, puis collez ici.">
+              <input className={input} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.vinted.fr/items/…" inputMode="url" />
+            </Field>
+          </section>
+
+          <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 grid grid-cols-[1fr_auto] gap-2 rounded-2xl bg-bg/90 py-2 backdrop-blur md:bottom-3">
+            <button className={btn.huge} disabled={busy} onClick={publish}>Marquer en ligne et suivant</button>
+            <button className={`${btn.secondary} min-h-16`} onClick={next}>Passer</button>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

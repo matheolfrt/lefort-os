@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BrandPicker } from "@/components/brand-picker";
+import { StationHeader } from "@/components/station-header";
 import { useScan } from "@/components/scan-provider";
 import { useToast } from "@/components/toast";
 import { Kbd, btn, input } from "@/components/ui";
@@ -115,129 +116,135 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
 
   if (!batches.length) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <p className="mb-4 text-lg">Aucun lot ouvert.</p>
+      <div className="mx-auto max-w-md rounded-xl border border-line bg-panel p-6 text-center">
+        <p className="mb-4 text-lg font-semibold">Aucun lot ouvert.</p>
         <Link href="/lots/nouveau" className={btn.primary}>Créer un lot</Link>
       </div>
     );
   }
 
-  return (
-    <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[1fr_260px]">
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-bold">Réception & tri</h1>
-          <select className={`${input} w-auto font-mono`} value={batchId ?? ""} onChange={(e) => setBatchId(e.target.value || null)}>
-            <option value="">— Lot —</option>
-            {batches.map((b) => <option key={b.id} value={b.id}>{b.code}</option>)}
-          </select>
-          {batch && <span className="text-sm text-muted">{done.length} traités cette session</span>}
-        </div>
+  const pick = (on: boolean) =>
+    on ? "border-ink bg-ink text-ink-fg" : "border-line bg-panel hover:border-fg/30";
 
-        <div className="rounded-xl border-2 border-dashed border-accent bg-panel p-4">
-          <label className="mb-1 block text-xs font-semibold uppercase text-muted">Étiquette (scannez ou tapez)</label>
-          <div className="flex gap-2">
+  return (
+    <div className="mx-auto max-w-5xl">
+      <StationHeader title="Réception & tri" done={done.length}>
+        <select className={`${input} w-full font-mono sm:w-auto`} value={batchId ?? ""} onChange={(e) => setBatchId(e.target.value || null)} aria-label="Lot">
+          <option value="">— Choisir le lot —</option>
+          {batches.map((b) => <option key={b.id} value={b.id}>{b.code}</option>)}
+        </select>
+      </StationHeader>
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+        <div className="space-y-4">
+          <div className="rounded-xl border-2 border-dashed border-fg/25 bg-panel p-4 focus-within:border-accent">
+            <label htmlFor="reception-sku" className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-muted">Étiquette — scannez ou tapez</label>
             <input
+              id="reception-sku"
               ref={skuRef}
               autoFocus
-              className={`${input} font-mono text-2xl uppercase`}
+              className={`${input} min-h-14 font-mono text-2xl uppercase`}
               value={sku}
               onChange={(e) => setSku(e.target.value.toUpperCase())}
               placeholder="LSH00001"
               autoCapitalize="characters"
               autoComplete="off"
             />
+            <p className="mt-1.5 text-xs text-muted">Vide = nouveau SKU attribué automatiquement (étiquette à imprimer ensuite).</p>
           </div>
-          <p className="mt-1 text-xs text-muted">Laissez vide pour attribuer automatiquement un nouveau SKU (étiquette à imprimer ensuite).</p>
-        </div>
 
-        <section>
-          <h2 className="mb-2 text-xs font-semibold uppercase text-muted">Catégorie</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {catalog.categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => set("category_id", c.id)}
-                className={`min-h-14 rounded-lg border-2 px-3 text-left font-semibold ${
-                  form.category_id === c.id ? "border-accent bg-accent text-accent-fg" : "border-line bg-panel"
-                }`}
-              >
-                {c.hotkey && <Kbd>{c.hotkey}</Kbd>} {c.name}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <h2 className="mb-2 text-xs font-semibold uppercase text-muted">Marque</h2>
-            <BrandPicker brands={brands} value={form.brand_id} onChange={(id) => set("brand_id", id)} orgId={orgId}
-              onCreated={(b) => setBrands((x) => [...x, b].sort((a, z) => a.name.localeCompare(z.name)))} />
-          </div>
-          <div>
-            <h2 className="mb-2 text-xs font-semibold uppercase text-muted">Taille</h2>
-            <input className={input} value={form.size_label} onChange={(e) => set("size_label", e.target.value)} placeholder="50, 40R, M…" />
-            <div className="mt-2 flex flex-wrap gap-1">
-              {JACKET_SIZES.map((s) => (
-                <button key={s} onClick={() => set("size_label", s)}
-                  className={`min-h-10 min-w-11 rounded border px-2 font-mono ${form.size_label === s ? "border-accent bg-accent text-accent-fg" : "border-line"}`}>
-                  {s}
+          <section className="rounded-xl border border-line bg-panel p-4">
+            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Catégorie <span className="hidden font-normal normal-case sm:inline">· touches 1 à 9</span></h2>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {catalog.categories.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => set("category_id", c.id)}
+                  className={`flex min-h-14 items-center gap-2 rounded-lg border px-3 text-left font-semibold transition active:scale-[0.98] ${pick(form.category_id === c.id)}`}
+                >
+                  {c.hotkey && <Kbd>{c.hotkey}</Kbd>} {c.name}
                 </button>
               ))}
             </div>
-          </div>
-        </div>
+          </section>
 
-        <section>
-          <h2 className="mb-2 text-xs font-semibold uppercase text-muted">État</h2>
-          <div className="flex flex-wrap gap-2">
-            {CONDITIONS.map((c) => (
-              <button key={c} onClick={() => set("condition", c)}
-                className={`min-h-11 rounded-lg border-2 px-3 text-sm font-medium ${form.condition === c ? "border-accent bg-accent text-accent-fg" : "border-line bg-panel"}`}>
-                {CONDITION_LABEL[c]}
+          <section className="grid gap-4 rounded-xl border border-line bg-panel p-4 sm:grid-cols-2">
+            <div>
+              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Marque</h2>
+              <BrandPicker brands={brands} value={form.brand_id} onChange={(id) => set("brand_id", id)} orgId={orgId}
+                onCreated={(b) => setBrands((x) => [...x, b].sort((a, z) => a.name.localeCompare(z.name)))} />
+            </div>
+            <div>
+              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Taille</h2>
+              <input className={input} value={form.size_label} onChange={(e) => set("size_label", e.target.value)} placeholder="50, 40R, M…" aria-label="Taille" />
+              <div className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                {JACKET_SIZES.map((s) => (
+                  <button key={s} onClick={() => set("size_label", s)}
+                    className={`min-h-11 rounded-md border font-mono font-semibold transition active:scale-[0.97] ${pick(form.size_label === s)}`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-line bg-panel p-4">
+            <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">État</h2>
+            <div className="flex flex-wrap gap-2">
+              {CONDITIONS.map((c) => (
+                <button key={c} onClick={() => set("condition", c)}
+                  className={`min-h-11 rounded-lg border px-3 text-sm font-semibold transition active:scale-[0.98] ${pick(form.condition === c)}`}>
+                  {CONDITION_LABEL[c]}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <select className={input} value={form.color_id ?? ""} onChange={(e) => set("color_id", e.target.value || null)} aria-label="Couleur">
+                <option value="">Couleur (optionnel)</option>
+                {colors.map((c) => <option key={c.id} value={c.id}>{c.value}</option>)}
+              </select>
+              <input className={input} value={form.defects} onChange={(e) => set("defects", e.target.value)} placeholder="Défauts constatés (optionnel)" aria-label="Défauts" />
+            </div>
+          </section>
+
+          {/* Actions stay reachable above the phone's bottom bar */}
+          <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 space-y-2 rounded-2xl bg-bg/90 py-2 backdrop-blur md:bottom-3">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-2">
+              <button className={btn.huge} disabled={busy} onClick={() => submit("sorted")}>
+                Valider → photo <span className="hidden sm:inline"><Kbd>Entrée</Kbd></span>
               </button>
-            ))}
+              <button className={`${btn.secondary} min-h-16`} disabled={busy} onClick={() => setHoldOpen((v) => !v)} aria-expanded={holdOpen}>Attente</button>
+              <button className={`${btn.secondary} min-h-16 text-red-700 dark:text-red-400`} disabled={busy}
+                onClick={() => confirm("Écarter cet article (invendable) ?") && submit("rejected", { reason: form.defects || "Écarté au tri" })}>
+                Écarter
+              </button>
+            </div>
+            {holdOpen && (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {(Object.keys(HOLD_LABEL) as HoldReason[]).map((r) => (
+                  <button key={r} className={btn.secondary} onClick={() => submit("on_hold", { hold_reason: r })}>{HOLD_LABEL[r]}</button>
+                ))}
+              </div>
+            )}
           </div>
-        </section>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <select className={input} value={form.color_id ?? ""} onChange={(e) => set("color_id", e.target.value || null)}>
-            <option value="">Couleur (optionnel)</option>
-            {colors.map((c) => <option key={c.id} value={c.id}>{c.value}</option>)}
-          </select>
-          <input className={input} value={form.defects} onChange={(e) => set("defects", e.target.value)} placeholder="Défauts constatés (optionnel)" />
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_auto] gap-2">
-          <button className={btn.huge} disabled={busy} onClick={() => submit("sorted")}>
-            Valider → photo <Kbd>Entrée</Kbd>
-          </button>
-          <button className={`${btn.secondary} min-h-16`} disabled={busy} onClick={() => setHoldOpen((v) => !v)}>En attente</button>
-          <button className={`${btn.danger} min-h-16`} disabled={busy}
-            onClick={() => confirm("Écarter cet article (invendable) ?") && submit("rejected", { reason: form.defects || "Écarté au tri" })}>
-            Écarter
-          </button>
-        </div>
-        {holdOpen && (
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(HOLD_LABEL) as HoldReason[]).map((r) => (
-              <button key={r} className={btn.secondary} onClick={() => submit("on_hold", { hold_reason: r })}>{HOLD_LABEL[r]}</button>
-            ))}
-          </div>
-        )}
+        <aside className="h-fit rounded-xl border border-line bg-panel p-3">
+          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Derniers enregistrés {batch && `· ${batch.code}`}</h2>
+          {done.length === 0 ? (
+            <p className="text-sm text-muted">Rien pour l&apos;instant.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {done.map((d) => (
+                <li key={d.sku} className="flex min-h-10 items-center justify-between">
+                  <Link href={`/stock/${d.sku}`} className="font-mono text-sm font-semibold hover:text-accent">{d.sku}</Link>
+                  <span className="text-xs text-muted">{d.status === "sorted" ? "→ photo" : d.status === "on_hold" ? "en attente" : "écarté"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
       </div>
-
-      <aside className="rounded-xl border border-line bg-panel p-3">
-        <h2 className="mb-2 text-xs font-semibold uppercase text-muted">Derniers enregistrés</h2>
-        <ul className="space-y-1 font-mono text-sm">
-          {done.map((d) => (
-            <li key={d.sku} className="flex justify-between">
-              <Link href={`/stock/${d.sku}`} className="hover:underline">{d.sku}</Link>
-              <span className="text-xs text-muted">{d.status === "sorted" ? "→ photo" : d.status === "on_hold" ? "attente" : "écarté"}</span>
-            </li>
-          ))}
-        </ul>
-      </aside>
     </div>
   );
 }

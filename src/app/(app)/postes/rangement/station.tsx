@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useScan, useScanApi } from "@/components/scan-provider";
+import { StationHeader } from "@/components/station-header";
 import { useToast } from "@/components/toast";
 import { btn, input } from "@/components/ui";
 import { asItem, rpc } from "@/lib/client-data";
@@ -61,10 +62,13 @@ export function StorageStation({ initialQueue }: { initialQueue: QueueItem[] }) 
   });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-xl font-bold">Rangement</h1>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <StationHeader title="Rangement" queue={queue.length} done={log.length} />
 
-      <div className={`rounded-xl p-6 text-center ${pending ? "bg-accent text-accent-fg" : bin ? "bg-emerald-700 text-white" : "bg-ink text-ink-fg"}`}>
+      <div aria-live="polite" className={`flex min-h-40 flex-col items-center justify-center rounded-2xl p-6 text-center ${pending ? "bg-accent text-accent-fg" : bin ? "bg-emerald-700 text-white" : "bg-ink text-ink-fg"}`}>
+        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] opacity-70">
+          {pending ? "Étape 2 / 2" : bin ? "Mode remplissage" : "Étape 1 / 2"}
+        </div>
         {pending ? (
           <>
             <div className="font-mono text-3xl font-black">{pending.sku}</div>
@@ -72,17 +76,20 @@ export function StorageStation({ initialQueue }: { initialQueue: QueueItem[] }) 
           </>
         ) : bin ? (
           <>
-            <div className="text-sm uppercase opacity-80">Remplissage</div>
             <div className="font-mono text-3xl font-black">{bin.replace("EMP-", "")}</div>
             <div className="mt-2 text-xl">Scannez les articles à y ranger</div>
           </>
         ) : (
-          <div className="text-xl">Scannez un article (ou un emplacement pour le remplir)</div>
+          <>
+            <div className="text-2xl font-bold">Scannez un article</div>
+            <div className="mt-1 text-sm opacity-70">ou un emplacement pour y ranger plusieurs articles d&apos;affilée</div>
+          </>
         )}
       </div>
 
       <div className="flex gap-2">
         <input
+          aria-label="Saisie manuelle d'un code"
           className={`${input} font-mono uppercase`}
           value={manual}
           placeholder="Saisie manuelle : LSH00001 ou EMP-A-01-02"
@@ -94,7 +101,7 @@ export function StorageStation({ initialQueue }: { initialQueue: QueueItem[] }) 
             }
           }}
         />
-        <button className={`${btn.primary} md:hidden`} onClick={openCamera}>Scanner</button>
+        <button className={`${btn.primary} shrink-0 md:hidden`} onClick={openCamera}>Scanner</button>
       </div>
       {(pending || bin) && (
         <button className={`${btn.secondary} w-full`} onClick={() => { setPending(null); setBin(null); }}>Terminer / annuler</button>
@@ -102,16 +109,23 @@ export function StorageStation({ initialQueue }: { initialQueue: QueueItem[] }) 
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-xl border border-line bg-panel p-3">
-          <h2 className="mb-2 text-xs font-semibold uppercase text-muted">À ranger ({queue.length})</h2>
-          <ul className="max-h-80 space-y-1 overflow-auto text-sm">
-            {queue.map((q) => (
-              <li key={q.id}><span className="font-mono font-semibold">{q.sku}</span> <span className="text-muted">{q.label}</span></li>
-            ))}
-          </ul>
+          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">À ranger · {queue.length}</h2>
+          {queue.length === 0 ? <p className="text-sm text-muted">Rien à ranger.</p> : (
+            <ul className="max-h-80 divide-y divide-line overflow-auto text-sm">
+              {queue.map((q) => (
+                <li key={q.id} className="flex min-h-10 items-center gap-2">
+                  <span className="font-mono font-semibold">{q.sku}</span>
+                  <span className="truncate text-muted">{q.label}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
         <section className="rounded-xl border border-line bg-panel p-3">
-          <h2 className="mb-2 text-xs font-semibold uppercase text-muted">Rangés</h2>
-          <ul className="space-y-1 font-mono text-sm">{log.map((l, i) => <li key={i}>{l}</li>)}</ul>
+          <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Rangés cette session · {log.length}</h2>
+          {log.length === 0 ? <p className="text-sm text-muted">Rien pour l&apos;instant.</p> : (
+            <ul className="divide-y divide-line font-mono text-sm">{log.map((l, i) => <li key={i} className="flex min-h-10 items-center">{l}</li>)}</ul>
+          )}
         </section>
       </div>
     </div>

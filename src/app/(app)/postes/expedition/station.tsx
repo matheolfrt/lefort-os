@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
 import { useScan } from "@/components/scan-provider";
+import { StationHeader } from "@/components/station-header";
 import { useToast } from "@/components/toast";
 import { Empty, btn, input } from "@/components/ui";
 import { dateTime, daysSince } from "@/lib/format";
@@ -77,38 +78,54 @@ export function ShippingStation() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="text-xl font-bold">Expédition</h1>
+    <div className="mx-auto max-w-3xl space-y-3">
+      <StationHeader title="Expédition" queue={orders.length} />
       {orders.length === 0 ? (
-        <Empty>Rien à expédier. 🎉</Empty>
+        <Empty>Rien à expédier.</Empty>
       ) : (
         orders.map((lines) => {
           const o = lines[0];
           const isActive = active === o.order_id;
           const late = daysSince(o.sold_at) >= 1;
+          const pickedCount = lines.filter((l) => picked.has(l.item_id)).length;
           return (
-            <section key={o.order_id} className={`rounded-xl border-2 bg-panel p-4 ${isActive ? "border-accent" : "border-line"}`} onClick={() => setActive(o.order_id)}>
-              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                <div className="font-bold">V-{o.order_number} · {o.buyer_handle ?? "acheteur"}</div>
-                <div className={`text-sm ${late ? "font-semibold text-red-600" : "text-muted"}`}>vendu {dateTime(o.sold_at)}</div>
-              </div>
-              <ul className="space-y-2">
+            <section key={o.order_id} className={`overflow-hidden rounded-xl border-2 bg-panel ${isActive ? "border-ink" : "border-line"}`}>
+              <button
+                type="button"
+                aria-expanded={isActive}
+                onClick={() => setActive(isActive ? null : o.order_id)}
+                className="flex min-h-14 w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-left"
+              >
+                <span className="font-bold">V-{o.order_number} <span className="font-normal text-muted">· {o.buyer_handle ?? "acheteur"}</span></span>
+                <span className="flex items-center gap-2 text-sm">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pickedCount === lines.length ? "bg-emerald-600 text-white" : "bg-line/70 text-muted"}`}>
+                    {pickedCount}/{lines.length} prélevé{lines.length > 1 ? "s" : ""}
+                  </span>
+                  <span className={late ? "font-semibold text-red-600 dark:text-red-400" : "text-muted"}>
+                    {late ? `en retard · ` : ""}vendu {dateTime(o.sold_at)}
+                  </span>
+                </span>
+              </button>
+              <ul className="divide-y divide-line border-t border-line">
                 {lines.map((l) => (
-                  <li key={l.item_id} className="flex items-center gap-3">
-                    {picked.has(l.item_id) ? <CheckCircle2 className="text-emerald-600" /> : <Circle className="text-muted" />}
-                    <span className="rounded bg-ink px-2 py-1 font-mono text-sm font-bold text-ink-fg">{l.location_code?.replace("EMP-", "") ?? "?"}</span>
-                    <span className="font-mono font-semibold">{l.sku}</span>
-                    <span className="truncate text-sm text-muted">{l.title ?? ""} {l.size_label && `T${l.size_label}`}</span>
+                  <li key={l.item_id} className="flex min-h-14 items-center gap-3 px-4 py-2">
+                    {picked.has(l.item_id) ? <CheckCircle2 className="shrink-0 text-emerald-600" aria-label="prélevé" /> : <Circle className="shrink-0 text-muted" aria-label="à prélever" />}
+                    <span className="shrink-0 rounded-md bg-ink px-2 py-1 font-mono text-sm font-bold text-ink-fg">{l.location_code?.replace("EMP-", "") ?? "?"}</span>
+                    <span className="min-w-0">
+                      <span className="block font-mono text-sm font-semibold">{l.sku}</span>
+                      <span className="block truncate text-xs text-muted">{l.title ?? (l.size_label ? `T${l.size_label}` : "")}</span>
+                    </span>
                   </li>
                 ))}
               </ul>
               {isActive && (
-                <div className="mt-4 grid gap-2 sm:grid-cols-[180px_1fr]">
-                  <select className={input} value={carrier} onChange={(e) => setCarrier(e.target.value)}>
+                <div className="grid gap-2 border-t border-line bg-bg/60 p-4 sm:grid-cols-[180px_1fr]">
+                  <p className="text-xs text-muted sm:col-span-2">Scannez chaque article pour confirmer le prélèvement, puis le bordereau pour le numéro de suivi.</p>
+                  <select className={input} value={carrier} onChange={(e) => setCarrier(e.target.value)} aria-label="Transporteur">
                     {CARRIERS.map((c) => <option key={c}>{c}</option>)}
                   </select>
-                  <input className={input} value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="N° de suivi (scannez le bordereau)" />
-                  <button className={`${btn.huge} sm:col-span-2`} disabled={busy} onClick={(e) => { e.stopPropagation(); ship(o.order_id); }}>
+                  <input className={input} value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="N° de suivi (scannez le bordereau)" aria-label="Numéro de suivi" />
+                  <button className={`${btn.huge} sm:col-span-2`} disabled={busy} onClick={() => ship(o.order_id)}>
                     Colis expédié
                   </button>
                 </div>

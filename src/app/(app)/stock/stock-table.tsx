@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { Check, Printer, X } from "lucide-react";
 import { useToast } from "@/components/toast";
-import { SkuLink, StatusChip, btn, input } from "@/components/ui";
+import { StatusChip, btn, input } from "@/components/ui";
 import { HOLD_LABEL } from "@/i18n/fr";
 import { daysSince, money } from "@/lib/format";
 import { rpc } from "@/lib/client-data";
@@ -37,6 +38,16 @@ const TARGETS: { value: string; label: string }[] = [
   { value: "sorted", label: "Trié (refaire photos — responsable)" },
 ];
 
+// Items still on sale age; sold/discarded ones don't
+const AGEING: ItemStatus[] = ["received", "sorted", "photographed", "measured", "listing_ready", "listed", "reserved", "on_hold", "returned"];
+
+function Age({ row }: { row: StockRow }) {
+  const d = daysSince(row.receivedAt);
+  const ageing = AGEING.includes(row.status);
+  const tone = !ageing ? "text-muted" : d > 90 ? "font-bold text-red-600 dark:text-red-400" : d > 60 ? "font-semibold text-amber-600 dark:text-amber-400" : "text-muted";
+  return <span className={`tabular-nums ${tone}`}>{d} j</span>;
+}
+
 export function StockTable({ rows, categories }: { rows: StockRow[]; categories: { id: string; name: string }[] }) {
   const router = useRouter();
   const toast = useToast();
@@ -67,6 +78,7 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
     });
     setAnchor(index);
   }
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
 
   async function run(label: string, action: () => Promise<BulkResult>) {
     setBusy(true);
@@ -110,44 +122,73 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
     });
   };
 
+  const Box = ({ checked, onClick, label }: { checked: boolean; onClick: (e: React.MouseEvent) => void; label: string }) => (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onClick}
+      className="flex size-11 shrink-0 items-center justify-center rounded-lg"
+    >
+      <span className={`flex size-5 items-center justify-center rounded-[5px] border-2 transition ${
+        checked ? "border-accent bg-accent text-accent-fg" : "border-fg/25 bg-panel"
+      }`}>
+        {checked && <Check size={14} strokeWidth={3} />}
+      </span>
+    </button>
+  );
+
   return (
     <>
-      <div className="overflow-x-auto">
+      {/* ── Phone: cards */}
+      <div className="md:hidden">
+        <div className="mb-1 flex items-center gap-1 text-sm text-muted">
+          <Box checked={allChecked} onClick={toggleAll} label="Tout sélectionner" />
+          <span>Tout sélectionner ({rows.length})</span>
+        </div>
+        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-panel">
+          {rows.map((r, i) => (
+            <li key={r.id} className={`flex items-center gap-1 pr-3 ${selected.has(r.id) ? "bg-accent/10" : ""}`}>
+              <Box checked={selected.has(r.id)} onClick={() => toggle(i, false)} label={`Sélectionner ${r.sku}`} />
+              <Link href={`/stock/${r.sku}`} className="min-w-0 flex-1 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-sm font-bold">{r.sku}</span>
+                  <StatusChip status={r.status} />
+                </div>
+                <div className="truncate text-sm">{r.label || "—"}</div>
+                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
+                  {r.size && <span>T. {r.size}</span>}
+                  {r.location && <span className="font-mono">{r.location.replace("EMP-", "")}</span>}
+                  <span className="ml-auto font-semibold tabular-nums text-fg">{money(r.priceCents)}</span>
+                  <Age row={r} />
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ── Desktop: dense table */}
+      <div className="hidden overflow-x-auto rounded-xl border border-line bg-panel md:block">
         <table className="data">
           <thead>
             <tr>
-              <th className="w-8">
-                <input
-                  type="checkbox"
-                  aria-label="Tout sélectionner"
-                  className="size-4 accent-[var(--accent)]"
-                  checked={allChecked}
-                  onChange={() => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)))}
-                />
-              </th>
+              <th className="w-12 !px-1"><Box checked={allChecked} onClick={toggleAll} label="Tout sélectionner" /></th>
               <th>SKU</th><th>Statut</th><th>Article</th><th>Taille</th><th>Emplacement</th><th className="num">Prix</th><th className="num">Âge</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={r.id} className={selected.has(r.id) ? "bg-accent/10" : ""}>
-                <td onClick={(e) => { if (e.target === e.currentTarget) toggle(i, e.shiftKey); }}>
-                  <input
-                    type="checkbox"
-                    aria-label={`Sélectionner ${r.sku}`}
-                    className="size-4 accent-[var(--accent)]"
-                    checked={selected.has(r.id)}
-                    onChange={() => {}}
-                    onClick={(e) => toggle(i, e.shiftKey)}
-                  />
-                </td>
-                <td><SkuLink sku={r.sku} /></td>
+              <tr key={r.id} className={selected.has(r.id) ? "!bg-accent/10" : ""}>
+                <td className="!px-1 !py-0"><Box checked={selected.has(r.id)} onClick={(e) => toggle(i, e.shiftKey)} label={`Sélectionner ${r.sku}`} /></td>
+                <td><Link href={`/stock/${r.sku}`} className="font-mono font-semibold text-fg hover:text-accent">{r.sku}</Link></td>
                 <td><StatusChip status={r.status} /></td>
-                <td className="max-w-80 truncate">{r.label}</td>
+                <td className="max-w-96 truncate">{r.label}</td>
                 <td>{r.size ?? "—"}</td>
-                <td className="font-mono text-xs">{r.location?.replace("EMP-", "") ?? "—"}</td>
-                <td className="num">{money(r.priceCents)}</td>
-                <td className="num">{daysSince(r.receivedAt)} j</td>
+                <td className="font-mono text-xs text-muted">{r.location?.replace("EMP-", "") ?? "—"}</td>
+                <td className="num font-medium">{money(r.priceCents)}</td>
+                <td className="num"><Age row={r} /></td>
               </tr>
             ))}
           </tbody>
@@ -155,7 +196,7 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
       </div>
 
       {errors.length > 0 && (
-        <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
           <div className="mb-1 font-semibold">Articles refusés (les autres ont été mis à jour) :</div>
           <ul className="space-y-0.5">
             {errors.map((e) => <li key={e.sku}><span className="font-mono font-semibold">{e.sku}</span> : {e.error}</li>)}
@@ -163,15 +204,20 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
         </div>
       )}
 
-      {ids.length > 0 && <div className="h-24" aria-hidden />}
+      {ids.length > 0 && <div className="h-56 md:h-24" aria-hidden />}
       {ids.length > 0 && (
-        <div className="fixed inset-x-0 bottom-20 z-30 px-3 md:bottom-4 md:left-60 md:px-8">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 rounded-xl bg-ink p-3 text-ink-fg shadow-2xl">
-            <span className="px-1 font-bold">{ids.length} sélectionné{ids.length > 1 ? "s" : ""}</span>
-            <button className="rounded p-1 opacity-70 hover:opacity-100" onClick={() => setSelected(new Set())} aria-label="Désélectionner"><X size={18} /></button>
+        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-3 md:bottom-4 md:left-60 md:px-8">
+          <div className="mx-auto grid max-w-6xl gap-2 rounded-2xl bg-ink p-3 text-ink-fg shadow-2xl md:flex md:flex-wrap md:items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-bold">{ids.length} sélectionné{ids.length > 1 ? "s" : ""}</span>
+              <button className="flex size-9 items-center justify-center rounded-full opacity-70 hover:bg-white/10 hover:opacity-100"
+                onClick={() => setSelected(new Set())} aria-label="Désélectionner"><X size={18} /></button>
+              <a className="ml-auto inline-flex min-h-10 items-center gap-1.5 rounded-md border border-white/20 px-3 text-sm font-medium md:ml-0"
+                href={`/etiquettes/articles?skus=${skus.join(",")}`} target="_blank"><Printer size={16} /> Étiquettes</a>
+            </div>
 
-            <div className="flex items-center gap-1">
-              <select className={`${input} w-auto bg-panel text-fg`} value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Nouveau statut">
+            <div className="flex items-center gap-1.5">
+              <select className={`${input} min-w-0 flex-1 bg-panel text-fg md:w-auto md:flex-none`} value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Nouveau statut">
                 <option value="">Changer le statut…</option>
                 {TARGETS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
@@ -183,21 +229,20 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
               <button className={btn.primary} disabled={busy || !target} onClick={applyStatus}>Appliquer</button>
             </div>
 
-            <div className="flex items-center gap-1">
-              <input className={`${input} w-36 bg-panel font-mono uppercase text-fg`} value={location} placeholder="EMP-A-01-02"
-                onChange={(e) => setLocation(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === "Enter" && applyLocation()} aria-label="Emplacement" />
-              <button className={btn.secondary + " text-fg"} disabled={busy || !location} onClick={applyLocation}>Déplacer</button>
+            <div className="grid grid-cols-2 gap-1.5 md:flex md:items-center">
+              <div className="flex gap-1.5">
+                <input className={`${input} min-w-0 bg-panel font-mono uppercase text-fg md:w-36`} value={location} placeholder="Emplacement"
+                  onChange={(e) => setLocation(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === "Enter" && applyLocation()} aria-label="Emplacement" />
+                <button className="min-h-11 shrink-0 rounded-md bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 disabled:opacity-40" disabled={busy || !location} onClick={applyLocation}>Déplacer</button>
+              </div>
+              <div className="flex gap-1.5">
+                <select className={`${input} min-w-0 bg-panel text-fg md:w-auto`} value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Catégorie">
+                  <option value="">Catégorie…</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <button className="min-h-11 shrink-0 rounded-md bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 disabled:opacity-40" disabled={busy || !category} onClick={applyCategory}>OK</button>
+              </div>
             </div>
-
-            <div className="flex items-center gap-1">
-              <select className={`${input} w-auto bg-panel text-fg`} value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Catégorie">
-                <option value="">Catégorie…</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <button className={btn.secondary + " text-fg"} disabled={busy || !category} onClick={applyCategory}>OK</button>
-            </div>
-
-            <a className={btn.secondary + " text-fg"} href={`/etiquettes/articles?skus=${skus.join(",")}`} target="_blank">Étiquettes</a>
           </div>
         </div>
       )}
