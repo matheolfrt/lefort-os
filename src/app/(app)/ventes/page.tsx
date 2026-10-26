@@ -1,6 +1,8 @@
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { Card, Empty, PageHeader, SkuLink } from "@/components/ui";
+import Link from "next/link";
+import { Download, Upload } from "lucide-react";
+import { Card, Empty, PageHeader, SkuLink, btn } from "@/components/ui";
 import { dateTime, money } from "@/lib/format";
 import { NewSale } from "./new-sale";
 import { OrderActions } from "./order-actions";
@@ -20,7 +22,16 @@ export default async function Sales() {
 
   return (
     <>
-      <PageHeader title="Ventes" subtitle="Saisissez chaque vente Vinted dès la notification : l'article est retiré du stock vendable." />
+      <PageHeader
+        title="Ventes"
+        subtitle="Saisissez chaque vente Vinted dès la notification : l'article est retiré du stock vendable."
+        actions={ctx.isManager && (
+          <>
+            <a href="/export/ventes" className={btn.secondary}><Download size={16} /> Exporter CSV</a>
+            <Link href="/ventes/import" className={btn.secondary}><Upload size={16} /> Importer</Link>
+          </>
+        )}
+      />
       <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
         <Card title="Nouvelle vente"><NewSale /></Card>
         {ctx.isManager && (

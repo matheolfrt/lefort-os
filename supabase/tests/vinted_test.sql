@@ -125,6 +125,69 @@ select t.expect_error($$select public.bulk_transition(array[gen_random_uuid()], 
 select t.expect_error($$select public.transition_item((select id from items where status = 'sold' limit 1), 'listing_ready')$$, 'Article vendu');
 select t.expect_error($$select public.bulk_move(array[gen_random_uuid()], 'EMP-NOPE')$$, 'inconnu');
 
+-- CSV import: create, update, refuse
+do $$ declare r jsonb; v_n int; begin
+  r := public.import_items($j$[
+    {"sku":"IMP-001","category":"blazer","brand":"Hugo Boss","size":"50","condition":"good","color":"bleu marine",
+     "title":"Blazer Boss","price_cents":4500,"min_price_cents":4000,"status":"listed",
+     "vinted_url":"https://www.vinted.fr/items/7777-blazer","cost_cents":1500},
+    {"category":"Costume","title":"Costume gris","status":"received"},
+    {"sku":"IMP-003","title":"Mauvais statut","status":"Vendu"},
+    {"sku":"IMP-004","title":"Prix incohérent","price_cents":1000,"min_price_cents":2000}
+  ]$j$);
+  assert (r->>'created')::int = 2 and jsonb_array_length(r->'errors') = 2, r::text;
+  assert (select kind from batches where id = (r->>'batch_id')::uuid) = 'opening_stock';
+  assert (select i.status from items i where sku = 'IMP-001') = 'listed';
+  assert (select external_id from listings l join items i on i.id = l.item_id where i.sku = 'IMP-001') = '7777';
+  assert (select allocated_cost_cents from item_costs ic join items i on i.id = ic.item_id where i.sku = 'IMP-001') = 1500;
+  assert (select c.name from items i join categories c on c.id = i.category_id where i.sku = 'IMP-001') = 'Blazer';
+  assert (select code from locations l join items i on i.current_location_id = l.id where i.sku = 'IMP-001') = 'EMP-A-ETIQUETER';
+
+  -- known SKU: skipped unless update requested, then field by field
+  r := public.import_items('[{"sku":"imp-001","price_cents":3900,"size":""}]');
+  assert (r->'rows'->0->>'action') = 'skipped', r::text;
+  r := public.import_items('[{"sku":"imp-001","price_cents":3900,"min_price_cents":3500,"size":"","location":"EMP-A-01-02"}]', null, true);
+  assert (r->'rows'->0->>'action') = 'updated' and r->>'batch_id' is null, r::text;
+  assert (select list_price_cents from items where sku = 'IMP-001') = 3900;
+  assert (select size_label from items where sku = 'IMP-001') = '50', 'empty cell keeps value';
+  assert (select price_cents from listings l join items i on i.id = l.item_id where i.sku = 'IMP-001') = 3900;
+  assert (select code from locations l join items i on i.current_location_id = l.id where i.sku = 'IMP-001') = 'EMP-A-01-02';
+
+  -- round trip: sold items and unknown status labels on existing items are left alone
+  r := public.import_items(jsonb_build_array(jsonb_build_object('sku', (select sku from items where status = 'sold' limit 1), 'status', 'Vendu', 'price_cents', 1)), null, true);
+  assert (r->'rows'->0->>'action') = 'skipped' and jsonb_array_length(r->'errors') = 0, r::text;
+  r := public.import_items('[{"sku":"imp-001","status":"En ligne","cost_cents":1500}]', null, true);
+  assert jsonb_array_length(r->'errors') = 0, r::text;
+
+  -- an import with only failures leaves no empty batch behind
+  select count(*) into v_n from batches;
+  r := public.import_items('[{"sku":"BAD SKU!","title":"x"}]');
+  assert (r->>'created')::int = 0 and (select count(*) from batches) = v_n, r::text;
+end $$;
+
+-- delete / restore
+do $$ declare r jsonb; v_sold uuid; v_item uuid; begin
+  select id into v_item from items where sku = 'IMP-001';
+  select item_id into v_sold from order_lines limit 1;
+  r := public.delete_items(array[v_item, v_sold], 'Doublon');
+  assert (r->>'updated')::int = 1 and jsonb_array_length(r->'errors') = 1, r::text;
+  assert (select deleted_at is not null from items where id = v_item);
+  assert (select status from listings where item_id = v_item) = 'delisted';
+  assert (select count(*) from v_pipeline p where p.items > 0) >= 0;
+  -- a deleted Vinted item is not proposed for import again
+  assert public.vinted_sync_preview('[{"external_id":"7777","state":"active","title":"x","price_cents":3900}]', false)->'new' = '[]'::jsonb;
+  -- importing its SKU again is refused
+  assert jsonb_array_length(public.import_items('[{"sku":"IMP-001"}]', null, true)->'errors') = 1;
+  r := public.restore_items(array[v_item]);
+  assert (r->>'updated')::int = 1 and (select deleted_at is null from items where id = v_item);
+  assert (select status from items where id = v_item) = 'listing_ready', 'a restored item goes back to listing';
+  assert (select count(*) from item_events where item_id = v_item and type in ('deleted', 'restored')) = 2;
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
+select t.expect_error($$select public.delete_items(array[(select id from items limit 1)])$$, 'non autorisée');
+select t.expect_error($$select public.import_items('[]')$$, 'non autorisée');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+
 -- an outsider reaches nothing
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select t.expect_error($$select public.vinted_sync_preview('[]')$$, 'aucun compte actif');

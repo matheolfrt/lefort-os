@@ -48,7 +48,9 @@ function Age({ row }: { row: StockRow }) {
   return <span className={`tabular-nums ${tone}`}>{d} j</span>;
 }
 
-export function StockTable({ rows, categories }: { rows: StockRow[]; categories: { id: string; name: string }[] }) {
+export function StockTable({ rows, categories, isManager = false, trash = false }: {
+  rows: StockRow[]; categories: { id: string; name: string }[]; isManager?: boolean; trash?: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -112,6 +114,12 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
     if (!location.trim()) return;
     run("Emplacement", () => rpc<BulkResult>("bulk_move", { p_item_ids: ids, p_location_code: location }));
   };
+
+  const applyDelete = () => {
+    if (!confirm(`Supprimer ${ids.length} article${ids.length > 1 ? "s" : ""} ? Ils iront dans la corbeille (restaurables). Les articles vendus ne sont jamais supprimés.`)) return;
+    run("Suppression", () => rpc<BulkResult>("delete_items", { p_item_ids: ids, p_reason: "Supprimé depuis le stock" }));
+  };
+  const applyRestore = () => run("Restauration", () => rpc<BulkResult>("restore_items", { p_item_ids: ids }));
 
   const applyCategory = () => {
     if (!category) return;
@@ -216,6 +224,9 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
                 href={`/etiquettes/articles?skus=${skus.join(",")}`} target="_blank"><Printer size={16} /> Étiquettes</a>
             </div>
 
+            {trash ? (
+              <button className={btn.primary} disabled={busy} onClick={applyRestore}>Restaurer</button>
+            ) : (<>
             <div className="flex items-center gap-1.5">
               <select className={`${input} min-w-0 flex-1 bg-panel text-fg md:w-auto md:flex-none`} value={target} onChange={(e) => setTarget(e.target.value)} aria-label="Nouveau statut">
                 <option value="">Changer le statut…</option>
@@ -243,6 +254,13 @@ export function StockTable({ rows, categories }: { rows: StockRow[]; categories:
                 <button className="min-h-11 shrink-0 rounded-md bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 disabled:opacity-40" disabled={busy || !category} onClick={applyCategory}>OK</button>
               </div>
             </div>
+            {isManager && (
+              <button className="min-h-11 rounded-md px-3 text-sm font-semibold text-red-300 hover:bg-red-500/20 disabled:opacity-40 md:ml-auto"
+                disabled={busy} onClick={applyDelete}>
+                Supprimer
+              </button>
+            )}
+            </>)}
           </div>
         </div>
       )}

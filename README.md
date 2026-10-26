@@ -68,3 +68,15 @@ Fonctions SQL : `vinted_sync_preview`, `vinted_apply_updates`, `vinted_import`
 
 Après toute modification : `npm run build:extension` régénère `public/lefort-os-vinted.zip`,
 téléchargeable depuis Paramètres.
+
+## Import / export CSV et suppression
+
+- **Exports** (format Excel français : `;`, virgule décimale, UTF-8) : `Stock → Exporter CSV` exporte la liste
+  affichée (filtres compris, coûts pour les responsables) ; `Ventes → Exporter CSV` donne une ligne par article vendu.
+- **Import de l'inventaire** (`/stock/import`) : crée les nouveaux SKU dans un lot et, si demandé, met à jour les SKU
+  existants champ par champ. Un export peut être modifié puis réimporté (articles vendus et statuts ignorés).
+  Fonction SQL `import_items`.
+- **Import des ventes** (`/ventes/import`) : une ligne par article vendu ; même « Réf commande » = vente groupée.
+  Chaque vente passe par `record_sale`.
+- **Suppression** : `delete_items` / `restore_items` (corbeille, responsables uniquement). Un article ayant une vente
+  n'est jamais supprimé.

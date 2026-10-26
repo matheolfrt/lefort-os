@@ -8,7 +8,7 @@ import { HOLD_LABEL, STATUS_LABEL } from "@/i18n/fr";
 import { cm, dateTime, money } from "@/lib/format";
 import type { Item, ItemStatus } from "@/lib/types";
 import { ItemEditor } from "./item-editor";
-import { ItemActions } from "./item-actions";
+import { ItemActions, RestoreItem } from "./item-actions";
 
 const NEXT_STATION: Partial<Record<ItemStatus, { href: string; label: string }>> = {
   received: { href: "/postes/reception", label: "Trier" },
@@ -64,6 +64,7 @@ export default async function ItemPage({ params }: { params: Promise<{ sku: stri
           </>
         }
       />
+      {it.deleted_at && <RestoreItem itemId={it.id} sku={it.sku} isManager={ctx.isManager} />}
       {it.status === "on_hold" && (
         <p className="mb-4 rounded-lg bg-yellow-200 p-3 font-semibold text-yellow-950">
           En attente : {it.hold_reason ? HOLD_LABEL[it.hold_reason] : "—"} (reprendra à « {it.status_before_hold && STATUS_LABEL[it.status_before_hold]} »)
@@ -95,7 +96,7 @@ export default async function ItemPage({ params }: { params: Promise<{ sku: stri
         </div>
 
         <div className="space-y-4">
-          {!["sold", "shipped", "completed"].includes(it.status) && <Card title="Actions"><ItemActions item={it} isManager={ctx.isManager} /></Card>}
+          {!it.deleted_at && !["sold", "shipped", "completed"].includes(it.status) && <Card title="Actions"><ItemActions item={it} isManager={ctx.isManager} /></Card>}
           {ctx.isManager && (
             <Card title="Rentabilité">
               <dl className="space-y-1 text-sm">

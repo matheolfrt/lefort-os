@@ -62,6 +62,7 @@ export interface Item {
   listed_at: string | null;
   sold_at: string | null;
   version: number;
+  deleted_at?: string | null;
 }
 
 export interface Category {
