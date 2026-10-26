@@ -2,8 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, ScanLine } from "lucide-react";
 import { CameraScanner } from "./camera-scanner";
+import { Palette } from "./palette";
 import { useToast } from "./toast";
 import { classifyScan, type ScanResult } from "@/lib/scan";
 
@@ -13,7 +13,7 @@ type Handler = (scan: ScanResult) => boolean | Promise<boolean>;
 interface ScanApi {
   register: (h: Handler) => () => void;
   openCamera: () => void;
-  /** Quick "scan or type a code" dialog, also on ⌘K / Ctrl+K and "/" */
+  /** Search palette (items, sales, pages) that also takes a typed code; ⌘K / Ctrl+K and "/" */
   openQuick: () => void;
   dispatch: (raw: string) => void;
 }
@@ -24,7 +24,7 @@ const ScanContext = createContext<ScanApi | null>(null);
 const MAX_GAP_MS = 40;
 const MIN_LENGTH = 4;
 
-export function ScanProvider({ children }: { children: ReactNode }) {
+export function ScanProvider({ children, isManager = false }: { children: ReactNode; isManager?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const handlers = useRef<Handler[]>([]);
@@ -53,8 +53,32 @@ export function ScanProvider({ children }: { children: ReactNode }) {
     let target: HTMLInputElement | HTMLTextAreaElement | null = null;
     let valueBefore = "";
     let scanning = false;
+    let flushTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // A fast burst that does not end with Enter was typing after all (a fast typist, a paste helper):
+    // give the swallowed characters back to the field they were meant for.
+    const flush = () => {
+      if (scanning && target && buffer) {
+        const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), "value")?.set;
+        setter?.call(target, valueBefore + buffer);
+        target.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      buffer = "";
+      scanning = false;
+    };
 
     const onKey = (e: KeyboardEvent) => {
+      // scanners press Shift for capitals: it is part of the burst, not a break
+      if (e.key === "Shift") return;
+      clearTimeout(flushTimer);
+      // any other special key (shortcut, Tab, arrows…) ends the burst: the next character starts a new one
+      if (e.key !== "Enter" && (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey)) {
+        if (scanning) flush();
+        buffer = "";
+        scanning = false;
+        last = 0;
+        return;
+      }
       const now = performance.now();
       const gap = now - last;
       last = now;
@@ -68,13 +92,15 @@ export function ScanProvider({ children }: { children: ReactNode }) {
             target.dispatchEvent(new Event("input", { bubbles: true }));
           }
           dispatch(buffer);
+        } else if (scanning) {
+          flush(); // too short for a scan: it was typing
         }
         buffer = "";
         scanning = false;
         return;
       }
-      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
       if (gap > MAX_GAP_MS) {
+        if (scanning) flush();
         buffer = e.key;
         scanning = false;
         const el = document.activeElement;
@@ -83,11 +109,14 @@ export function ScanProvider({ children }: { children: ReactNode }) {
       } else {
         buffer += e.key;
         if (buffer.length >= 3) scanning = true;
-        if (scanning) e.preventDefault();
+        if (scanning) {
+          e.preventDefault();
+          flushTimer = setTimeout(flush, 120);
+        }
       }
     };
     window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    return () => { clearTimeout(flushTimer); window.removeEventListener("keydown", onKey, true); };
   }, [dispatch]);
 
   useEffect(() => {
@@ -123,8 +152,9 @@ export function ScanProvider({ children }: { children: ReactNode }) {
     <ScanContext.Provider value={{ register, openCamera: () => setCamera(true), openQuick: () => setQuick(true), dispatch }}>
       {children}
       {quick && (
-        <QuickScan
-          onSubmit={(code) => { setQuick(false); dispatch(code); }}
+        <Palette
+          isManager={isManager}
+          onCode={(code) => { setQuick(false); dispatch(code); }}
           onCamera={() => { setQuick(false); setCamera(true); }}
           onClose={() => setQuick(false)}
         />
@@ -146,46 +176,4 @@ export function useScan(handler: Handler) {
   const ref = useRef(handler);
   ref.current = handler;
   useEffect(() => register((s) => ref.current(s)), [register]);
-}
-
-function QuickScan({ onSubmit, onCamera, onClose }: { onSubmit: (code: string) => void; onCamera: () => void; onClose: () => void }) {
-  const [value, setValue] = useState("");
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm px-4 pt-[max(4rem,env(safe-area-inset-top))]" onClick={onClose}>
-      <form
-        role="dialog"
-        aria-label="Scanner un code"
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-panel shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => { e.preventDefault(); if (value.trim()) onSubmit(value.trim()); }}
-      >
-        <div className="flex items-center gap-3 border-b border-line px-4">
-          <ScanLine size={20} className="shrink-0 text-muted" />
-          <input
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value.toUpperCase())}
-            placeholder="SKU, emplacement ou lot — ex. LSH00042"
-            autoCapitalize="characters"
-            autoComplete="off"
-            className="min-h-14 w-full bg-transparent font-mono text-lg outline-none"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2 p-3">
-          <button type="button" onClick={onCamera} className="flex min-h-12 items-center justify-center gap-2 rounded-lg border border-line font-semibold">
-            <Camera size={18} /> Caméra
-          </button>
-          <button type="submit" className="min-h-12 rounded-lg bg-accent font-semibold text-accent-fg disabled:opacity-40" disabled={!value.trim()}>
-            Ouvrir
-          </button>
-        </div>
-        <p className="px-4 pb-3 text-xs text-muted">Une douchette fonctionne aussi depuis n&apos;importe quel écran, sans ouvrir cette fenêtre.</p>
-      </form>
-    </div>
-  );
 }

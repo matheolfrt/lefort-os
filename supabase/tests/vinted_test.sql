@@ -245,9 +245,43 @@ do $$ declare r jsonb; v_o uuid; begin
   r := public.vinted_orders_sync(jsonb_build_array(jsonb_build_object('order_id', v_o, 'state', 'shipped')));
   assert (r->>'shipped')::int = 0 and (select status from orders where id = v_o) = 'completed', r::text;
 end $$;
+-- deleting a sale entered by mistake, and sold items with their sale
+do $$ declare r jsonb; v_o uuid; v_item uuid; v_bundle uuid; v_other uuid; v_ledger int; begin
+  -- a completed, non-historical sale (T1): voiding it puts the item back on sale and out of the ledger
+  select id into v_o from orders where external_order_id = 'T1';
+  select item_id into v_item from order_lines where order_id = v_o;
+  select count(*) into v_ledger from v_livre_recettes;
+  r := public.void_order(v_o, 'Doublon');
+  assert (r->>'items')::int = 1, r::text;
+  assert (select status = 'cancelled' and external_order_id is null and notes like '%Doublon (réf. T1)%' from orders where id = v_o);
+  assert (select status from items where id = v_item) = 'listing_ready';
+  assert (select count(*) from v_livre_recettes) = v_ledger - 1, 'voided sale leaves the ledger';
+  assert (select count(*) from item_events where item_id = v_item and type = 'sale_voided') = 1;
+  perform t.expect_error(format('select public.void_order(%L)', v_o), 'déjà annulée');
+  -- the same transaction can be imported again
+  r := public.import_sales('[{"order_ref":"T1","lines":[{"title":"Veste","price_cents":3000,"vinted_url":"https://www.vinted.fr/items/8080-veste"}]}]', false, 'completed');
+  assert (r->>'orders')::int = 1, r::text;
+
+  -- a bundle: deleting one sold item cancels the sale, the other item goes back on sale
+  r := public.import_sales('[{"order_ref":"B1","lines":[{"sku":"BND-1","title":"A","price_cents":1000},{"sku":"BND-2","title":"B","price_cents":2000}]}]', false, 'completed');
+  select id into v_item from items where sku = 'BND-1';
+  select id into v_other from items where sku = 'BND-2';
+  select id into v_bundle from orders where external_order_id = 'B1';
+  r := public.delete_items(array[v_item], 'Erreur');
+  assert (r->>'updated')::int = 0 and r->'errors'->0->>'error' like '%supprimer aussi la vente%', r::text;
+  r := public.delete_items(array[v_item], 'Erreur', true);
+  assert (r->>'updated')::int = 1 and jsonb_array_length(r->'errors') = 0, r::text;
+  assert (select deleted_at is not null from items where id = v_item);
+  assert (select status from orders where id = v_bundle) = 'cancelled';
+  assert (select status from items where id = v_other) = 'listing_ready' and (select deleted_at is null from items where id = v_other);
+  -- restoring the deleted item brings it back on sale too
+  r := public.restore_items(array[v_item]);
+  assert (select status from items where id = v_item) = 'listing_ready';
+end $$;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
 select t.expect_error($$select public.import_sales('[]', true)$$, 'non autorisée');
 select t.expect_error($$select public.vinted_orders_preview('[]')$$, 'non autorisée');
+select t.expect_error($$select public.void_order(gen_random_uuid())$$, 'non autorisée');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 
 -- an outsider reaches nothing

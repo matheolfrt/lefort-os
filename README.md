@@ -85,5 +85,7 @@ téléchargeable depuis Paramètres.
   Chaque vente passe par `record_sale` (via `import_sales`). Un SKU absent du stock (ou une ligne sans SKU, reconnue
   par son lien Vinted si elle existe) crée l'article dans un lot « LOT-HISTORIQUE ». Ventes **historiques** (déjà déclarées) :
   `orders.is_historical`, comptées dans les statistiques mais exclues du livre des recettes et du CA URSSAF.
-- **Suppression** : `delete_items` / `restore_items` (corbeille, responsables uniquement). Un article ayant une vente
-  n'est jamais supprimé.
+- **Suppression** : `delete_items` / `restore_items` (corbeille, responsables uniquement). Un article vendu n'est
+  supprimé qu'avec `p_with_sales` : sa vente est annulée (`void_order`), jamais effacée. `void_order` annule aussi une
+  vente seule (erreur, doublon d'import) : elle sort des totaux et du livre des recettes, ses articles reviennent
+  « prêt à publier » et la référence Vinted est libérée (`supabase/migrations/20261029000010_void_sales.sql`).

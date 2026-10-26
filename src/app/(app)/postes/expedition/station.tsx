@@ -5,6 +5,7 @@ import { CheckCircle2, Circle } from "lucide-react";
 import { useScan } from "@/components/scan-provider";
 import { StationHeader } from "@/components/station-header";
 import { useToast } from "@/components/toast";
+import { useConfirm } from "@/components/confirm";
 import { Empty, btn, input } from "@/components/ui";
 import { dateTime, daysSince } from "@/lib/format";
 import { rpc } from "@/lib/client-data";
@@ -18,6 +19,7 @@ const CARRIERS = ["Mondial Relay", "Vinted Go", "Relais Colis", "Colissimo", "Ch
 /** Pick list sorted by location, scan-to-confirm each item, then mark the parcel shipped. */
 export function ShippingStation() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [active, setActive] = useState<string | null>(null);
@@ -62,7 +64,8 @@ export function ShippingStation() {
 
   async function ship(orderId: string) {
     const lines = rows.filter((r) => r.order_id === orderId);
-    if (lines.some((l) => !picked.has(l.item_id)) && !confirm("Tous les articles n'ont pas été scannés. Expédier quand même ?")) return;
+    if (lines.some((l) => !picked.has(l.item_id)) && !(await confirm({ title: "Expédier quand même ?",
+      message: "Tous les articles de la commande n'ont pas été scannés.", confirmLabel: "Expédier" }))) return;
     setBusy(true);
     try {
       await rpc("ship_order", { p_order_id: orderId, p_carrier: carrier, p_tracking: tracking || null });

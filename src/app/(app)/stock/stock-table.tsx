@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Printer, X } from "lucide-react";
+import { Check, Printer, RotateCcw, Trash2, X } from "lucide-react";
 import { useToast } from "@/components/toast";
+import { useConfirm } from "@/components/confirm";
 import { StatusChip, btn, input } from "@/components/ui";
 import { HOLD_LABEL } from "@/i18n/fr";
 import { daysSince, money } from "@/lib/format";
@@ -38,6 +39,8 @@ const TARGETS: { value: string; label: string }[] = [
   { value: "sorted", label: "Trié (refaire photos — responsable)" },
 ];
 
+const SOLD: ItemStatus[] = ["sold", "shipped", "completed"];
+
 // Items still on sale age; sold/discarded ones don't
 const AGEING: ItemStatus[] = ["received", "sorted", "photographed", "measured", "listing_ready", "listed", "reserved", "on_hold", "returned"];
 
@@ -53,6 +56,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
 }) {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [anchor, setAnchor] = useState<number | null>(null);
   const [target, setTarget] = useState("");
@@ -115,11 +119,42 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
     run("Emplacement", () => rpc<BulkResult>("bulk_move", { p_item_ids: ids, p_location_code: location }));
   };
 
-  const applyDelete = () => {
-    if (!confirm(`Supprimer ${ids.length} article${ids.length > 1 ? "s" : ""} ? Ils iront dans la corbeille (restaurables). Les articles vendus ne sont jamais supprimés.`)) return;
-    run("Suppression", () => rpc<BulkResult>("delete_items", { p_item_ids: ids, p_reason: "Supprimé depuis le stock" }));
-  };
-  const applyRestore = () => run("Restauration", () => rpc<BulkResult>("restore_items", { p_item_ids: ids }));
+  async function remove(list: StockRow[]) {
+    const sold = list.filter((r) => SOLD.includes(r.status)).length;
+    const n = list.length;
+    const answer = await confirm({
+      title: n === 1 ? `Supprimer ${list[0].sku} ?` : `Supprimer ${n} articles ?`,
+      message: <>{n === 1 ? "Il ira" : "Ils iront"} dans la corbeille du stock, d&apos;où vous pourrez {n === 1 ? "le" : "les"} restaurer.</>,
+      confirmLabel: "Supprimer",
+      danger: true,
+      reason: { label: "Motif", placeholder: "Doublon, erreur de saisie…", optional: true },
+      checkbox: sold ? {
+        label: n === 1 ? "Supprimer aussi sa vente" : `Supprimer aussi les ventes (${sold} article${sold > 1 ? "s" : ""} vendu${sold > 1 ? "s" : ""})`,
+        hint: "La vente est annulée : elle sort des statistiques et du livre des recettes. Les autres articles d'un lot vendu ensemble reviennent « prêt à publier ».",
+        required: sold === n,
+      } : undefined,
+    });
+    if (!answer) return;
+    run("Suppression", () => rpc<BulkResult>("delete_items", {
+      p_item_ids: list.map((r) => r.id), p_reason: answer.reason || "Supprimé depuis le stock", p_with_sales: answer.checked,
+    }));
+  }
+  const applyDelete = () => remove(rows.filter((r) => selected.has(r.id)));
+  const restore = (list: string[]) => run("Restauration", () => rpc<BulkResult>("restore_items", { p_item_ids: list }));
+  const applyRestore = () => restore(ids);
+
+  /** One-tap action at the end of each row: delete (or restore in the trash) */
+  const RowAction = ({ r }: { r: StockRow }) => !isManager ? null : trash ? (
+    <button type="button" onClick={() => restore([r.id])} disabled={busy} aria-label={`Restaurer ${r.sku}`} title="Restaurer"
+      className="flex size-11 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-accent/15 hover:text-accent">
+      <RotateCcw size={18} />
+    </button>
+  ) : (
+    <button type="button" onClick={() => remove([r])} disabled={busy} aria-label={`Supprimer ${r.sku}`} title="Supprimer"
+      className="flex size-11 shrink-0 items-center justify-center rounded-xl text-muted/70 transition hover:bg-red-500/15 hover:text-red-300">
+      <Trash2 size={18} />
+    </button>
+  );
 
   const applyCategory = () => {
     if (!category) return;
@@ -157,7 +192,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
         </div>
         <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-panel/80">
           {rows.map((r, i) => (
-            <li key={r.id} className={`flex items-center gap-1 pr-3 ${selected.has(r.id) ? "bg-accent/10" : ""}`}>
+            <li key={r.id} className={`flex items-center gap-1 ${isManager ? "pr-1" : "pr-3"} ${selected.has(r.id) ? "bg-accent/10" : ""}`}>
               <Box checked={selected.has(r.id)} onClick={() => toggle(i, false)} label={`Sélectionner ${r.sku}`} />
               <Link href={`/stock/${r.sku}`} className="min-w-0 flex-1 py-2.5">
                 <div className="flex items-center justify-between gap-2">
@@ -172,6 +207,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
                   <Age row={r} />
                 </div>
               </Link>
+              <RowAction r={r} />
             </li>
           ))}
         </ul>
@@ -184,6 +220,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
             <tr>
               <th className="w-12 !px-1"><Box checked={allChecked} onClick={toggleAll} label="Tout sélectionner" /></th>
               <th>SKU</th><th>Statut</th><th>Article</th><th>Taille</th><th>Emplacement</th><th className="num">Prix</th><th className="num">Âge</th>
+              {isManager && <th className="w-12"><span className="sr-only">Actions</span></th>}
             </tr>
           </thead>
           <tbody>
@@ -197,6 +234,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
                 <td className="font-mono text-xs text-muted">{r.location?.replace("EMP-", "") ?? "—"}</td>
                 <td className="num font-medium">{money(r.priceCents)}</td>
                 <td className="num"><Age row={r} /></td>
+                {isManager && <td className="!px-1 !py-0"><RowAction r={r} /></td>}
               </tr>
             ))}
           </tbody>
@@ -214,7 +252,7 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
 
       {ids.length > 0 && <div className="h-56 md:h-24" aria-hidden />}
       {ids.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-3 md:bottom-4 md:left-60 md:px-8">
+        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-3 md:bottom-4 md:left-64 md:px-8">
           <div className="mx-auto grid max-w-6xl gap-2 rounded-2xl bg-ink p-3 text-ink-fg shadow-2xl ring-1 ring-line md:flex md:flex-wrap md:items-center">
             <div className="flex items-center gap-2">
               <span className="font-bold">{ids.length} sélectionné{ids.length > 1 ? "s" : ""}</span>

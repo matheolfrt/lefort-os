@@ -1,24 +1,67 @@
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Download, Upload } from "lucide-react";
-import { Card, Empty, PageHeader, SkuLink, btn } from "@/components/ui";
+import { Download, Search, Upload } from "lucide-react";
+import { Card, Empty, PageHeader, SkuLink, btn, input } from "@/components/ui";
 import { dateTime, money } from "@/lib/format";
 import { NewSale } from "./new-sale";
 import { OrderActions } from "./order-actions";
 
 const ORDER_STATUS: Record<string, string> = { pending: "À expédier", shipped: "Expédiée", completed: "Clôturée", cancelled: "Annulée" };
 
-export default async function Sales() {
+const PAGE = 50;
+const FILTERS: { key: string; label: string }[] = [
+  { key: "", label: "Toutes" }, { key: "pending", label: "À expédier" }, { key: "shipped", label: "Expédiées" },
+  { key: "completed", label: "Clôturées" }, { key: "cancelled", label: "Annulées" },
+];
+type Params = { q?: string; etat?: string; page?: string };
+
+export default async function Sales({ searchParams }: { searchParams: Promise<Params> }) {
+  const sp = await searchParams;
   const ctx = await getContext();
   const supabase = await createClient();
-  const { data: orders } = ctx.isManager
-    ? await supabase
-        .from("orders")
-        .select("*, order_lines(id, status, sale_price_cents, cost_snapshot_cents, items(id, sku)), refunds(amount_cents)")
-        .order("sold_at", { ascending: false })
-        .limit(100)
-    : { data: [] };
+  const page = Math.max(Number(sp.page) || 1, 1);
+  const etat = FILTERS.some((f) => f.key === sp.etat) ? sp.etat ?? "" : "";
+  const q = (sp.q ?? "").replace(/[%,()*]/g, " ").trim();
+
+  let orders: Awaited<ReturnType<typeof loadOrders>>["data"] = [];
+  let count = 0;
+  const counts: Record<string, number> = {};
+  async function loadOrders() {
+    let query = supabase.from("orders")
+      .select("*, order_lines(id, status, sale_price_cents, cost_snapshot_cents, items(id, sku)), refunds(amount_cents)", { count: "exact" });
+    if (etat) query = query.eq("status", etat);
+    if (q) {
+      // V-123 or 123 → order number; otherwise buyer, Vinted reference, or an item's SKU / title
+      const num = q.match(/^v?-?(\d+)$/i)?.[1];
+      const { data: items } = await supabase.from("items").select("id").or(`sku.ilike.%${q}%,title.ilike.%${q}%`).limit(100);
+      const { data: lines } = items?.length
+        ? await supabase.from("order_lines").select("order_id").in("item_id", items.map((i) => i.id)).limit(150)
+        : { data: [] as { order_id: string }[] };
+      const ids = [...new Set((lines ?? []).map((l) => l.order_id))];
+      query = query.or([
+        `buyer_handle.ilike.%${q}%`, `external_order_id.ilike.%${q}%`,
+        ...(num ? [`number.eq.${num}`] : []), ...(ids.length ? [`id.in.(${ids.join(",")})`] : []),
+      ].join(","));
+    }
+    return query.order("sold_at", { ascending: false }).range((page - 1) * PAGE, page * PAGE - 1);
+  }
+  if (ctx.isManager) {
+    const [res, ...byStatus] = await Promise.all([
+      loadOrders(),
+      ...FILTERS.slice(1).map((f) => supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", f.key)),
+    ]);
+    orders = res.data ?? [];
+    count = res.count ?? 0;
+    FILTERS.slice(1).forEach((f, i) => { counts[f.key] = byStatus[i].count ?? 0; });
+    counts[""] = Object.values(counts).reduce((a, b) => a + b, 0);
+  }
+  const pages = Math.max(1, Math.ceil(count / PAGE));
+  const href = (patch: Partial<Params>) => {
+    const next = { q: sp.q, etat: etat || undefined, page: undefined, ...patch } as Record<string, string | undefined>;
+    const qs = new URLSearchParams(Object.entries(next).filter(([, v]) => v) as [string, string][]);
+    return `/ventes${qs.size ? `?${qs}` : ""}`;
+  };
 
   return (
     <>
@@ -35,9 +78,29 @@ export default async function Sales() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
         <Card title="Nouvelle vente"><NewSale /></Card>
         {ctx.isManager && (
-          <Card title="Commandes">
+          <Card title={`Commandes · ${count}`}>
+            <div className="mb-3 space-y-2">
+              <form action="/ventes" className="relative">
+                {etat && <input type="hidden" name="etat" value={etat} />}
+                <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                <input className={`${input} pl-10`} name="q" defaultValue={sp.q} placeholder="N° de vente, acheteur, SKU, titre…" aria-label="Rechercher une vente" />
+              </form>
+              <nav aria-label="Filtrer par état" className="-mx-4 overflow-x-auto px-4">
+                <ul className="flex min-w-max gap-1.5">
+                  {FILTERS.map((f) => (
+                    <li key={f.key}>
+                      <Link href={href({ etat: f.key || undefined })} aria-current={etat === f.key ? "true" : undefined}
+                        className={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition ${
+                          etat === f.key ? "border-fg bg-fg text-bg" : "border-line bg-panel hover:border-fg/30"}`}>
+                        {f.label}<span className={`tabular-nums ${etat === f.key ? "opacity-70" : "text-muted"}`}>{counts[f.key] ?? 0}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </div>
             {!orders?.length ? (
-              <Empty>Aucune vente pour l&apos;instant.</Empty>
+              <Empty>{q || etat ? "Aucune vente ne correspond." : "Aucune vente pour l'instant."}</Empty>
             ) : (
               <>
                 {/* Phone: one card per order */}
@@ -90,6 +153,13 @@ export default async function Sales() {
                     </tbody>
                   </table>
                 </div>
+                {pages > 1 && (
+                  <nav className="mt-4 flex items-center justify-center gap-2 text-sm" aria-label="Pagination">
+                    {page > 1 && <Link href={href({ page: String(page - 1) })} className={btn.secondary}>← Précédent</Link>}
+                    <span className="px-2 tabular-nums text-muted">Page {page} / {pages}</span>
+                    {page < pages && <Link href={href({ page: String(page + 1) })} className={btn.secondary}>Suivant →</Link>}
+                  </nav>
+                )}
               </>
             )}
           </Card>

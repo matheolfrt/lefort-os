@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { useToast } from "@/components/toast";
+import { useConfirm } from "@/components/confirm";
 import { btn } from "@/components/ui";
 import { HOLD_LABEL } from "@/i18n/fr";
 import { rpc } from "@/lib/client-data";
@@ -13,6 +14,8 @@ const PRE_SALE = ["received", "sorted", "photographed", "measured", "listing_rea
 export function ItemActions({ item, isManager }: { item: Item; isManager: boolean }) {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
+  const sold = ["sold", "shipped", "completed"].includes(item.status);
 
   async function run(fn: string, args: Record<string, unknown>, ok: string) {
     try {
@@ -49,9 +52,10 @@ export function ItemActions({ item, isManager }: { item: Item; isManager: boolea
       )}
       {item.status === "reserved" && <button className={btn.secondary} onClick={() => to("listed")}>Annuler la réservation</button>}
       {(PRE_SALE.includes(item.status) || item.status === "on_hold") && (
-        <button className={btn.danger} onClick={() => {
-          const reason = prompt("Motif (invendable, trop abîmé…) ?");
-          if (reason) to("rejected", { reason });
+        <button className={btn.danger} onClick={async () => {
+          const a = await confirm({ title: `Écarter ${item.sku} ?`, message: "L'article sort de la chaîne (invendable).", danger: true,
+            confirmLabel: "Écarter", reason: { label: "Motif", placeholder: "Trop abîmé, tache…" } });
+          if (a) to("rejected", { reason: a.reason });
         }}>Écarter</button>
       )}
       {isManager && item.status === "rejected" && <button className={btn.secondary} onClick={() => to("sorted")}>Annuler l&apos;écart</button>}
@@ -60,12 +64,17 @@ export function ItemActions({ item, isManager }: { item: Item; isManager: boolea
       )}
       {isManager && (
         <button
-          className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-red-300 px-4 font-medium text-red-700 hover:bg-red-50 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
+          className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-500/40 px-4 font-medium text-red-300 transition hover:bg-red-500/10"
           onClick={async () => {
-            const reason = prompt("Supprimer cet article ? Il ira dans la corbeille (restaurable).\nMotif (facultatif) :");
-            if (reason === null) return;
+            const a = await confirm({
+              title: `Supprimer ${item.sku} ?`, message: "Il ira dans la corbeille du stock, d'où vous pourrez le restaurer.",
+              danger: true, confirmLabel: "Supprimer", reason: { label: "Motif", placeholder: "Doublon, erreur de saisie…", optional: true },
+              checkbox: sold ? { label: "Supprimer aussi sa vente", required: true,
+                hint: "La vente est annulée : elle sort des statistiques et du livre des recettes." } : undefined,
+            });
+            if (!a) return;
             try {
-              const r = await rpc<{ updated: number; errors: { error: string }[] }>("delete_items", { p_item_ids: [item.id], p_reason: reason });
+              const r = await rpc<{ updated: number; errors: { error: string }[] }>("delete_items", { p_item_ids: [item.id], p_reason: a.reason, p_with_sales: a.checked });
               if (r.errors.length) return toast(r.errors[0].error, "error");
               toast(`${item.sku} supprimé`, "ok");
               router.push("/stock");
@@ -87,7 +96,7 @@ export function RestoreItem({ itemId, sku, isManager }: { itemId: string; sku: s
   const router = useRouter();
   const toast = useToast();
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-red-50 p-3 text-red-900 dark:bg-red-500/10 dark:text-red-200">
+    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl bg-red-500/10 p-3 text-red-200 ring-1 ring-inset ring-red-400/30">
       <Trash2 size={18} />
       <span className="flex-1 font-semibold">Article supprimé : il n&apos;apparaît plus dans le stock ni dans les statistiques.</span>
       {isManager && (

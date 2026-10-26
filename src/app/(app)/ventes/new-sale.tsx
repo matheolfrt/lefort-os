@@ -21,7 +21,10 @@ export function NewSale() {
   const [items, setItems] = useState<Item[]>([]);
   const [sku, setSku] = useState("");
   const [gross, setGross] = useState("");
-  const [soldAt, setSoldAt] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+  const nowLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const [soldAt, setSoldAt] = useState(nowLocal);
+  // until the date is edited by hand, the sale is dated when it is saved (the page may stay open for hours)
+  const [dateTouched, setDateTouched] = useState(false);
   const [buyer, setBuyer] = useState("");
   const [ref, setRef] = useState("");
   const [shipping, setShipping] = useState("");
@@ -61,7 +64,8 @@ export function NewSale() {
     setItems((cur) => {
       if (cur.some((x) => x.id === it.id)) return cur;
       const next = [...cur, it];
-      setGross(eurosInput(next.reduce((s, x) => s + (x.list_price_cents ?? 0), 0)));
+      const total = next.reduce((s, x) => s + (x.list_price_cents ?? 0), 0);
+      setGross(total > 0 ? eurosInput(total) : "");
       return next;
     });
     setSku("");
@@ -77,13 +81,13 @@ export function NewSale() {
   async function submit() {
     const grossCents = parseEuros(gross);
     if (!items.length) return toast("Ajoutez au moins un article", "error");
-    if (grossCents == null) return toast("Montant invalide", "error");
+    if (grossCents == null || grossCents <= 0) return toast("Indiquez le prix de vente", "error");
     setBusy(true);
     try {
       await rpc("record_sale", {
         p_item_ids: items.map((i) => i.id),
         p_gross_cents: grossCents,
-        p_sold_at: new Date(soldAt).toISOString(),
+        p_sold_at: dateTouched ? new Date(soldAt).toISOString() : new Date().toISOString(),
         p_channel: "vinted",
         p_external_order_id: ref || null,
         p_buyer: buyer || null,
@@ -95,6 +99,8 @@ export function NewSale() {
       setGross("");
       setBuyer("");
       setRef("");
+      setDateTouched(false);
+      setSoldAt(nowLocal());
       router.refresh();
     } catch (e) {
       toast((e as Error).message, "error");
@@ -156,7 +162,8 @@ export function NewSale() {
           <input className={`${input} text-xl`} inputMode="decimal" value={gross} onChange={(e) => setGross(e.target.value)} />
         </Field>
         <Field label="Date de vente">
-          <input className={input} type="datetime-local" value={soldAt} onChange={(e) => setSoldAt(e.target.value)} />
+          <input className={input} type="datetime-local" value={soldAt} onChange={(e) => { setSoldAt(e.target.value); setDateTouched(true); }}
+            onFocus={() => { if (!dateTouched) setSoldAt(nowLocal()); }} />
         </Field>
         <Field label="Acheteur"><input className={input} value={buyer} onChange={(e) => setBuyer(e.target.value)} /></Field>
         <Field label="Réf. commande"><input className={input} value={ref} onChange={(e) => setRef(e.target.value)} /></Field>

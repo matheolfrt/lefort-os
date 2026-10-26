@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toast";
+import { useConfirm } from "@/components/confirm";
+import { Trash2 } from "lucide-react";
 import { btn, input } from "@/components/ui";
 import { rpc } from "@/lib/client-data";
 import { parseEuros } from "@/lib/format";
@@ -10,6 +12,7 @@ import { parseEuros } from "@/lib/format";
 export function OrderActions({ orderId, status, items }: { orderId: string; status: string; items: { id: string; sku: string }[] }) {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [panel, setPanel] = useState<"complete" | "refund" | null>(null);
   const [paidAt, setPaidAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [amount, setAmount] = useState("");
@@ -31,12 +34,25 @@ export function OrderActions({ orderId, status, items }: { orderId: string; stat
     <div className="flex flex-col items-end gap-1.5 text-sm">
       <div className="flex flex-wrap justify-end gap-1.5">
       {status === "pending" && (
-        <button className="inline-flex min-h-10 items-center rounded-lg border border-line px-3 text-sm font-medium hover:border-fg/30 text-red-700 dark:text-red-400" onClick={() => {
-          const why = prompt("Motif d'annulation ?");
-          if (why) run("cancel_order", { p_order_id: orderId, p_reason: why }, "Commande annulée, articles remis en vente");
+        <button className="inline-flex min-h-10 items-center rounded-lg border border-line px-3 text-sm font-medium hover:border-fg/30 text-red-700 dark:text-red-400" onClick={async () => {
+          const a = await confirm({ title: "Annuler la commande ?", message: "Les articles sont remis en vente.", danger: true,
+            confirmLabel: "Annuler la commande", reason: { label: "Motif", placeholder: "Acheteur injoignable…" } });
+          if (a) run("cancel_order", { p_order_id: orderId, p_reason: a.reason }, "Commande annulée, articles remis en vente");
         }}>Annuler</button>
       )}
       {status === "shipped" && <button className="inline-flex min-h-10 items-center rounded-lg border border-line px-3 text-sm font-medium hover:border-fg/30" onClick={() => setPanel(panel === "complete" ? null : "complete")}>Clôturer</button>}
+      {status !== "cancelled" && (
+        <button aria-label="Supprimer la vente" title="Supprimer la vente (erreur, doublon)"
+          className="inline-flex size-10 items-center justify-center rounded-lg border border-line text-muted/80 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300"
+          onClick={async () => {
+            const a = await confirm({
+              title: "Supprimer cette vente ?", danger: true, confirmLabel: "Supprimer la vente",
+              message: "Pour une vente saisie par erreur ou importée en double. Elle sort des statistiques et du livre des recettes ; ses articles reviennent « prêt à publier ».",
+              reason: { label: "Motif", placeholder: "Doublon, mauvais article…", optional: true },
+            });
+            if (a) run("void_order", { p_order_id: orderId, p_reason: a.reason || null }, "Vente supprimée, articles remis en stock");
+          }}><Trash2 size={16} /></button>
+      )}
       {(status === "shipped" || status === "completed") && <button className="inline-flex min-h-10 items-center rounded-lg border border-line px-3 text-sm font-medium hover:border-fg/30" onClick={() => setPanel(panel === "refund" ? null : "refund")}>Rembourser</button>}
       </div>
 

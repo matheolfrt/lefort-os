@@ -6,6 +6,7 @@ import { BrandPicker } from "@/components/brand-picker";
 import { StationHeader } from "@/components/station-header";
 import { useScan } from "@/components/scan-provider";
 import { useToast } from "@/components/toast";
+import { useConfirm } from "@/components/confirm";
 import { Kbd, btn, input } from "@/components/ui";
 import { CONDITION_LABEL, HOLD_LABEL } from "@/i18n/fr";
 import { rpc } from "@/lib/client-data";
@@ -29,6 +30,7 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
   initialBatch: string | null; orgId: string;
 }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [brands, setBrands] = useState<Brand[]>(catalog.brands);
   const [batchId, setBatchId] = useState<string | null>(initialBatch);
   const [sku, setSku] = useState("");
@@ -215,7 +217,11 @@ export function ReceptionStation({ catalog, batches, initialBatch, orgId }: {
               </button>
               <button className={`${btn.secondary} min-h-16`} disabled={busy} onClick={() => setHoldOpen((v) => !v)} aria-expanded={holdOpen}>Attente</button>
               <button className={`${btn.secondary} min-h-16 text-red-700 dark:text-red-400`} disabled={busy}
-                onClick={() => confirm("Écarter cet article (invendable) ?") && submit("rejected", { reason: form.defects || "Écarté au tri" })}>
+                onClick={async () => {
+                  const a = await confirm({ title: "Écarter cet article ?", message: "Il sort de la chaîne (invendable).", danger: true,
+                    confirmLabel: "Écarter", reason: { label: "Motif", initial: form.defects, placeholder: "Trop abîmé, tache…", optional: true } });
+                  if (a) submit("rejected", { reason: a.reason || "Écarté au tri" });
+                }}>
                 Écarter
               </button>
             </div>
