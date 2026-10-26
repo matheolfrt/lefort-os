@@ -92,6 +92,19 @@ do $$ declare p jsonb; r jsonb; begin
   assert jsonb_array_length(public.vinted_sync_preview((select j from snap))->'sold_on_vinted') = 0;
 end $$;
 
+-- imported without a date: a later sync that knows the photo date corrects the age
+do $$ declare p jsonb; r jsonb; v_snap jsonb := $j$[
+  {"external_id":"222","title":"Costume Zegna gris","price_cents":17500,"state":"active","listed_at":"2026-01-15T10:00:00Z"}
+]$j$; begin
+  p := public.vinted_sync_preview(v_snap, false);
+  assert jsonb_array_length(p->'date_fixes') = 1, p::text;
+  r := public.vinted_apply_updates(v_snap);
+  assert (r->>'dates_updated')::int = 1, r::text;
+  assert (select i.listed_at from items i join listings l on l.item_id = i.id where l.external_id = '222') = '2026-01-15T10:00:00Z';
+  assert (select i.received_at from items i join listings l on l.item_id = i.id where l.external_id = '222') = '2026-01-15T10:00:00Z';
+  assert jsonb_array_length(public.vinted_sync_preview(v_snap, false)->'date_fixes') = 0, 'fixed once';
+end $$;
+
 -- bulk actions from the Stock list
 do $$ declare ids uuid[]; r jsonb; begin
   select array_agg(i.id order by i.sku) into ids from items i where i.status in ('listed', 'reserved', 'sold');

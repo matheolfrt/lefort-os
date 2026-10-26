@@ -127,6 +127,9 @@ async function analyse() {
   const updates = [
     ...preview.price_changes.map((p) => `${p.sku} : prix ${euros(p.old_cents)} → <b>${euros(p.new_cents)}</b>`),
     ...preview.reservation_changes.map((r) => `${r.sku} : ${r.to === "reserved" ? "réservé sur Vinted" : "n'est plus réservé"}`),
+    ...(preview.date_fixes?.length
+      ? [`${preview.date_fixes.length} article(s) importé(s) : date de mise en ligne corrigée (âge du stock)`]
+      : []),
   ];
   $("updates-count").textContent = updates.length;
   $("updates-list").innerHTML = updates.map((u) => `<li>${u}</li>`).join("");
@@ -158,7 +161,7 @@ async function analyse() {
     complete: snapshot.complete,
     listings: snapshot.listings.length,
     states: snapshot.listings.reduce((a, l) => ({ ...a, [l.state]: (a[l.state] ?? 0) + 1 }), {}),
-    missing_fields: ["title", "price_cents", "brand", "size", "condition", "description"].map((f) =>
+    missing_fields: ["title", "price_cents", "brand", "size", "condition", "description", "listed_at"].map((f) =>
       `${f}: ${snapshot.listings.filter((l) => l[f] == null).length}`),
     vinted_fields: snapshot.sampleKeys,
   }, null, 2);
@@ -233,7 +236,7 @@ $("apply-updates").addEventListener("click", async () => {
   $("apply-updates").disabled = true;
   try {
     const r = await rpc("vinted_apply_updates", { p_listings: snapshot.listings });
-    toast(`${r.prices_updated} prix et ${r.reservations_updated} réservations mis à jour`, "ok");
+    toast(`${r.prices_updated} prix, ${r.reservations_updated} réservations et ${r.dates_updated ?? 0} dates mis à jour`, "ok");
     await analyse();
   } catch (err) {
     toast(err.message, "err");

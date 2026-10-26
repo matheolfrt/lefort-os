@@ -80,6 +80,13 @@ export async function readWardrobe(options) {
     return Number.isNaN(d.getTime()) ? null : d.toISOString();
   };
 
+  const oldestPhoto = (it) => {
+    const stamps = (it.photos ?? (it.photo ? [it.photo] : []))
+      .map((p) => Number(p?.high_resolution?.timestamp ?? p?.timestamp))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    return stamps.length ? Math.min(...stamps) : null;
+  };
+
   const normalise = (it) => {
     const photos = (it.photos ?? (it.photo ? [it.photo] : []))
       .map((p) => p?.full_size_url ?? p?.high_resolution?.url ?? p?.url)
@@ -97,7 +104,8 @@ export async function readWardrobe(options) {
       size: text(it.size_title ?? it.size),
       condition: CONDITIONS[condText] ?? CONDITION_IDS[it.status_id] ?? null,
       state: it.is_draft ? "draft" : sold ? "sold" : it.is_reserved ? "reserved" : it.is_hidden ? "hidden" : "active",
-      listed_at: toIso(it.created_at_ts ?? it.created_at ?? it.photo?.high_resolution?.timestamp),
+      // The wardrobe list has no creation date: the oldest photo upload is the closest proxy
+      listed_at: toIso(it.created_at_ts ?? it.created_at ?? oldestPhoto(it)),
       photos,
     };
   };
