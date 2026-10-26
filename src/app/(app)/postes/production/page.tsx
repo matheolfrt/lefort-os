@@ -1,15 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
-import type { BoardData } from "@/lib/production";
+import type { BoardData, Filters } from "@/lib/production";
 import { Production, type Overview, type RefData } from "./production";
 
 export const metadata = { title: "Production" };
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ bloques?: string; q?: string }> }) {
+  const sp = await searchParams;
+  // links from Conseils: blocked items only, or a search
+  const filters: Filters = { ...(sp.bloques === "1" ? { blocked: true } : {}), ...(sp.q ? { q: sp.q } : {}) };
   const ctx = await getContext();
   const supabase = await createClient();
   const [board, overview, members, profiles, brands, categories, suppliers, batches] = await Promise.all([
-    supabase.rpc("production_board", { p_filters: {}, p_sorts: {}, p_limit: 30 }),
+    supabase.rpc("production_board", { p_filters: filters, p_sorts: {}, p_limit: 30 }),
     supabase.rpc("production_overview"),
     supabase.from("memberships").select("user_id, role").eq("active", true),
     supabase.from("profiles").select("id, full_name"),
@@ -34,6 +37,7 @@ export default async function Page() {
       initialError={board.error?.message ?? null}
       overview={(overview.data as Overview | null) ?? null}
       refData={ref}
+      initialFilters={filters}
       me={{ id: ctx.userId, name: ctx.fullName, isManager: ctx.isManager }}
     />
   );

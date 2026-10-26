@@ -78,12 +78,13 @@ function clean(f: Filters): Filters {
   return Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined && v !== "" && v !== false && !(Array.isArray(v) && v.length === 0))) as Filters;
 }
 
-export function Production({ initialBoard, initialError, overview: initialOverview, refData: ref, me }: {
+export function Production({ initialBoard, initialError, overview: initialOverview, refData: ref, me, initialFilters = {} }: {
   initialBoard: BoardData | null;
   initialError: string | null;
   overview: Overview | null;
   refData: RefData;
   me: { id: string; name: string; isManager: boolean };
+  initialFilters?: Filters;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -94,8 +95,8 @@ export function Production({ initialBoard, initialError, overview: initialOvervi
   const [cols, setCols] = useState(() => build(initialBoard));
   const colsRef = useRef(cols);
   colsRef.current = cols;
-  const [filters, setFilters] = useState<Filters>({});
-  const [draft, setDraft] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [draft, setDraft] = useState<Filters>(initialFilters);
   const [sorts, setSorts] = useState<Partial<Record<BoardStatus, SortKey>>>({});
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [panel, setPanel] = useState<BoardCard | null>(null);

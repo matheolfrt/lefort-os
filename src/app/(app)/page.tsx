@@ -6,6 +6,7 @@ import {
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { LOW_SAMPLE, loadDashboard, type PeriodResult } from "@/lib/dashboard";
+import { buildAdvice, eur as eur0, type Advice, type Facts } from "@/lib/advisor";
 import { PIPELINE, STATUS_LABEL, STATUS_DOT } from "@/i18n/fr";
 import { money } from "@/lib/format";
 import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/lib/compliance";
@@ -19,7 +20,13 @@ const eur = (cents: number | null | undefined) => (cents == null ? "—" : euro0
 export default async function Dashboard() {
   const ctx = await getContext();
   const supabase = await createClient();
-  const d = await loadDashboard(supabase, ctx.org, ctx.isManager);
+  const [d, facts] = await Promise.all([
+    loadDashboard(supabase, ctx.org, ctx.isManager),
+    // advice is for managers; a database without the advisor migration simply shows no card
+    ctx.isManager ? supabase.rpc("advisor_facts").then((r) => (r.error ? null : (r.data as Facts))) : Promise.resolve(null),
+  ]);
+  const advice = facts ? buildAdvice(facts, new Date(), ctx.org.declaration_frequency === "quarterly") : null;
+  const topAdvice: Advice[] = advice ? [...advice.tasks.slice(0, 3), ...advice.advice.slice(0, 2)] : [];
   const f = d.finance;
   const q = (s: ItemStatus) => d.pipeline[s] ?? { count: 0, oldestDays: null };
   const toStore = q("measured").count + q("returned").count;
@@ -72,6 +79,31 @@ export default async function Dashboard() {
           {todo.map((t) => <TodoTile key={t.label} {...t} />)}
         </div>
       </Section>
+
+      {/* ── Advice */}
+      {topAdvice.length > 0 && (
+        <Section title="Conseils" aside={
+          <Link href="/conseils" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline">
+            Tous les conseils <ChevronRight size={16} />
+          </Link>
+        }>
+          <ul className="divide-y divide-line rounded-2xl border border-line bg-panel/80" data-testid="dashboard-advice">
+            {topAdvice.map((a) => (
+              <li key={a.id}>
+                <Link href={a.href?.startsWith("#") ? `/conseils${a.href}` : a.href ?? "/conseils"} className="flex min-h-12 items-center gap-3 px-4 py-2.5 transition hover:bg-fg/[0.03]">
+                  <span className={`size-2.5 shrink-0 rounded-full ${a.tone === "urgent" ? "bg-red-500" : a.tone === "high" ? "bg-orange-400" : "bg-accent"}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{a.title}</span>
+                    <span className="block truncate text-xs text-muted">{a.detail}</span>
+                  </span>
+                  {a.impactCents != null && a.impactCents > 0 && <span className="hidden font-mono text-sm sm:block">{eur0(a.impactCents)}</span>}
+                  <ChevronRight size={18} className="shrink-0 text-muted/60" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
       {/* ── KPI */}
       <Section title={f ? "Ce mois-ci" : "Stock"}>

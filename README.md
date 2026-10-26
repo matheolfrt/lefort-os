@@ -103,6 +103,15 @@ assigné, puis le plus urgent et le plus ancien des étapes du rôle. Productivi
 Colonnes virtualisées et chargées par pages de 30 (`production_board`, ~0,1 s sur 20 000 articles).
 Migration `supabase/migrations/20261031000012_production_board.sql`, tests `supabase/tests/production_test.sql`.
 
+## Conseils
+
+`/conseils` (responsables) et carte « Conseils » du tableau de bord : tâches prioritaires et conseils de rentabilité
+calculés par des règles explicites, sans IA. `advisor_facts()` rassemble les chiffres en un appel (files d'attente,
+expéditions, réservations, stock dormant, prix à perte ou trop bas, marge et délai par marque, catégorie, taille,
+tranche de prix et fournisseur, frais, tendance, CA à déclarer) ; `src/lib/advisor.ts` les transforme en conseils,
+avec leurs seuils. Classement par marge par jour de stock. Migration `supabase/migrations/20261101000013_advisor.sql`
+(qui accélère aussi les règles d'accès : rôle et organisation évalués une fois par requête).
+
 ## Scénarios
 
 `/scenarios` (responsables) : simulateur de l'activité — stock, coût et prix moyens, écoulement mensuel, frais Vinted,

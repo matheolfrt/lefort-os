@@ -16,6 +16,8 @@ create function t.col(p_board jsonb, p_status text) returns jsonb language sql a
 create function t.add_listing(p_sku text) returns void language sql security definer as
   $$ insert into listings(org_id, item_id, channel, url, price_cents)
      select org_id, id, 'vinted', 'https://www.vinted.fr/items/1', 3900 from items where sku = p_sku $$;
+create function t.list_old(p_sku text, p_price bigint) returns void language sql security definer as
+  $$ update items set status = 'listed', list_price_cents = p_price, listed_at = now() - interval '200 days' where sku = p_sku $$;
 grant usage on schema t to authenticated;
 grant execute on all functions in schema t to authenticated;
 
@@ -138,6 +140,21 @@ do $$ declare r jsonb; begin
   assert (r->>'pending')::int = 10 and (r->>'blocked')::int = 1 and r->'bottleneck'->>'col' is not null, r::text;
   assert jsonb_array_length(r->'columns') = 6, r::text;
 end $$;
+
+-- advisor: figures for managers only; dormant and loss-making prices are spotted
+do $$ declare r jsonb; begin
+  perform t.list_old('P-9', 3900);
+  perform t.list_old('P-10', 300);
+  r := public.advisor_facts();
+  assert (r->'dormant'->>'n')::int = 2 and jsonb_array_length(r->'dormant_items') = 2 and r->'dormant_items'->0->>'sku' in ('P-9', 'P-10'), r::text;
+  assert (r->'below_cost'->>'n')::int = 1 and r->'below_cost'->'items'->0->>'sku' = 'P-10', r->>'below_cost'; -- 3 € for an item that cost 4 €
+  assert (r->'stock'->>'n')::int = 10 and (r->'stock'->>'cost_cents')::int = 4000, r->>'stock';
+  assert (r->'blocked'->>'n')::int = 1 and (r->'queues'->'received'->>'n')::int >= 1, r::text;
+  assert jsonb_typeof(r->'brands') = 'array' and jsonb_typeof(r->'suppliers') = 'array' and (r->'totals'->>'sold')::int = 0, r::text;
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
+select t.expect_error($$select public.advisor_facts()$$, 'réservés aux responsables');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 
 -- an outsider reaches nothing
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
