@@ -26,7 +26,7 @@ export function Shell({ children, isManager, orgName, userName }: {
   children: ReactNode; isManager: boolean; orgName: string; userName: string;
 }) {
   const path = usePathname();
-  const { openCamera } = useScanApi();
+  const { openCamera, openQuick } = useScanApi();
   const items = NAV.filter((n) => isManager || !n.manager);
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 
@@ -36,6 +36,15 @@ export function Shell({ children, isManager, orgName, userName }: {
         <div className="px-5 py-5">
           <div className="text-lg font-black tracking-tight">LEFORT OS</div>
           <div className="text-xs opacity-60">{orgName}</div>
+        </div>
+        <div className="px-3 pb-3">
+          <button
+            onClick={openQuick}
+            className="flex w-full items-center gap-2 rounded-md border border-white/15 px-3 py-2 text-left text-sm text-white/70 hover:border-white/30 hover:text-white"
+          >
+            <ScanLine size={16} /> <span className="flex-1">Scanner un SKU</span>
+            <kbd className="rounded border border-white/20 px-1.5 font-mono text-[10px]">⌘K</kbd>
+          </button>
         </div>
         <nav className="flex-1 space-y-0.5 px-2">
           {items.map(({ href, label, icon: Icon }) => (

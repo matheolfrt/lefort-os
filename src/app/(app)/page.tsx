@@ -1,112 +1,331 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import {
+  AlertTriangle, Camera, ChevronRight, PackageCheck, PackageOpen, Ruler, Send, Tag, Warehouse, type LucideIcon,
+} from "lucide-react";
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { LOW_SAMPLE, loadDashboard, type PeriodResult } from "@/lib/dashboard";
 import { PIPELINE, STATUS_LABEL, STATUS_TONE } from "@/i18n/fr";
-import { Card, PageHeader, Stat, btn } from "@/components/ui";
-import { daysSince, money } from "@/lib/format";
+import { money } from "@/lib/format";
 import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/lib/compliance";
+import { StartWork } from "@/components/dashboard/start-work";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import type { ItemStatus } from "@/lib/types";
+
+const euro0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const eur = (cents: number | null | undefined) => (cents == null ? "—" : euro0.format(Math.round(cents / 100)));
 
 export default async function Dashboard() {
   const ctx = await getContext();
   const supabase = await createClient();
-  const year = new Date().getFullYear();
+  const d = await loadDashboard(supabase, ctx.org, ctx.isManager);
+  const f = d.finance;
+  const q = (s: ItemStatus) => d.pipeline[s] ?? { count: 0, oldestDays: null };
+  const toStore = q("measured").count + q("returned").count;
 
-  const [{ data: pipeline }, { data: toShip }, { data: turnover }] = await Promise.all([
-    supabase.from("v_pipeline").select("*"),
-    supabase.rpc("shipping_queue"),
-    ctx.isManager
-      ? supabase.from("v_monthly_turnover").select("*").gte("month", `${year}-01-01`).order("month")
-      : Promise.resolve({ data: [] as { month: string; turnover_cents: number; contributions_cents: number }[] }),
-  ]);
+  const todo: TodoProps[] = [
+    { label: "À trier", icon: PackageOpen, href: "/stock?status=received", ...q("received"), lateAfter: 3 },
+    { label: "À photographier", icon: Camera, href: "/stock?status=sorted", ...q("sorted"), lateAfter: 7 },
+    { label: "À mesurer", icon: Ruler, href: "/stock?status=photographed", ...q("photographed"), lateAfter: 7 },
+    { label: "À publier", icon: Send, href: "/stock?status=listing_ready", ...q("listing_ready"), lateAfter: 7 },
+    { label: "À ranger", icon: Warehouse, href: "/postes/rangement", count: toStore,
+      oldestDays: Math.max(q("measured").oldestDays ?? 0, q("returned").oldestDays ?? 0) || null, lateAfter: 3 },
+    { label: "À expédier", icon: PackageCheck, href: "/postes/expedition", count: d.shipping.orders, oldestDays: d.shipping.oldestDays,
+      lateAfter: 1, unit: "commande" },
+  ];
+  if (d.toLabel > 0) {
+    todo.push({ label: "À étiqueter", icon: Tag, href: "/emplacements/EMP-A-ETIQUETER", count: d.toLabel, oldestDays: null,
+      note: "Import Vinted" });
+  }
 
-  const counts = new Map<ItemStatus, { items: number; oldest_since: string }>(
-    (pipeline ?? []).map((p) => [p.status as ItemStatus, p]),
-  );
-  const shipOrders = new Map<string, string>((toShip ?? []).map((r: { order_id: string; sold_at: string }) => [r.order_id, r.sold_at]));
-  const oldestSale = [...shipOrders.values()].sort()[0];
-  const ytd = (turnover ?? []).reduce((s, m) => s + Number(m.turnover_cents), 0);
-  const thisMonth = (turnover ?? []).at(-1);
-  const onHold = counts.get("on_hold")?.items ?? 0;
+  const today = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
+  const lateShip = d.shipping.orders > 0 && (d.shipping.oldestDays ?? 0) >= 1;
 
   return (
-    <>
-      <PageHeader title="Tableau de bord" subtitle={new Date().toLocaleDateString("fr-FR", { dateStyle: "full" })} />
+    <div className="mx-auto max-w-7xl space-y-5">
+      {/* ── Header */}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight">Tableau de bord</h1>
+          <p className="text-sm capitalize text-muted">{today}</p>
+        </div>
+        <StartWork counts={{
+          receive: q("received").count, photo: q("sorted").count, measure: q("photographed").count,
+          publish: q("listing_ready").count, store: toStore, ship: d.shipping.orders,
+        }} />
+      </header>
 
-      {shipOrders.size > 0 && (
-        <Link
-          href="/postes/expedition"
-          className={`mb-4 flex items-center justify-between rounded-lg p-4 font-semibold ${
-            daysSince(oldestSale) >= 1 ? "bg-red-600 text-white" : "bg-orange-200 text-orange-950"
-          }`}
-        >
-          <span>
-            {shipOrders.size} commande{shipOrders.size > 1 ? "s" : ""} à expédier
-            {daysSince(oldestSale) >= 1 && ` — la plus ancienne depuis ${daysSince(oldestSale)} j`}
+      {lateShip && (
+        <Link href="/postes/expedition" className="flex min-h-12 items-center gap-3 rounded-xl bg-red-600 px-4 py-3 font-semibold text-white">
+          <AlertTriangle size={20} className="shrink-0" />
+          <span className="flex-1">
+            {d.shipping.orders} commande{d.shipping.orders > 1 ? "s" : ""} à expédier, la plus ancienne vendue il y a {d.shipping.oldestDays} j
           </span>
-          <span>Expédier →</span>
+          <ChevronRight size={20} />
         </Link>
       )}
 
-      <Card title="Chaîne de production" className="mb-4">
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-9">
-          {PIPELINE.map((s) => {
-            const c = counts.get(s);
-            const age = c ? daysSince(c.oldest_since) : 0;
-            return (
-              <Link key={s} href={`/stock?status=${s}`} className={`rounded-md p-3 ${STATUS_TONE[s]} hover:brightness-95`}>
-                <div className="text-[11px] font-semibold uppercase leading-tight">{STATUS_LABEL[s]}</div>
-                <div className="mt-1 text-3xl font-black tabular-nums">{c?.items ?? 0}</div>
-                <div className="text-[11px] opacity-70">{c && s !== "listed" ? `plus ancien : ${age} j` : " "}</div>
-              </Link>
-            );
-          })}
+      {/* ── What to do now */}
+      <Section title="À faire maintenant">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-flow-col xl:auto-cols-fr xl:grid-cols-none">
+          {todo.map((t) => <TodoTile key={t.label} {...t} />)}
         </div>
-        {onHold > 0 && (
-          <Link href="/stock?status=on_hold" className="mt-3 inline-block text-sm font-semibold text-yellow-700 underline">
-            {onHold} article{onHold > 1 ? "s" : ""} en attente (retouche, nettoyage…)
-          </Link>
-        )}
-      </Card>
+      </Section>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Link href="/postes" className={`${btn.huge} col-span-2 md:col-span-1`}>Ouvrir un poste</Link>
-        <Stat label="En ligne" value={counts.get("listed")?.items ?? 0} />
-        {ctx.isManager && (
-          <>
-            <Stat label="CA du mois" value={money(thisMonth ? Number(thisMonth.turnover_cents) : 0)} hint="encaissé" />
-            <Stat
-              label={`CA ${year}`}
-              value={money(ytd)}
-              hint={`URSSAF estimée : ${money((turnover ?? []).reduce((s, m) => s + Number(m.contributions_cents), 0))}`}
-            />
-          </>
+      {/* ── KPI */}
+      <Section title={f ? "Ce mois-ci" : "Stock"}>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          {f && (
+            <>
+              <Kpi label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} />
+              <Kpi label="Bénéfice estimé" value={eur(f.month.afterCents)} tone={f.month.afterCents < 0 ? "bad" : undefined}
+                hint="après coûts et cotisations" n={f.month.itemsSold} />
+              <Kpi label="Ventes" value={String(f.month.itemsSold)} hint={`${eur(f.month.revenueCents)} de ventes`} />
+            </>
+          )}
+          <Kpi label="Stock" value={String(d.stock.count)} hint={`dont ${d.stock.listedCount} en ligne`} />
+          {f && <Kpi label="Valeur d'achat du stock" value={eur(f.stockCostCents)} hint="coût de revient" />}
+          <Kpi label="Valeur de vente potentielle" value={eur(d.stock.potentialCents)}
+            hint={`${d.stock.pricedCount} article${d.stock.pricedCount > 1 ? "s" : ""} avec un prix`} />
+          {f && (
+            <>
+              <Kpi label="Panier moyen" value={eur(f.avgBasket.cents)} hint="par commande ce mois" n={f.avgBasket.n} />
+              <Kpi label="Délai moyen de vente" value={f.avgDaysToSell.days == null ? "—" : `${Math.round(f.avgDaysToSell.days)} j`}
+                hint="mise en ligne → vente, 90 j" n={f.avgDaysToSell.n} />
+            </>
+          )}
+        </div>
+      </Section>
+
+      {/* ── Production line */}
+      <Section
+        title="Chaîne de production"
+        aside={(q("on_hold").count > 0 || q("returned").count > 0) && (
+          <span className="flex gap-3 text-sm">
+            {q("on_hold").count > 0 && <Link className="inline-flex min-h-11 items-center font-semibold text-amber-700 underline-offset-2 hover:underline dark:text-amber-400" href="/stock?status=on_hold">{q("on_hold").count} en attente</Link>}
+            {q("returned").count > 0 && <Link className="inline-flex min-h-11 items-center font-semibold text-rose-700 underline-offset-2 hover:underline" href="/stock?status=returned">{q("returned").count} retour{q("returned").count > 1 ? "s" : ""}</Link>}
+          </span>
         )}
+      >
+        <Pipeline counts={PIPELINE.map((s) => ({ status: s, ...q(s) }))} />
+      </Section>
+
+      {/* ── Money & stock health */}
+      <div className={`grid gap-5 ${f ? "lg:grid-cols-[1.6fr_1fr]" : ""}`}>
+        {f && (
+          <Section title="Finance">
+            <div className="rounded-xl border border-line bg-panel p-4">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">CA encaissé · 12 derniers mois</div>
+              <RevenueChart months={f.months} />
+              <FinanceTable month={f.month} year={f.year} ratePct={f.contributionRatePct} />
+            </div>
+          </Section>
+        )}
+        <div className="space-y-5">
+          <Section title="Âge du stock">
+            <StockAge buckets={d.ageBuckets} total={d.stock.count} />
+          </Section>
+          {f && (
+            <Section title="Seuils micro-entreprise">
+              <div className="space-y-3 rounded-xl border border-line bg-panel p-4">
+                <Gauge label="Franchise de TVA" value={f.yearCashedCents} max={VAT_FRANCHISE_THRESHOLD_CENTS} />
+                <Gauge label="Plafond micro" value={f.yearCashedCents} max={MICRO_TURNOVER_CEILING_CENTS} />
+              </div>
+            </Section>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
 
-      {ctx.isManager && (
-        <Card title="Seuils micro-entreprise">
-          <Gauge label="Franchise de TVA" value={ytd} max={VAT_FRANCHISE_THRESHOLD_CENTS} />
-          <Gauge label="Plafond micro-entreprise" value={ytd} max={MICRO_TURNOVER_CEILING_CENTS} />
-        </Card>
+function Section({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
+  return (
+    <section>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-muted">{title}</h2>
+        {aside}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+interface TodoProps {
+  label: string; icon: LucideIcon; href: string; count: number; oldestDays: number | null;
+  lateAfter?: number; unit?: string; note?: string;
+}
+
+function TodoTile({ label, icon: Icon, href, count, oldestDays, lateAfter, note }: TodoProps) {
+  const late = count > 0 && lateAfter != null && (oldestDays ?? 0) >= lateAfter;
+  return (
+    <Link
+      href={href}
+      className={`group flex min-h-[92px] flex-col justify-between rounded-xl border bg-panel p-3 transition hover:border-fg/30 active:scale-[0.98] ${
+        late ? "border-red-400 dark:border-red-500/60" : "border-line"
+      }`}
+    >
+      <div className="flex items-center justify-between text-muted">
+        <Icon size={18} className={count ? "text-fg/70" : ""} />
+        <ChevronRight size={16} className="opacity-0 transition group-hover:opacity-100" />
+      </div>
+      <div>
+        <div className={`text-[28px] font-black leading-none tabular-nums ${count ? "" : "text-muted/40"}`}>{count}</div>
+        <div className="mt-1 text-sm font-semibold leading-tight">{label}</div>
+        <div className={`text-xs ${late ? "font-semibold text-red-600 dark:text-red-400" : "text-muted"}`}>
+          {note ?? (count && oldestDays != null ? (late ? `en retard · ${oldestDays} j` : `plus ancien ${oldestDays} j`) : count ? "\u00a0" : "Rien en attente")}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function SampleSize({ n }: { n: number }) {
+  if (n >= LOW_SAMPLE) return null;
+  return (
+    <span title="Échantillon faible : à interpréter avec prudence" className="rounded bg-line/70 px-1.5 py-0.5 font-mono text-[10px] font-semibold normal-case tracking-normal text-muted">
+      n={n}
+    </span>
+  );
+}
+
+function Kpi({ label, value, hint, n, tone }: { label: string; value: string; hint?: string; n?: number; tone?: "bad" }) {
+  return (
+    <div className="rounded-xl border border-line bg-panel px-3.5 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted">{label}</span>
+        {n != null && <SampleSize n={n} />}
+      </div>
+      <div className={`mt-1 text-[26px] font-black leading-tight tabular-nums tracking-tight ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
+        {value}
+      </div>
+      {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
+    </div>
+  );
+}
+
+// Dots reuse the status colours of the chips used everywhere else in the app
+const dot = (s: ItemStatus) => STATUS_TONE[s].split(" ")[0];
+
+function Pipeline({ counts }: { counts: { status: ItemStatus; count: number; oldestDays: number | null }[] }) {
+  // bottleneck: the busiest step before publication
+  const before = counts.filter((c) => ["received", "sorted", "photographed", "measured", "listing_ready"].includes(c.status));
+  const top = before.reduce((a, b) => (b.count > a.count ? b : a), before[0]);
+  return (
+    <div className="-mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+      <ol className="flex min-w-max gap-1 md:grid md:min-w-0 md:grid-cols-9">
+        {counts.map((c, i) => {
+          const bottleneck = c.status === top.status && c.count > 0;
+          return (
+            <li key={c.status} className="flex items-center gap-1">
+              <Link
+                href={`/stock?status=${c.status}`}
+                className={`flex min-h-[76px] w-[104px] flex-col justify-between rounded-lg border bg-panel px-2.5 py-2 transition hover:border-fg/30 active:scale-[0.98] md:w-full ${
+                  bottleneck ? "border-amber-400 dark:border-amber-500/60" : "border-line"
+                }`}
+              >
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase leading-tight tracking-wide text-muted">
+                  <span className={`size-2 shrink-0 rounded-full ${dot(c.status)}`} />
+                  {STATUS_LABEL[c.status]}
+                </span>
+                <span className={`text-2xl font-black leading-none tabular-nums ${c.count ? "" : "text-muted/40"}`}>{c.count}</span>
+                <span className="text-[10px] text-muted">{bottleneck ? "goulot" : " "}</span>
+              </Link>
+              {i < counts.length - 1 && <ChevronRight size={14} className="shrink-0 text-muted/50 md:hidden" />}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function FinanceTable({ month, year, ratePct }: { month: PeriodResult; year: PeriodResult; ratePct: number }) {
+  const rows: { label: string; key: keyof PeriodResult; strong?: boolean; minus?: boolean }[] = [
+    { label: "CA des ventes", key: "revenueCents" },
+    { label: "Coûts (achat, frais, port)", key: "costsCents", minus: true },
+    { label: "Bénéfice avant cotisations", key: "beforeCents", strong: true },
+    { label: `Cotisations estimées (${String(ratePct).replace(".", ",")} %)`, key: "contributionsCents", minus: true },
+    { label: "Bénéfice après cotisations", key: "afterCents", strong: true },
+  ];
+  return (
+    <table className="mt-4 w-full text-[13px] sm:text-sm">
+      <thead>
+        <tr className="text-[11px] uppercase tracking-wide text-muted">
+          <th className="pb-1 text-left font-semibold" />
+          <th className="pb-1 text-right font-semibold">Mois <SampleSize n={month.itemsSold} /></th>
+          <th className="pb-1 text-right font-semibold">Année <SampleSize n={year.itemsSold} /></th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.key} className={r.strong ? "border-t border-line font-bold" : "text-muted"}>
+            <td className="py-1.5 pr-2">{r.label}</td>
+            {[month, year].map((p, i) => {
+              const v = p[r.key];
+              return (
+                <td key={i} className={`py-1.5 text-right tabular-nums ${r.strong && v < 0 ? "text-red-600 dark:text-red-400" : r.strong ? "text-fg" : ""}`}>
+                  {r.minus && v ? "−" : ""}{money(v)}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+const AGE_TONE = {
+  ok: "bg-fg/25",
+  watch: "bg-fg/45",
+  warn: "bg-amber-500",
+  alert: "bg-red-600",
+} as const;
+
+function StockAge({ buckets, total }: { buckets: { label: string; count: number; tone: keyof typeof AGE_TONE }[]; total: number }) {
+  const old = buckets.filter((b) => b.tone === "warn" || b.tone === "alert").reduce((s, b) => s + b.count, 0);
+  return (
+    <div className="rounded-xl border border-line bg-panel p-4">
+      <div className="mb-3 flex h-3 overflow-hidden rounded-full bg-line">
+        {buckets.map((b) => b.count > 0 && (
+          <div key={b.label} className={`${AGE_TONE[b.tone]} border-r-2 border-panel last:border-r-0`} style={{ width: `${(b.count / Math.max(total, 1)) * 100}%` }} />
+        ))}
+      </div>
+      <dl className="grid grid-cols-4 gap-2">
+        {buckets.map((b) => (
+          <div key={b.label}>
+            <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-muted">
+              <span className={`size-2 rounded-full ${AGE_TONE[b.tone]}`} />{b.label}
+            </dt>
+            <dd className={`text-xl font-black tabular-nums ${b.tone === "alert" && b.count ? "text-red-600 dark:text-red-400" : b.tone === "warn" && b.count ? "text-amber-600 dark:text-amber-400" : ""}`}>
+              {b.count}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {old > 0 && (
+        <p className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          {old} article{old > 1 ? "s" : ""} en stock depuis plus de 60 jours : pensez à baisser le prix ou à les republier.
+        </p>
       )}
-    </>
+    </div>
   );
 }
 
 function Gauge({ label, value, max }: { label: string; value: number; max: number }) {
   const ratio = Math.min(1, value / max);
-  const tone = ratio >= 0.95 ? "bg-red-600" : ratio >= 0.8 ? "bg-orange-500" : "bg-emerald-600";
+  const tone = ratio >= 0.95 ? "bg-red-600" : ratio >= 0.8 ? "bg-amber-500" : "bg-emerald-600";
   return (
-    <div className="mb-3">
-      <div className="mb-1 flex justify-between text-sm">
-        <span>{label}</span>
-        <span className="tabular-nums text-muted">
-          {money(value)} / {money(max)} ({Math.round(ratio * 100)} %)
-        </span>
+    <div>
+      <div className="mb-1 flex justify-between gap-2 text-sm">
+        <span className="font-medium">{label}</span>
+        <span className="tabular-nums text-muted">{eur(value)} / {eur(max)} · <b className="text-fg">{Math.round(ratio * 100)} %</b></span>
       </div>
-      <div className="h-2 rounded bg-line">
-        <div className={`h-2 rounded ${tone}`} style={{ width: `${ratio * 100}%` }} />
+      <div className="h-2 rounded-full bg-line">
+        <div className={`h-2 rounded-full ${tone}`} style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 1 : 0)}%` }} />
       </div>
     </div>
   );

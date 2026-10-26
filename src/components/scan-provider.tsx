@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Camera, ScanLine } from "lucide-react";
 import { CameraScanner } from "./camera-scanner";
 import { useToast } from "./toast";
 import { classifyScan, type ScanResult } from "@/lib/scan";
@@ -12,6 +13,8 @@ type Handler = (scan: ScanResult) => boolean | Promise<boolean>;
 interface ScanApi {
   register: (h: Handler) => () => void;
   openCamera: () => void;
+  /** Quick "scan or type a code" dialog, also on ⌘K / Ctrl+K and "/" */
+  openQuick: () => void;
   dispatch: (raw: string) => void;
 }
 
@@ -26,6 +29,7 @@ export function ScanProvider({ children }: { children: ReactNode }) {
   const toast = useToast();
   const handlers = useRef<Handler[]>([]);
   const [camera, setCamera] = useState(false);
+  const [quick, setQuick] = useState(false);
 
   const dispatch = useCallback(
     async (raw: string) => {
@@ -86,6 +90,19 @@ export function ScanProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey, true);
   }, [dispatch]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const typing = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+      if ((e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) || (e.key === "/" && !typing)) {
+        e.preventDefault();
+        setQuick(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const register = useCallback((h: Handler) => {
     handlers.current.push(h);
     return () => {
@@ -103,8 +120,15 @@ export function ScanProvider({ children }: { children: ReactNode }) {
   const closeCamera = useCallback(() => setCamera(false), []);
 
   return (
-    <ScanContext.Provider value={{ register, openCamera: () => setCamera(true), dispatch }}>
+    <ScanContext.Provider value={{ register, openCamera: () => setCamera(true), openQuick: () => setQuick(true), dispatch }}>
       {children}
+      {quick && (
+        <QuickScan
+          onSubmit={(code) => { setQuick(false); dispatch(code); }}
+          onCamera={() => { setQuick(false); setCamera(true); }}
+          onClose={() => setQuick(false)}
+        />
+      )}
       {camera && <CameraScanner onResult={onCameraResult} onClose={closeCamera} />}
     </ScanContext.Provider>
   );
@@ -122,4 +146,46 @@ export function useScan(handler: Handler) {
   const ref = useRef(handler);
   ref.current = handler;
   useEffect(() => register((s) => ref.current(s)), [register]);
+}
+
+function QuickScan({ onSubmit, onCamera, onClose }: { onSubmit: (code: string) => void; onCamera: () => void; onClose: () => void }) {
+  const [value, setValue] = useState("");
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[max(4rem,env(safe-area-inset-top))]" onClick={onClose}>
+      <form
+        role="dialog"
+        aria-label="Scanner un code"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-panel shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => { e.preventDefault(); if (value.trim()) onSubmit(value.trim()); }}
+      >
+        <div className="flex items-center gap-3 border-b border-line px-4">
+          <ScanLine size={20} className="shrink-0 text-muted" />
+          <input
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value.toUpperCase())}
+            placeholder="SKU, emplacement ou lot — ex. LSH00042"
+            autoCapitalize="characters"
+            autoComplete="off"
+            className="min-h-14 w-full bg-transparent font-mono text-lg outline-none"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2 p-3">
+          <button type="button" onClick={onCamera} className="flex min-h-12 items-center justify-center gap-2 rounded-lg border border-line font-semibold">
+            <Camera size={18} /> Caméra
+          </button>
+          <button type="submit" className="min-h-12 rounded-lg bg-accent font-semibold text-accent-fg disabled:opacity-40" disabled={!value.trim()}>
+            Ouvrir
+          </button>
+        </div>
+        <p className="px-4 pb-3 text-xs text-muted">Une douchette fonctionne aussi depuis n&apos;importe quel écran, sans ouvrir cette fenêtre.</p>
+      </form>
+    </div>
+  );
 }
