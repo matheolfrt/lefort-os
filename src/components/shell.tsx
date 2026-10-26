@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Boxes, Calculator, Factory, LayoutDashboard, MapPin, Package, ScanLine, Settings, ShoppingBag, Truck,
+  BarChart3, Boxes, Calculator, Factory, LayoutDashboard, MapPin, Package, ScanLine, Settings, ShoppingBag, Truck,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useScanApi } from "./scan-provider";
 
 const NAV = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false },
+  { href: "/statistiques", label: "Statistiques", icon: BarChart3, manager: true },
   { href: "/postes", label: "Postes", icon: Factory, manager: false },
   { href: "/stock", label: "Stock", icon: Package, manager: false },
   { href: "/lots", label: "Lots", icon: Boxes, manager: false },

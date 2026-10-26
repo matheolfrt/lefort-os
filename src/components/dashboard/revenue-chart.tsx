@@ -30,7 +30,7 @@ export function RevenueChart({ months }: { months: { month: string; cents: numbe
               {h > 0 && (
                 <path
                   d={`M${x},${H - bottom} V${y + 4} q0,-4 4,-4 H${x + bw - 4} q4,0 4,4 V${H - bottom} Z`}
-                  className={current ? "fill-fg" : i === hover ? "fill-fg/60" : "fill-fg/25"}
+                  className={current || i === hover ? "fill-series-1" : "fill-series-1/45"}
                 />
               )}
             </g>

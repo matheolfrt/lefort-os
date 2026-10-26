@@ -11,6 +11,9 @@
   --accent-fg: #ffffff;
   --ink: #18181b;
   --ink-fg: #fafafa;
+  /* chart series (validated categorical pair: blue, orange) */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -20,6 +23,8 @@
     --fg: #ededeb;
     --muted: #9a9a95;
     --ink: #0a0a0b;
+    --series-1: #3987e5;
+    --series-2: #d95926;
   }
 }
 
@@ -33,6 +38,8 @@
   --color-accent-fg: var(--accent-fg);
   --color-ink: var(--ink);
   --color-ink-fg: var(--ink-fg);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }

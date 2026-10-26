@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useScan } from "@/components/scan-provider";
 import { useToast } from "@/components/toast";
 import { Field, StatusChip, btn, input } from "@/components/ui";
 import { asItem, rpc } from "@/lib/client-data";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { eurosInput, money, parseEuros } from "@/lib/format";
 import type { Item } from "@/lib/types";
 
 const SELLABLE = ["listed", "reserved", "listing_ready"];
+
+type Hit = { id: string; sku: string; title: string | null; size_label: string | null; list_price_cents: number | null; brands: { name: string } | null };
 
 export function NewSale() {
   const router = useRouter();
@@ -24,6 +27,32 @@ export function NewSale() {
   const [shipping, setShipping] = useState("");
   const [packaging, setPackaging] = useState("");
   const [busy, setBusy] = useState(false);
+  const [hits, setHits] = useState<Hit[]>([]);
+  const [cursor, setCursor] = useState(0);
+
+  // search sellable items by title, brand, SKU or size as you type
+  useEffect(() => {
+    const q = sku.replace(/[%,()*]/g, " ").trim();
+    if (q.length < 2) { setHits([]); return; }
+    const t = setTimeout(async () => {
+      const words = q.split(/\s+/).filter(Boolean);
+      const db = supabaseBrowser();
+      const { data: brands } = await db.from("brands").select("id, name").or(words.map((w) => `name.ilike.%${w}%`).join(","));
+      const brandIds = (w: string) => ((brands ?? []) as { id: string; name: string }[]).filter((b) => b.name.toLowerCase().includes(w.toLowerCase())).map((b) => b.id);
+      let query = db.from("items")
+        .select("id, sku, title, size_label, list_price_cents, brands(name)")
+        .is("deleted_at", null).in("status", SELLABLE);
+      // every word must match the title, the SKU or the brand (or be the size)
+      for (const w of words) {
+        const ids = brandIds(w);
+        query = query.or(`title.ilike.%${w}%,sku.ilike.%${w}%,size_label.ilike.${w}${ids.length ? `,brand_id.in.(${ids.join(",")})` : ""}`);
+      }
+      const { data } = await query.order("listed_at", { ascending: false, nullsFirst: false }).limit(8);
+      setHits((data ?? []) as unknown as Hit[]);
+      setCursor(0);
+    }, 180);
+    return () => clearTimeout(t);
+  }, [sku]);
 
   async function add(code: string) {
     const it = asItem(await rpc<Item>("find_item_by_sku", { p_sku: code }).catch(() => null));
@@ -36,6 +65,7 @@ export function NewSale() {
       return next;
     });
     setSku("");
+    setHits([]);
   }
 
   useScan((scan) => {
@@ -75,9 +105,42 @@ export function NewSale() {
 
   return (
     <div className="space-y-3">
-      <Field label="Article(s) — scannez ou tapez le SKU">
-        <input className={`${input} font-mono uppercase`} value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())}
-          onKeyDown={(e) => { if (e.key === "Enter" && sku) { e.preventDefault(); add(sku); } }} placeholder="LSH00001" />
+      <Field label="Article(s) — cherchez par titre, marque, taille ou SKU, ou scannez">
+        <div className="relative">
+          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input className={`${input} pl-10`} value={sku} onChange={(e) => setSku(e.target.value)}
+            role="combobox" aria-expanded={hits.length > 0} aria-controls="sale-hits" aria-autocomplete="list"
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown" && hits.length) { e.preventDefault(); setCursor((c) => (c + 1) % hits.length); }
+              if (e.key === "ArrowUp" && hits.length) { e.preventDefault(); setCursor((c) => (c - 1 + hits.length) % hits.length); }
+              if (e.key === "Escape") setHits([]);
+              if (e.key === "Enter" && sku) {
+                e.preventDefault();
+                add(hits[cursor]?.sku ?? sku.toUpperCase());
+              }
+            }} placeholder="Ex. blazer boss bleu 50" />
+          {hits.length > 0 && (
+            <ul id="sale-hits" role="listbox" className="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-auto rounded-lg border border-line bg-panel shadow-lg">
+              {hits.map((h, i) => (
+                <li key={h.id} role="option" aria-selected={i === cursor}>
+                  <button type="button" onMouseEnter={() => setCursor(i)} onClick={() => add(h.sku)}
+                    className={`flex min-h-12 w-full items-center gap-3 px-3 py-2 text-left ${i === cursor ? "bg-bg" : ""}`}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{h.title ?? h.brands?.name ?? "Sans titre"}</span>
+                      <span className="block text-xs text-muted">
+                        <span className="font-mono">{h.sku}</span>{h.size_label && ` · taille ${h.size_label}`}{h.brands?.name && ` · ${h.brands.name}`}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">{money(h.list_price_cents)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {sku.trim().length >= 2 && hits.length === 0 && (
+            <p className="mt-1 text-xs text-muted">Aucun article en vente ne correspond. Entrée pour chercher le SKU exact.</p>
+          )}
+        </div>
       </Field>
       {items.map((i) => (
         <div key={i.id} className="flex items-center gap-2 rounded-md border border-line p-2">

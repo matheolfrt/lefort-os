@@ -116,7 +116,12 @@ export default async function Dashboard() {
         {f && (
           <Section title="Finance">
             <div className="rounded-xl border border-line bg-panel p-4">
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">CA encaissé · 12 derniers mois</div>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">CA encaissé · 12 derniers mois</span>
+                <Link href="/statistiques" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline">
+                  Statistiques <ChevronRight size={16} />
+                </Link>
+              </div>
               <RevenueChart months={f.months} />
               <FinanceTable month={f.month} year={f.year} ratePct={f.contributionRatePct} />
             </div>
