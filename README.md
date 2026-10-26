@@ -112,6 +112,16 @@ tranche de prix et fournisseur, frais, tendance, CA à déclarer) ; `src/lib/adv
 avec leurs seuils. Classement par marge par jour de stock. Migration `supabase/migrations/20261101000013_advisor.sql`
 (qui accélère aussi les règles d'accès : rôle et organisation évalués une fois par requête).
 
+## Niches
+
+`/niches` (responsables) : niches à tester (idée → en test → validée ou abandonnée). Une niche = des critères (marques,
+catégories, tailles, mots-clés du titre, gamme de prix) ; les lots achetés pour la tester s'y rattachent
+(`batches.niche_id`, champ « Niche testée » à la création du lot). Résultats sur les vraies ventes (`v_niche_items`,
+`niche_stats`) comparés à la moyenne : marge par article et par jour de stock, écoulement, retour sur l'argent investi,
+prix d'achat maximum conseillé. Verdict après 5 ventes (réglable). Suggestions tirées des chiffres (marques, catégories,
+tailles déjà rentables ou prometteuses) et idées de départ (`src/lib/niches.ts`).
+Migration `supabase/migrations/20261102000014_niches.sql`.
+
 ## Scénarios
 
 `/scenarios` (responsables) : simulateur de l'activité — stock, coût et prix moyens, écoulement mensuel, frais Vinted,

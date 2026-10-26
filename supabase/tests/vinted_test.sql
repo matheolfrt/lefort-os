@@ -321,6 +321,32 @@ select t.expect_error($$select public.vinted_orders_preview('[]')$$, 'non autori
 select t.expect_error($$select public.void_order(gen_random_uuid())$$, 'non autorisée');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 
+-- niches: matched by criteria or by a test batch, results from real sales, managers only
+do $$ declare r jsonb; v_n uuid; v_t uuid; v_batch uuid; v_sold int; begin
+  insert into niches(org_id, name, keywords, created_by) values (public.auth_org_id(), 'Hugo', '{hugo}', auth.uid()) returning id into v_n;
+  select count(*) into v_sold from v_item_economics e join brands b on b.id = e.brand_id where e.is_sold and b.name ilike '%hugo%';
+  r := public.niche_stats();
+  assert (select (x->'all'->>'sold')::int from jsonb_array_elements(r->'niches') x where x->>'id' = v_n::text) = v_sold, r::text;
+  assert (r->'reference'->>'sold')::int > 0, r::text;
+  -- a niche with no criteria and no batch covers nothing
+  insert into niches(org_id, name) values (public.auth_org_id(), 'Vide') returning id into v_t;
+  assert (select x->'all' from jsonb_array_elements(public.niche_stats()->'niches') x where x->>'id' = v_t::text) = 'null'::jsonb;
+  -- a test batch: all its items count, as test items
+  insert into batches(org_id, code, supplier_id, purchased_at, allocation_method, created_by, niche_id)
+  select org_id, 'LOT-NICHE-TEST', id, current_date, 'equal', auth.uid(), v_t from suppliers limit 1 returning id into v_batch;
+  perform public.create_batch_skus(v_batch, 'NT-', 1, 3);
+  r := public.niche_stats();
+  assert (select (x->'test'->>'items')::int from jsonb_array_elements(r->'niches') x where x->>'id' = v_t::text) = 3, r::text;
+  assert jsonb_array_length(public.niche_item_list(v_t)) = 3;
+  assert (select bool_and((x->>'in_test')::boolean) from jsonb_array_elements(public.niche_item_list(v_t)) x);
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
+do $$ begin
+  assert (select count(*) from niches) = 0, 'operators do not see niches';
+end $$;
+select t.expect_error($$select public.niche_stats()$$, 'réservées aux responsables');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+
 -- an outsider reaches nothing
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select t.expect_error($$select public.vinted_sync_preview('[]')$$, 'aucun compte actif');

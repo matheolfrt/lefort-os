@@ -34,6 +34,7 @@ export async function GET() {
     ["20261030000011_batch_skus_on_sale_locations", "bulk_put_on_sale", { p_item_ids: [] }],
     ["20261031000012_production_board", "production_overview", {}],
     ["20261101000013_advisor", "advisor_facts", {}],
+    ["20261102000014_niches", "niche_stats", {}],
   ] as const;
   const checks = await Promise.all(later.map(([, fn, args]) => supabase.rpc(fn, args)));
   const toRun = later.filter((_, i) => missing(checks[i].error?.code)).map(([file]) => `${file}.sql`);

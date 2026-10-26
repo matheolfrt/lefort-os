@@ -23,11 +23,17 @@ async function createBatch(formData: FormData) {
       invoice_number: f("invoice_number") || null,
       payment_method: f("payment_method") || null,
       notes: f("notes") || null,
+      niche_id: f("niche_id") || null,
       created_by: ctx.userId,
     })
     .select("id")
     .single();
   if (error) redirect(`/lots/nouveau?error=${encodeURIComponent(error.code === "23505" ? "Ce code de lot existe déjà." : error.message)}`);
+  // a batch bought to test a niche starts that test
+  if (f("niche_id")) {
+    await supabase.from("niches").update({ status: "testing", started_at: f("purchased_at") || null })
+      .eq("id", f("niche_id")).eq("status", "idea");
+  }
 
   const lines = (["goods", "transport", "customs", "fees"] as const)
     .map((kind) => ({ kind, amount_cents: parseEuros(f(`cost_${kind}`)) }))
@@ -45,13 +51,15 @@ async function createBatch(formData: FormData) {
   redirect(`/lots/${batch.id}`);
 }
 
-export default async function NewBatch({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function NewBatch({ searchParams }: { searchParams: Promise<{ error?: string; niche?: string }> }) {
   await requireManager();
-  const { error } = await searchParams;
+  const { error, niche } = await searchParams;
   const supabase = await createClient();
-  const [{ data: suppliers }, { count }] = await Promise.all([
+  const [{ data: suppliers }, { count }, { data: niches }] = await Promise.all([
     supabase.from("suppliers").select("id, name").eq("active", true).order("name"),
     supabase.from("batches").select("id", { count: "exact", head: true }),
+    // missing table (migration not run yet) simply hides the field
+    supabase.from("niches").select("id, name, status").in("status", ["idea", "testing"]).order("name"),
   ]);
   const today = new Date().toISOString().slice(0, 10);
   const suggestedCode = `LOT-${today.slice(0, 4)}-${String((count ?? 0) + 1).padStart(2, "0")}`;
@@ -92,6 +100,14 @@ export default async function NewBatch({ searchParams }: { searchParams: Promise
                 <option value="equal">Égale entre articles</option>
               </select>
             </Field>
+            {(niches ?? []).length > 0 && (
+              <Field label="Niche testée" hint="Facultatif : tous les articles de ce lot compteront dans le test de la niche.">
+                <select className={input} name="niche_id" defaultValue={niche ?? ""}>
+                  <option value="">Aucune</option>
+                  {(niches ?? []).map((n) => <option key={n.id} value={n.id}>{n.name}{n.status === "idea" ? " (lancera le test)" : ""}</option>)}
+                </select>
+              </Field>
+            )}
             <Field label="Notes"><textarea className={`${input} min-h-20 py-2`} name="notes" /></Field>
           </div>
         </Card>
