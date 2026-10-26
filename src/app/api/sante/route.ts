@@ -23,6 +23,16 @@ export async function GET() {
     fetch(`${url}/auth/v1/health`, { headers: { apikey: key } }).then((r) => r.ok).catch(() => false),
   ]);
 
+  // one function per later migration: tells which files still have to be run in the SQL Editor
+  const later = [
+    ["20261026000004_vinted_sync", "vinted_sync_preview", { p_listings: [] }],
+    ["20261026000005_bulk_actions", "bulk_transition", { p_item_ids: [], p_to: "listed" }],
+    ["20261027000007_delete_import", "import_items", { p_rows: [] }],
+    ["20261027000008_import_sales", "import_sales", { p_sales: [], p_historical: true }],
+  ] as const;
+  const checks = await Promise.all(later.map(([, fn, args]) => supabase.rpc(fn, args)));
+  const toRun = later.filter((_, i) => missing(checks[i].error?.code)).map(([file]) => `${file}.sql`);
+
   const schema = !missing(table.error?.code) && !missing(rpc.error?.code);
   return NextResponse.json(
     {
@@ -30,6 +40,7 @@ export async function GET() {
       projet_supabase: new URL(url).hostname.split(".")[0],
       authentification: authHealth ? "ok" : "injoignable",
       migrations: schema ? "installées" : "absentes : exécutez supabase/migrations/*.sql dans ce projet",
+      migrations_a_executer: toRun,
       details: { items: table.error?.code ?? "ok", rpc: rpc.error?.code ?? "ok" },
     },
     { status: schema && authHealth ? 200 : 503 },
