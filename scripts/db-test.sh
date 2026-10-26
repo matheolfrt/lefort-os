@@ -17,4 +17,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_vinted -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_vinted -f supabase/tests/vinted_test.sql >/dev/null
+# Production board on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_prod" -c "create database ${DB}_prod"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_prod -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_prod -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_prod -f supabase/tests/production_test.sql >/dev/null
 echo "DB tests passed"

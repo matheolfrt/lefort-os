@@ -1,5 +1,6 @@
 import { ShippingStation } from "./station";
 
-export default function Page() {
-  return <ShippingStation />;
+export default async function Page({ searchParams }: { searchParams: Promise<{ commande?: string }> }) {
+  const { commande } = await searchParams;
+  return <ShippingStation initialOrder={commande ?? null} />;
 }

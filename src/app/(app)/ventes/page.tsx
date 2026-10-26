@@ -14,7 +14,7 @@ const FILTERS: { key: string; label: string }[] = [
   { key: "", label: "Toutes" }, { key: "pending", label: "À expédier" }, { key: "shipped", label: "Expédiées" },
   { key: "completed", label: "Clôturées" }, { key: "cancelled", label: "Annulées" },
 ];
-type Params = { q?: string; etat?: string; page?: string };
+type Params = { q?: string; etat?: string; page?: string; article?: string };
 
 export default async function Sales({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
@@ -76,7 +76,7 @@ export default async function Sales({ searchParams }: { searchParams: Promise<Pa
         )}
       />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
-        <Card title="Nouvelle vente"><NewSale /></Card>
+        <Card title="Nouvelle vente"><NewSale initialSku={sp.article ?? null} /></Card>
         {ctx.isManager && (
           <Card title={`Commandes · ${count}`}>
             <div className="mb-3 space-y-2">

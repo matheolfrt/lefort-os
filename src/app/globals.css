@@ -67,3 +67,12 @@ table.data td { padding: 0.625rem; border-bottom: 1px solid var(--line); vertica
 table.data tbody tr:last-child td { border-bottom: 0; }
 table.data tr:hover td { background: color-mix(in srgb, var(--fg) 4%, transparent); }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Production board: a card lands in its new column, side panels slide in */
+@keyframes card-in { from { opacity: 0; transform: translateY(-8px) scale(0.97); } to { opacity: 1; transform: none; } }
+.card-in { animation: card-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes panel-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.panel-in { animation: panel-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes panel-fade { from { opacity: 0; } to { opacity: 1; } }
+.panel-fade { animation: panel-fade 0.2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .card-in, .panel-in, .panel-fade { animation: none; } }

@@ -90,6 +90,19 @@ téléchargeable depuis Paramètres.
   vente seule (erreur, doublon d'import) : elle sort des totaux et du livre des recettes, ses articles reviennent
   « prêt à publier » et la référence Vinted est libérée (`supabase/migrations/20261029000010_void_sales.sql`).
 
+## Production (Kanban)
+
+`/postes/production` : la chaîne en 9 colonnes (Réception → Expédié), une colonne = un statut `items.status`
+(un article en attente reste dans sa colonne, un retour revient en Réception). Glisser-déposer (souris, ou appui long
+au doigt sur tablette) ou « Terminer » font avancer d'une étape par `kanban_move`, qui passe par la machine à états
+et ses contrôles (photos, mesures, rangement, prix). Sauter une étape ou revenir en arrière : responsables seulement,
+après confirmation, tracé comme correction (`forced`). Vendu et Expédié s'ouvrent sur Ventes et Expédition.
+Priorité (`items.priority`), blocage avec raison (`blocked_reason`), employé assigné (`assigned_to`) ; chaque action
+est dans `item_events` (qui, quand, de → vers). « Prochaine tâche » (`next_task`) choisit l'article en main, puis
+assigné, puis le plus urgent et le plus ancien des étapes du rôle. Productivité et goulot : `production_stats`.
+Colonnes virtualisées et chargées par pages de 30 (`production_board`, ~0,1 s sur 20 000 articles).
+Migration `supabase/migrations/20261031000012_production_board.sql`, tests `supabase/tests/production_test.sql`.
+
 ## Scénarios
 
 `/scenarios` (responsables) : simulateur de l'activité — stock, coût et prix moyens, écoulement mensuel, frais Vinted,

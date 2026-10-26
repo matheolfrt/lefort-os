@@ -15,7 +15,7 @@ const SELLABLE = ["listed", "reserved", "listing_ready"];
 
 type Hit = { id: string; sku: string; title: string | null; size_label: string | null; list_price_cents: number | null; brands: { name: string } | null };
 
-export function NewSale() {
+export function NewSale({ initialSku = null }: { initialSku?: string | null } = {}) {
   const router = useRouter();
   const toast = useToast();
   const [items, setItems] = useState<Item[]>([]);
@@ -77,6 +77,12 @@ export function NewSale() {
     add(scan.code);
     return true;
   });
+
+  // opened from the production board ("Vendu" column): the item is already in the sale
+  useEffect(() => {
+    if (initialSku) add(initialSku);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSku]);
 
   async function submit() {
     const grossCents = parseEuros(gross);

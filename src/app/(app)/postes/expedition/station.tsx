@@ -17,12 +17,12 @@ interface Row {
 const CARRIERS = ["Mondial Relay", "Vinted Go", "Relais Colis", "Colissimo", "Chronopost", "UPS", "Remise en main propre"];
 
 /** Pick list sorted by location, scan-to-confirm each item, then mark the parcel shipped. */
-export function ShippingStation() {
+export function ShippingStation({ initialOrder = null }: { initialOrder?: string | null } = {}) {
   const toast = useToast();
   const confirm = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [active, setActive] = useState<string | null>(null);
+  const [active, setActive] = useState<string | null>(initialOrder);
   const [carrier, setCarrier] = useState(CARRIERS[0]);
   const [tracking, setTracking] = useState("");
   const [busy, setBusy] = useState(false);

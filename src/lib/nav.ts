@@ -9,7 +9,7 @@ export const NAV: NavItem[] = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard" },
   { href: "/statistiques", label: "Statistiques", icon: BarChart3, manager: true, keywords: "kpi graphiques marge chiffre" },
   { href: "/scenarios", label: "Scénarios", icon: FlaskConical, manager: true, keywords: "simulation prévision business plan hypothèses" },
-  { href: "/postes", label: "Postes", icon: Factory, manager: false, keywords: "travail production" },
+  { href: "/postes", label: "Postes", icon: Factory, manager: false, keywords: "travail production kanban" },
   { href: "/stock", label: "Stock", icon: Package, manager: false, keywords: "articles inventaire" },
   { href: "/lots", label: "Lots", icon: Boxes, manager: false, keywords: "achats batch" },
   { href: "/ventes", label: "Ventes", icon: ShoppingBag, manager: false, keywords: "commandes nouvelle vente" },
@@ -21,6 +21,7 @@ export const NAV: NavItem[] = [
 
 /** Shortcuts to the stations and frequent screens */
 export const SHORTCUTS: { href: string; label: string; manager: boolean }[] = [
+  { href: "/postes/production", label: "Production (Kanban, prochaine tâche)", manager: false },
   { href: "/postes/reception", label: "Poste Réception & tri", manager: false },
   { href: "/postes/photo", label: "Poste Photo & mesures", manager: false },
   { href: "/postes/rangement", label: "Poste Rangement", manager: false },

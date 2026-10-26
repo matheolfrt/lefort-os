@@ -22,7 +22,8 @@ const ScanContext = createContext<ScanApi | null>(null);
 
 // Hardware scanners type like a very fast keyboard and end with Enter
 const MAX_GAP_MS = 40;
-const MIN_LENGTH = 4;
+// "M-1" (3 characters) is a real SKU printed on labels
+const MIN_LENGTH = 3;
 
 export function ScanProvider({ children, isManager = false }: { children: ReactNode; isManager?: boolean }) {
   const router = useRouter();
