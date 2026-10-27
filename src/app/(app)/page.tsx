@@ -7,6 +7,7 @@ import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { LOW_SAMPLE, loadDashboard, type PeriodResult } from "@/lib/dashboard";
 import { buildAdvice, eur as eur0, type Advice, type Facts } from "@/lib/advisor";
+import { sellThroughAdvice, type SellThroughStats } from "@/lib/sellthrough";
 import { PIPELINE, STATUS_LABEL, STATUS_DOT } from "@/i18n/fr";
 import { money } from "@/lib/format";
 import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/lib/compliance";
@@ -347,10 +348,13 @@ function Gauge({ label, value, max }: { label: string; value: number; max: numbe
 async function AdviceCard({ quarterly }: { quarterly: boolean }) {
   const supabase = await createClient();
   // a database without the advisor migration simply shows no card
-  const { data, error } = await supabase.rpc("advisor_facts");
+  const [{ data, error }, { data: st }] = await Promise.all([supabase.rpc("advisor_facts"), supabase.rpc("sellthrough_stats")]);
   if (error || !data) return null;
   const advice = buildAdvice(data as Facts, new Date(), quarterly);
-  const top: Advice[] = [...advice.tasks.slice(0, 3), ...advice.advice.slice(0, 2)];
+  const rotation = st ? sellThroughAdvice(st as SellThroughStats) : [];
+  const tasks = [...advice.tasks, ...rotation.filter((a) => a.id.startsWith("st-risk"))].sort((a, b) => b.score - a.score);
+  const money = [...advice.advice, ...rotation.filter((a) => !a.id.startsWith("st-risk") && a.tone !== "info")].sort((a, b) => b.score - a.score);
+  const top: Advice[] = [...tasks.slice(0, 3), ...money.slice(0, 2)];
   if (!top.length) return null;
   return (
     <Section title="Conseils" aside={

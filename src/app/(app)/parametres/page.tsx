@@ -19,6 +19,7 @@ async function saveOrg(formData: FormData) {
     address: s("address") || null, declaration_frequency: s("declaration_frequency"),
     versement_liberatoire: formData.get("versement_liberatoire") === "on", vat_regime: s("vat_regime"),
     min_photos: Number(s("min_photos")), dead_stock_days: Number(s("dead_stock_days")),
+    sellthrough_target_pct: Number(s("sellthrough_target_pct")) || 80, sellthrough_days: Number(s("sellthrough_days")) || 30,
     vinted_fee_pct: Number(s("vinted_fee_pct").replace(",", ".")) || 0,
     vinted_fee_fixed_cents: Math.round(Number(s("vinted_fee_fixed").replace(",", ".")) * 100) || 0,
     listing_signature: s("listing_signature"),
@@ -103,6 +104,12 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               <Field label="Frais Vinted Pro fixes (€ / vente)"><input className={input} name="vinted_fee_fixed" defaultValue={(o.vinted_fee_fixed_cents / 100).toFixed(2).replace(".", ",")} inputMode="decimal" /></Field>
               <Field label="Photos minimum par article"><input className={input} name="min_photos" type="number" min={0} defaultValue={o.min_photos} /></Field>
               <Field label="Stock dormant après (jours)"><input className={input} name="dead_stock_days" type="number" min={1} defaultValue={o.dead_stock_days} /></Field>
+              <Field label="Objectif d'écoulement (%)" hint="Part des articles à vendre dans le délai ci-contre">
+                <input className={input} name="sellthrough_target_pct" type="number" min={1} max={100} defaultValue={o.sellthrough_target_pct ?? 80} />
+              </Field>
+              <Field label="Délai d'écoulement (jours)" hint="Compté depuis la réception de l'article">
+                <input className={input} name="sellthrough_days" type="number" min={7} max={120} defaultValue={o.sellthrough_days ?? 30} />
+              </Field>
               <div className="sm:col-span-2">
                 <Field label="Signature des annonces"><textarea className={`${input} min-h-16 py-2`} name="listing_signature" defaultValue={o.listing_signature} /></Field>
               </div>

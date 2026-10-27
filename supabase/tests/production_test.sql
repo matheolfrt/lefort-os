@@ -18,6 +18,10 @@ create function t.add_listing(p_sku text) returns void language sql security def
      select org_id, id, 'vinted', 'https://www.vinted.fr/items/1', 3900 from items where sku = p_sku $$;
 create function t.list_old(p_sku text, p_price bigint) returns void language sql security definer as
   $$ update items set status = 'listed', list_price_cents = p_price, listed_at = now() - interval '200 days' where sku = p_sku $$;
+-- test helper: a received item dated N days ago, put on sale
+create function t.aged(p_sku text, p_days int) returns void language sql security definer as
+  $$ update items set received_at = now() - make_interval(days => p_days), status = 'listed', list_price_cents = 3000,
+            listed_at = now() - make_interval(days => p_days) where sku = p_sku $$;
 grant usage on schema t to authenticated;
 grant execute on all functions in schema t to authenticated;
 
@@ -154,6 +158,45 @@ do $$ declare r jsonb; begin
 end $$;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
 select t.expect_error($$select public.advisor_facts()$$, 'réservés aux responsables');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
+
+-- sell-through: share of a batch sold within 30 days of reception; in-flight batches and finished ones
+do $$ declare r jsonb; v_a uuid; v_b uuid; b jsonb; begin
+  insert into batches(org_id, code, supplier_id, purchased_at, allocation_method, created_by)
+  select org_id, 'LOT-ST-A', id, current_date, 'equal', auth.uid() from suppliers limit 1 returning id into v_a;
+  insert into batches(org_id, code, supplier_id, purchased_at, allocation_method, created_by)
+  select org_id, 'LOT-ST-B', id, current_date, 'equal', auth.uid() from suppliers limit 1 returning id into v_b;
+  perform public.create_batch_skus(v_a, 'SA-', 1, 10);
+  perform public.create_batch_skus(v_b, 'SB-', 1, 4);
+  -- A: received 10 days ago, 5 sold 5 days ago (in flight)
+  for i in 1..10 loop perform t.aged('SA-' || i, 10); end loop;
+  perform public.record_sale(array[t.id('SA-1'), t.id('SA-2'), t.id('SA-3')], 9000, now() - interval '5 days');
+  perform public.record_sale(array[t.id('SA-4'), t.id('SA-5')], 6000, now() - interval '5 days');
+  -- B: received 45 days ago; 2 sold after 10 days (in time), 1 sold after 40 days (too late), 1 unsold
+  for i in 1..4 loop perform t.aged('SB-' || i, 45); end loop;
+  perform public.record_sale(array[t.id('SB-1'), t.id('SB-2')], 6000, now() - interval '35 days');
+  perform public.record_sale(array[t.id('SB-3')], 3000, now() - interval '5 days');
+  r := public.sellthrough_stats();
+  assert (r->>'days')::int = 30 and (r->>'target_pct')::int = 80, r::text;
+  b := (select x from jsonb_array_elements(r->'batches') x where x->>'code' = 'LOT-ST-A');
+  assert (b->>'items')::int = 10 and (b->>'sold_in_time')::int = 5 and (b->>'sold_total')::int = 5
+     and (b->>'not_online')::int = 0 and not (b->>'matured')::boolean and (b->>'age_days')::numeric between 9.9 and 10.1, b::text;
+  b := (select x from jsonb_array_elements(r->'batches') x where x->>'code' = 'LOT-ST-B');
+  assert (b->>'items')::int = 4 and (b->>'sold_total')::int = 3 and (b->>'sold_in_time')::int = 2 and (b->>'matured')::boolean, b::text;
+  -- finished results: only batch B (and older test items) are final; B alone: 2 of 4
+  assert (select (x->>'sold')::int from jsonb_array_elements(r->'suppliers') x limit 1) >= 2, r->>'suppliers';
+  -- an item rejected or in an opening-stock batch never counts
+  assert (select sum((x->>'items')::int) from jsonb_array_elements(r->'batches') x where x->>'code' in ('LOT-ST-A', 'LOT-ST-B')) = 14, r::text;
+  -- the target and the window are settings
+  update organizations set sellthrough_target_pct = 60, sellthrough_days = 45 where id = public.auth_org_id();
+  r := public.sellthrough_stats();
+  assert (r->>'days')::int = 45 and (r->>'target_pct')::int = 60, r::text;
+  b := (select x from jsonb_array_elements(r->'batches') x where x->>'code' = 'LOT-ST-B');
+  assert (b->>'sold_in_time')::int = 3 and (b->>'matured')::boolean = true, b::text; -- 40 days is in time within 45
+  update organizations set sellthrough_target_pct = 80, sellthrough_days = 30 where id = public.auth_org_id();
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
+select t.expect_error($$select public.sellthrough_stats()$$, 'réservé aux responsables');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 
 -- an outsider reaches nothing

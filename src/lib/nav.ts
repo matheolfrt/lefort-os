@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Compass, Factory, FlaskConical, LayoutDashboard, Lightbulb, MapPin, Package, Settings, ShoppingBag, Truck, type LucideIcon,
+  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, LayoutDashboard, Lightbulb, MapPin, Package, Settings, ShoppingBag, Truck, type LucideIcon,
 } from "lucide-react";
 
 export type NavGroup = "Pilotage" | "Opérations" | "Gestion";
@@ -9,6 +9,7 @@ export interface NavItem { href: string; label: string; icon: LucideIcon; manage
 export const NAV: NavItem[] = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard", group: "Pilotage" },
   { href: "/conseils", label: "Conseils", icon: Lightbulb, manager: true, keywords: "priorités rentabilité recommandations à faire acheter", group: "Pilotage" },
+  { href: "/ecoulement", label: "Écoulement", icon: Gauge, manager: true, keywords: "rotation 30 jours 80% vente rapide taux lot objectif", group: "Pilotage" },
   { href: "/niches", label: "Niches", icon: Compass, manager: true, keywords: "tester nouvelles niches marques idées essai lot de test", group: "Pilotage" },
   { href: "/statistiques", label: "Statistiques", icon: BarChart3, manager: true, keywords: "kpi graphiques marge chiffre", group: "Pilotage" },
   { href: "/scenarios", label: "Scénarios", icon: FlaskConical, manager: true, keywords: "simulation prévision business plan hypothèses", group: "Pilotage" },

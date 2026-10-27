@@ -24,6 +24,9 @@ export interface Organization {
   versement_liberatoire: boolean;
   min_photos: number;
   dead_stock_days: number;
+  /** optional until the sell-through migration has run */
+  sellthrough_target_pct?: number;
+  sellthrough_days?: number;
   vinted_fee_pct: number;
   vinted_fee_fixed_cents: number;
   listing_signature: string;

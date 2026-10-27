@@ -122,6 +122,16 @@ prix d'achat maximum conseillé. Verdict après 5 ventes (réglable). Suggestion
 tailles déjà rentables ou prometteuses) et idées de départ (`src/lib/niches.ts`).
 Migration `supabase/migrations/20261102000014_niches.sql`.
 
+## Écoulement
+
+`/ecoulement` (responsables) : part des articles vendus dans les 30 jours après leur réception (objectif 80 %, réglable
+dans Paramètres avec le délai). Le compteur de chaque article démarre à sa réception ; seuls les lots réellement achetés
+comptent (stock existant et ventes importées exclus). Lots en cours : vendus, reste à vendre pour tenir l'objectif, rythme
+requis et rythme actuel, articles pas encore en ligne, statut (en avance, dans les temps, à surveiller, en retard). Lots
+terminés, puis détail par fournisseur, marque, catégorie et mois de réception. Les lots à risque et l'écoulement global
+alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `sellthrough_stats()`, migration
+`supabase/migrations/20261103000015_sellthrough.sql`.
+
 ## Scénarios
 
 `/scenarios` (responsables) : simulateur de l'activité — stock, coût et prix moyens, écoulement mensuel, frais Vinted,

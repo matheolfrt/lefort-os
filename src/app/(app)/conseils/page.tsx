@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireManager } from "@/lib/session";
 import { MIN_SAMPLE, buildAdvice, eur, eur2, type Advice, type Ranked, type Verdict } from "@/lib/advisor";
 import type { Facts } from "@/lib/advisor";
+import { sellThroughAdvice, type SellThroughStats } from "@/lib/sellthrough";
 import { Prioritize } from "./prioritize";
 
 export const metadata = { title: "Conseils" };
@@ -26,9 +27,11 @@ const VERDICT: Record<Verdict, { label: string; cls: string }> = {
 export default async function Conseils() {
   await requireManager();
   const supabase = await createClient();
-  const [{ data, error }, { data: org }] = await Promise.all([
+  const [{ data, error }, { data: org }, { data: st }] = await Promise.all([
     supabase.rpc("advisor_facts"),
     supabase.from("organizations").select("declaration_frequency").maybeSingle(),
+    // missing until its migration has run: the page simply shows no sell-through advice
+    supabase.rpc("sellthrough_stats"),
   ]);
 
   if (error || !data) {
@@ -46,6 +49,15 @@ export default async function Conseils() {
 
   const f = data as Facts;
   const r = buildAdvice(f, new Date(), org?.declaration_frequency === "quarterly");
+  if (st) {
+    // sell-through advice joins the lists by urgency: batches at risk are tasks, the rest is advice
+    for (const a of sellThroughAdvice(st as SellThroughStats)) {
+      (a.id.startsWith("st-risk") ? r.tasks : a.tone === "info" ? r.insights : r.advice).push(a);
+    }
+    r.tasks.sort((a, b) => b.score - a.score);
+    r.advice.sort((a, b) => b.score - a.score);
+    r.insights.sort((a, b) => b.score - a.score);
+  }
 
   return (
     <div className="space-y-5">
