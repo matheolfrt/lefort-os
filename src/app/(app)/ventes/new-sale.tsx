@@ -15,7 +15,7 @@ const SELLABLE = ["listed", "reserved", "listing_ready"];
 
 type Hit = { id: string; sku: string; title: string | null; size_label: string | null; list_price_cents: number | null; brands: { name: string } | null };
 
-export function NewSale({ initialSku = null }: { initialSku?: string | null } = {}) {
+export function NewSale({ initialSku = null, focus = false }: { initialSku?: string | null; focus?: boolean } = {}) {
   const router = useRouter();
   const toast = useToast();
   const [items, setItems] = useState<Item[]>([]);
@@ -120,7 +120,7 @@ export function NewSale({ initialSku = null }: { initialSku?: string | null } = 
       <Field label="Article(s) — cherchez par titre, marque, taille ou SKU, ou scannez">
         <div className="relative">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input className={`${input} pl-10`} value={sku} onChange={(e) => setSku(e.target.value)}
+          <input className={`${input} pl-10`} value={sku} onChange={(e) => setSku(e.target.value)} data-new-sale-sku autoFocus={focus}
             role="combobox" aria-expanded={hits.length > 0} aria-controls="sale-hits" aria-autocomplete="list"
             onKeyDown={(e) => {
               if (e.key === "ArrowDown" && hits.length) { e.preventDefault(); setCursor((c) => (c + 1) % hits.length); }

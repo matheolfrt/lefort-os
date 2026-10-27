@@ -44,10 +44,10 @@ export default async function Ecoulement() {
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Stat label={`Écoulement à ${s.days} j`} value={<span className={TONE_TEXT[ot]}>{o.pct == null ? "—" : `${Math.round(o.pct)} %`}</span>}
-          hint={o.items ? `${o.sold} vendus sur ${o.items} articles (6 derniers mois)` : "pas encore de lot terminé"} />
-        <Stat label="Objectif" value={`${s.target_pct} %`} hint={`dans les ${s.days} jours`} />
-        <Stat label="Lots en cours" value={running.length} hint={risk.length ? `${risk.length} en retard ou à surveiller` : "tous dans les temps"} />
-        <Stat label="À vendre pour tenir l'objectif" value={toSell} hint={toSell ? "articles des lots à risque" : "rien à rattraper"} />
+          hint={o.items ? `${o.sold} vendus sur ${o.items} articles (6 derniers mois)` : "pas encore de lot terminé"} help={`Part des articles vendus dans les ${s.days} jours suivant leur réception, sur les lots reçus ces 6 derniers mois. Les lots encore dans leur période ne sont pas comptés.`} />
+        <Stat label="Objectif" value={`${s.target_pct} %`} hint={`dans les ${s.days} jours`} help="Réglable dans Paramètres. Le modèle « petits prix, rotation rapide » vise 80 % vendus en 30 jours." />
+        <Stat label="Lots en cours" value={running.length} hint={risk.length ? `${risk.length} en retard ou à surveiller` : "tous dans les temps"} help={`Lots reçus il y a moins de ${s.days} jours. « À surveiller » ou « en retard » : leur rythme de vente ne permet pas d'atteindre l'objectif à temps.`} />
+        <Stat label="À vendre pour tenir l'objectif" value={toSell} hint={toSell ? "articles des lots à risque" : "rien à rattraper"} help="Nombre d'articles à vendre en plus, dans les lots à risque, pour qu'ils atteignent l'objectif avant la fin de leur période." />
       </div>
 
       <section aria-labelledby="running">

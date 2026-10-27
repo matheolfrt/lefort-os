@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getContext, requireManager } from "@/lib/session";
@@ -154,6 +155,10 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             )}
           </Card>
 
+          <Card title="Base de données">
+            <p className="text-sm text-muted">Les nouvelles fonctions ont parfois besoin d&apos;une mise à jour de la base Supabase.</p>
+            <Link href="/parametres/mises-a-jour" className={`${btn.secondary} mt-3`}>Vérifier les mises à jour</Link>
+          </Card>
           <Card title="Extension Chrome Vinted">
             <p className="mb-3 text-sm">
               Importe votre dressing Vinted et le resynchronise : nouvelles annonces, ventes faites sur Vinted, prix et réservations.

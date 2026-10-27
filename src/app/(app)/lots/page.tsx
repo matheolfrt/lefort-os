@@ -27,7 +27,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
         actions={ctx.isManager && <Link href="/lots/nouveau" className={btn.primary}>Nouveau lot</Link>}
       />
       {(progress ?? []).length === 0 ? (
-        <Empty>Aucun lot. Créez votre premier lot pour imprimer les étiquettes.</Empty>
+        <Empty action={{ href: "/lots/nouveau", label: "Créer mon premier lot" }}>Un lot = un achat chez un fournisseur. Créez-le pour imprimer les étiquettes et suivre ce qu&apos;il vous rapporte.</Empty>
       ) : (
         <>
           {/* Phone: one card per batch */}

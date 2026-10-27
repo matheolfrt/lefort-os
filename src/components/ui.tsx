@@ -47,18 +47,48 @@ export function Card({ title, children, className = "" }: { title?: ReactNode; c
   );
 }
 
-export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
+export function Stat({ label, value, hint, help }: { label: string; value: ReactNode; hint?: ReactNode; help?: string }) {
   return (
     <div className="rounded-2xl border border-line bg-panel/80 px-4 py-3">
-      <div className="eyebrow-tight leading-tight text-muted">{label}</div>
+      <div className="eyebrow-tight flex items-start gap-1 leading-tight text-muted">{label}{help && <Help text={help} />}</div>
       <div className="mt-1.5 font-mono text-[26px] font-medium leading-tight tracking-tight tabular-nums">{value}</div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
     </div>
   );
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <div className="rounded-2xl border border-dashed border-line bg-panel/40 p-8 text-center text-muted">{children}</div>;
+/** An empty list says what to do next: a short sentence and, when useful, the button that does it */
+export function Empty({ children, action, secondary }: {
+  children: ReactNode; action?: { href: string; label: string }; secondary?: { href: string; label: string };
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-line bg-panel/40 p-8 text-center text-muted">
+      <div>{children}</div>
+      {(action || secondary) && (
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {action && <Link href={action.href} className={btn.primary}>{action.label}</Link>}
+          {secondary && <Link href={secondary.href} className={btn.secondary}>{secondary.label}</Link>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A small « ? » that explains a figure: on hover, on keyboard focus and on tap */
+export function Help({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex normal-case tracking-normal">
+      <button type="button" aria-label={`Aide : ${text}`}
+        className="-m-3 inline-flex size-11 items-center justify-center rounded-full text-muted/70 transition hover:text-fg focus-visible:text-fg">
+        {/* a finger-sized button around a small mark */}
+        <span className="flex size-5 items-center justify-center rounded-full text-[11px] font-semibold">?</span>
+      </button>
+      <span role="tooltip"
+        className="pointer-events-none invisible fixed inset-x-4 bottom-4 z-[60] rounded-xl border border-line bg-panel-2 p-3 font-sans text-sm font-normal leading-relaxed text-fg opacity-0 shadow-xl transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-full sm:mt-1 sm:w-64 sm:-translate-x-1/2 sm:text-xs">
+        {text}
+      </span>
+    </span>
+  );
 }
 
 export const btn = {

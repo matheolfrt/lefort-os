@@ -14,7 +14,7 @@ const FILTERS: { key: string; label: string }[] = [
   { key: "", label: "Toutes" }, { key: "pending", label: "À expédier" }, { key: "shipped", label: "Expédiées" },
   { key: "completed", label: "Clôturées" }, { key: "cancelled", label: "Annulées" },
 ];
-type Params = { q?: string; etat?: string; page?: string; article?: string };
+type Params = { q?: string; etat?: string; page?: string; article?: string; nouvelle?: string };
 
 export default async function Sales({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
@@ -76,7 +76,7 @@ export default async function Sales({ searchParams }: { searchParams: Promise<Pa
         )}
       />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
-        <Card title="Nouvelle vente"><NewSale initialSku={sp.article ?? null} /></Card>
+        <Card title="Nouvelle vente"><NewSale initialSku={sp.article ?? null} focus={sp.nouvelle === "1"} /></Card>
         {ctx.isManager && (
           <Card title={`Commandes · ${count}`}>
             <div className="mb-3 space-y-2">
@@ -100,7 +100,10 @@ export default async function Sales({ searchParams }: { searchParams: Promise<Pa
               </nav>
             </div>
             {!orders?.length ? (
-              <Empty>{q || etat ? "Aucune vente ne correspond." : "Aucune vente pour l'instant."}</Empty>
+              <Empty action={q || etat ? { href: "/ventes", label: "Voir toutes les ventes" } : undefined}
+                secondary={q || etat ? undefined : { href: "/ventes/import", label: "Importer mes ventes" }}>
+                {q || etat ? "Aucune vente ne correspond." : "Aucune vente pour l'instant : enregistrez la première avec le formulaire, ou importez l'historique de Vinted."}
+              </Empty>
             ) : (
               <>
                 {/* Phone: one card per order */}

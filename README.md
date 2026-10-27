@@ -30,6 +30,11 @@ Stack : Next.js 15 (App Router, TypeScript, Tailwind) · Supabase (Postgres, Aut
    l'espace Lefort Second Hand avec catégories, gabarits de mesures, emplacements et taux URSSAF.
 6. **Déploiement** : importer le dépôt sur Vercel, ajouter les deux variables d'environnement.
    Sur iPhone : ouvrir l'URL dans Safari → Partager → « Sur l'écran d'accueil ».
+7. **Mises à jour de la base** : quand une nouvelle version a besoin d'une migration, un bandeau l'indique aux
+   gérants ; Paramètres → Mises à jour de la base liste les fichiers manquants (bouton « Copier le SQL » + lien
+   vers l'éditeur SQL). Optionnel : avec `SUPABASE_ACCESS_TOKEN` (jeton personnel Supabase → Account → Access
+   Tokens) dans les variables Vercel, un bouton les applique en un clic via l'API Management de Supabase
+   (`src/lib/migrations.ts` : chaque migration récente y est détectée par une fonction qu'elle crée).
 
 ## Étiquettes (MUNBYN P130B)
 
@@ -131,6 +136,21 @@ requis et rythme actuel, articles pas encore en ligne, statut (en avance, dans l
 terminés, puis détail par fournisseur, marque, catégorie et mois de réception. Les lots à risque et l'écoulement global
 alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `sellthrough_stats()`, migration
 `supabase/migrations/20261103000015_sellthrough.sql`.
+
+## Pilotage et confort d'utilisation
+
+- **Pilotage** : une seule entrée de menu pour Conseils, Écoulement, Niches, Statistiques et Scénarios (onglets,
+  groupe de routes `src/app/(app)/(pilotage)`, URLs inchangées, réservé aux gérants).
+- **Stock modifiable sur place** : cliquer sur le prix, l'emplacement ou le statut d'une ligne pour le changer ;
+  chaque changement (aussi les actions groupées) propose « Annuler » au lieu d'une confirmation
+  (`src/lib/item-edits.ts`, partagé avec la fiche article et ⌘K). Les annulations passent par les mêmes règles
+  de statut : un retour refusé est signalé, jamais forcé.
+- **⌘K exécute des actions** (`src/lib/commands.ts`) : « M-12 29 », « baisser M-12 à 29,90 », « ranger M-12 en
+  A-01-02 », « en ligne M-12 », « vendre M-12 », « étiquette M-12 ».
+- **Raccourcis clavier** (`src/components/keyboard-shortcuts.tsx`) : `g` puis `d` `p` `r` `o` `s` `l` `v` `e`,
+  `n` nouvelle vente, `?` aide. Ignorés pendant la saisie et pendant un scan (touches trop rapprochées).
+- **Fiche article** : photos en grand, carte « En bref » modifiable, historique unique (statuts + emplacements).
+- **Aide** : écrans vides avec l'action suivante, bulles « ? » sur les chiffres clés.
 
 ## Scénarios
 

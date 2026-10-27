@@ -6,6 +6,7 @@ import { Menu, ScanLine, Search, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { NAV, type NavGroup } from "@/lib/nav";
 import { useScanApi } from "./scan-provider";
+import { KeyboardShortcuts } from "./keyboard-shortcuts";
 
 const MOBILE = ["/", "/postes", "/stock", "/ventes"];
 const GROUPS: NavGroup[] = ["Pilotage", "Opérations", "Gestion"];
@@ -21,8 +22,9 @@ export function Shell({ children, isManager, orgName, userName }: {
 }) {
   const path = usePathname();
   const { openCamera, openQuick } = useScanApi();
-  const items = NAV.filter((n) => isManager || !n.manager);
-  const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
+  const items = NAV.filter((n) => (isManager || !n.manager) && !n.tab);
+  const under = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
+  const active = (href: string, match?: string[]) => (match ? match.some(under) : under(href));
   const [menu, setMenu] = useState(false);
   useEffect(() => setMenu(false), [path]);
 
@@ -53,16 +55,16 @@ export function Shell({ children, isManager, orgName, userName }: {
               <div key={group} className="mt-3 first:mt-0">
                 {isManager && <div className="eyebrow-tight px-3 pb-1.5 text-[10px] text-muted/70">{group}</div>}
                 <div className="space-y-0.5">
-                  {links.map(({ href, label, icon: Icon }) => (
+                  {links.map(({ href, label, icon: Icon, match }) => (
                     <Link
-                      key={href}
+                      key={label}
                       href={href}
-                      aria-current={active(href) ? "page" : undefined}
+                      aria-current={active(href, match) ? "page" : undefined}
                       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-                        active(href) ? "bg-accent/12 text-accent" : "text-fg/70 hover:bg-fg/5 hover:text-fg"
+                        active(href, match) ? "bg-accent/12 text-accent" : "text-fg/70 hover:bg-fg/5 hover:text-fg"
                       }`}
                     >
-                      {active(href) && <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" />}
+                      {active(href, match) && <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" />}
                       <Icon size={18} className="shrink-0" /> <span className="flex-1">{label}</span>
                       <Pending />
                     </Link>
@@ -73,7 +75,10 @@ export function Shell({ children, isManager, orgName, userName }: {
           })}
         </nav>
         <div className="border-t border-line px-5 py-4 text-xs text-muted">
-          {userName}
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate">{userName}</span>
+            <span title="Raccourcis clavier" className="shrink-0">Raccourcis <kbd className="rounded-md border border-line px-1.5 font-mono text-[10px]">?</kbd></span>
+          </div>
           <form action="/logout" method="post">
             <button className="mt-1 underline">Se déconnecter</button>
           </form>
@@ -102,10 +107,10 @@ export function Shell({ children, isManager, orgName, userName }: {
               <button onClick={() => setMenu(false)} aria-label="Fermer" className="flex size-11 items-center justify-center rounded-xl"><X size={20} /></button>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
-              {items.map(({ href, label, icon: Icon }) => (
-                <Link key={href} href={href} onClick={() => setMenu(false)}
+              {items.map(({ href, label, icon: Icon, match }) => (
+                <Link key={label} href={href} onClick={() => setMenu(false)}
                   className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium ${
-                    active(href) ? "bg-accent/12 text-accent ring-1 ring-inset ring-accent/25" : "bg-bg/60 text-fg/85"}`}>
+                    active(href, match) ? "bg-accent/12 text-accent ring-1 ring-inset ring-accent/25" : "bg-bg/60 text-fg/85"}`}>
                   <Icon size={18} /> {label}
                 </Link>
               ))}
@@ -119,6 +124,8 @@ export function Shell({ children, isManager, orgName, userName }: {
       )}
 
       <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div key={path} className="page-in mx-auto max-w-7xl">{children}</div></main>
+
+      <KeyboardShortcuts isManager={isManager} />
 
       {/* Phone: bottom bar with a central scan button */}
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-ink/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">

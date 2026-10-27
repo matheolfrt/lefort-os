@@ -13,6 +13,7 @@ import { money } from "@/lib/format";
 import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/lib/compliance";
 import { StartWork } from "@/components/dashboard/start-work";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { Help } from "@/components/ui";
 import type { ItemStatus } from "@/lib/types";
 
 const euro0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -87,21 +88,27 @@ export default async function Dashboard() {
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {f && (
             <>
-              <Kpi label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} />
+              <Kpi label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`}
+                help="Argent réellement reçu ce mois (ventes encaissées, remboursements déduits). C'est ce chiffre qui compte pour l'URSSAF et les seuils." />
               <Kpi label="Bénéfice estimé" value={eur(f.month.afterCents)} tone={f.month.afterCents < 0 ? "bad" : undefined}
-                hint="après coûts et cotisations" n={f.month.itemsSold} />
+                hint="après coûts et cotisations" n={f.month.itemsSold}
+                help="Ventes du mois moins le coût d'achat des articles vendus, les frais (Vinted, envoi) et les cotisations URSSAF estimées." />
               <Kpi label="Ventes" value={String(f.month.itemsSold)} hint={`${eur(f.month.revenueCents)} de ventes`} />
             </>
           )}
           <Kpi label="Stock" value={String(d.stock.count)} hint={`dont ${d.stock.listedCount} en ligne`} />
-          {f && <Kpi label="Valeur d'achat du stock" value={eur(f.stockCostCents)} hint="coût de revient" />}
+          {f && <Kpi label="Valeur d'achat du stock" value={eur(f.stockCostCents)} hint="coût de revient"
+            help="Ce que vous avez payé pour les articles encore en stock (part du lot + frais). C'est l'argent immobilisé à faire tourner." />}
           <Kpi label="Valeur de vente potentielle" value={eur(d.stock.potentialCents)}
-            hint={`${d.stock.pricedCount} article${d.stock.pricedCount > 1 ? "s" : ""} avec un prix`} />
+            hint={`${d.stock.pricedCount} article${d.stock.pricedCount > 1 ? "s" : ""} avec un prix`}
+            help="Somme des prix affichés des articles en stock. Les articles sans prix ne sont pas comptés." />
           {f && (
             <>
-              <Kpi label="Panier moyen" value={eur(f.avgBasket.cents)} hint="par commande ce mois" n={f.avgBasket.n} />
+              <Kpi label="Panier moyen" value={eur(f.avgBasket.cents)} hint="par commande ce mois" n={f.avgBasket.n}
+                help="Montant moyen d'une commande (un lot de plusieurs articles compte pour une commande)." />
               <Kpi label="Délai moyen de vente" value={f.avgDaysToSell.days == null ? "—" : `${Math.round(f.avgDaysToSell.days)} j`}
-                hint="mise en ligne → vente, 90 j" n={f.avgDaysToSell.n} />
+                hint="mise en ligne → vente, 90 j" n={f.avgDaysToSell.n}
+                help="Nombre moyen de jours entre la mise en ligne et la vente, sur les ventes des 90 derniers jours. Plus c'est court, plus votre argent tourne vite." />
             </>
           )}
         </div>
@@ -204,11 +211,11 @@ function SampleSize({ n }: { n: number }) {
   );
 }
 
-function Kpi({ label, value, hint, n, tone }: { label: string; value: string; hint?: string; n?: number; tone?: "bad" }) {
+function Kpi({ label, value, hint, n, tone, help }: { label: string; value: string; hint?: string; n?: number; tone?: "bad"; help?: string }) {
   return (
     <div className="rounded-2xl border border-line bg-panel/80 px-3.5 py-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="eyebrow-tight text-muted">{label}</span>
+        <span className="eyebrow-tight flex items-start gap-1 text-muted">{label}{help && <Help text={help} />}</span>
         {n != null && <SampleSize n={n} />}
       </div>
       <div className={`mt-1 text-[26px] font-mono font-semibold leading-tight tabular-nums tracking-tight ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>

@@ -7,11 +7,13 @@ import { Check, Printer, RotateCcw, Trash2, X } from "lucide-react";
 import { useToast } from "@/components/toast";
 import { useConfirm } from "@/components/confirm";
 import { StatusChip, btn, input } from "@/components/ui";
+import { InlineEdit, StatusPicker } from "@/components/inline-edit";
 import { HOLD_LABEL } from "@/i18n/fr";
-import { daysSince, money } from "@/lib/format";
+import { daysSince, eurosInput, money } from "@/lib/format";
 import { rpc } from "@/lib/client-data";
-import { supabaseBrowser } from "@/lib/supabase/client";
-import { errorMessage } from "@/lib/errors";
+import {
+  moveTo, parsePrice, restoreCategories, restoreLocations, restorePrice, restoreStatuses, setCategory as setItemsCategory, setPrice, setStatus,
+} from "@/lib/item-edits";
 import type { HoldReason, ItemStatus } from "@/lib/types";
 
 export interface StockRow {
@@ -23,12 +25,14 @@ export interface StockRow {
   size: string | null;
   location: string | null;
   priceCents: number | null;
+  minPriceCents?: number | null;
+  categoryId?: string | null;
   receivedAt: string;
 }
 
 interface BulkResult { updated: number; errors: { sku: string; error: string }[] }
 
-// Statuses a person may set by hand; sold/shipped/completed/returned are handled in Ventes
+// Statuses a person may set by hand in bulk; sold/shipped/completed/returned are handled in Ventes
 const TARGETS: { value: string; label: string }[] = [
   { value: "listed", label: "Mettre en vente (en ligne), directement" },
   { value: "listing_ready", label: "Prêt à publier (retirer l'annonce)" },
@@ -56,8 +60,9 @@ function Age({ row }: { row: StockRow }) {
   return <span className={`tabular-nums ${tone}`}>{d} j</span>;
 }
 
-export function StockTable({ rows, categories, isManager = false, trash = false }: {
-  rows: StockRow[]; categories: { id: string; name: string }[]; isManager?: boolean; trash?: boolean;
+export function StockTable({ rows, categories, locations = [], isManager = false, trash = false }: {
+  rows: StockRow[]; categories: { id: string; name: string }[]; locations?: { code: string; label: string | null }[];
+  isManager?: boolean; trash?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -92,14 +97,15 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
   }
   const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
 
-  async function run(label: string, action: () => Promise<BulkResult>) {
+  /** Runs a change; when it can be undone, the message offers « Annuler » instead of asking first */
+  async function run(label: string, action: () => Promise<BulkResult>, undo?: () => Promise<unknown>) {
     setBusy(true);
     setErrors([]);
     try {
       const r = await action();
       setErrors(r.errors);
       toast(`${label} : ${r.updated} article${r.updated > 1 ? "s" : ""} mis à jour${r.errors.length ? `, ${r.errors.length} refusé(s)` : ""}`,
-        r.errors.length ? "error" : "ok");
+        r.errors.length ? "error" : "ok", undo && r.updated > 0 ? { action: { label: "Annuler", run: () => revert(undo) } } : undefined);
       if (!r.errors.length) setSelected(new Set());
       router.refresh();
     } catch (e) {
@@ -108,26 +114,39 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
       setBusy(false);
     }
   }
+  async function revert(undo: () => Promise<unknown>) {
+    try {
+      const r = await undo();
+      const refused = (r as BulkResult | undefined)?.errors ?? [];
+      toast(refused.length ? `Annulé en partie : ${refused.map((e) => `${e.sku} (${e.error})`).join(", ")}` : "Modification annulée", refused.length ? "error" : "info");
+    } catch (e) {
+      toast(`Impossible d'annuler : ${(e as Error).message}`, "error");
+    }
+    router.refresh();
+  }
+  const selectedRows = () => rows.filter((r) => selected.has(r.id));
 
   const applyStatus = () => {
     if (!target) return;
     if (target === "listed") {
       const cents = salePrice.trim() ? Math.round(Number(salePrice.replace(",", ".")) * 100) : null;
       if (cents != null && !(cents > 0)) return toast("Prix invalide", "error");
-      return run("Mise en vente", () => rpc<BulkResult>("bulk_put_on_sale", { p_item_ids: ids, p_price_cents: cents }));
+      const before = selectedRows();
+      return run("Mise en vente", () => setStatus(ids, "listed", { priceCents: cents }), async () => {
+        if (cents != null) for (const r of before) await restorePrice(r.id, r.priceCents, r.minPriceCents ?? null);
+        return restoreStatuses(before);
+      });
     }
-    run("Statut", () =>
-      rpc<BulkResult>("bulk_transition", {
-        p_item_ids: ids,
-        p_to: target === "release" ? null : target,
-        p_payload: target === "on_hold" ? { hold_reason: holdReason } : target === "rejected" ? { reason: "Écarté depuis le stock" } : {},
-      }),
-    );
+    const before = selectedRows();
+    run("Statut", () => setStatus(ids, target as ItemStatus | "release", { holdReason }), () => restoreStatuses(before));
   };
 
   const applyLocation = () => {
     if (!location.trim()) return;
-    run("Emplacement", () => rpc<BulkResult>("bulk_move", { p_item_ids: ids, p_location_code: location }));
+    const code = location.trim().toUpperCase();
+    const before = selectedRows();
+    run("Emplacement", () => rpc<BulkResult>("bulk_move", { p_item_ids: ids, p_location_code: code.startsWith("EMP-") ? code : `EMP-${code}` }),
+      () => restoreLocations(before));
   };
 
   async function remove(list: StockRow[]) {
@@ -169,11 +188,27 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
 
   const applyCategory = () => {
     if (!category) return;
+    const before = selectedRows().map((r) => ({ id: r.id, categoryId: r.categoryId ?? null }));
     run("Catégorie", async () => {
-      const { error } = await supabaseBrowser().from("items").update({ category_id: category }).in("id", ids);
-      if (error) throw new Error(errorMessage(error));
+      await setItemsCategory(ids, category);
       return { updated: ids.length, errors: [] };
-    });
+    }, () => restoreCategories(before));
+  };
+
+  // ── Changes made right in the table, one item at a time (click the cell, Enter to save, Échap to cancel)
+  const editable = (r: StockRow) => !trash && !SOLD.includes(r.status);
+  const savePrice = (r: StockRow, cents: number | null) => run(`Prix de ${r.sku}`, async () => {
+    await setPrice(r.id, cents, r.minPriceCents);
+    return { updated: 1, errors: [] };
+  }, () => restorePrice(r.id, r.priceCents, r.minPriceCents ?? null));
+  const saveLocation = (r: StockRow, code: string) => run(`${r.sku} déplacé`, async () => {
+    await moveTo(r.id, code);
+    return { updated: 1, errors: [] };
+  }, r.location ? () => moveTo(r.id, r.location!) : undefined);
+  const saveStatus = (r: StockRow, value: string) => {
+    const [target, hold] = value.split(":");
+    run(`Statut de ${r.sku}`, () => setStatus([r.id], target as ItemStatus | "release", { holdReason: hold }),
+      r.status === "on_hold" ? undefined : () => restoreStatuses([{ id: r.id, status: r.status }]));
   };
 
   const Box = ({ checked, onClick, label }: { checked: boolean; onClick: (e: React.MouseEvent) => void; label: string }) => (
@@ -224,13 +259,17 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
         </ul>
       </div>
 
-      {/* ── Desktop: dense table */}
+      <datalist id="stock-locations">
+        {locations.map((l) => <option key={l.code} value={l.code.replace("EMP-", "")}>{l.label ?? ""}</option>)}
+      </datalist>
+
+      {/* ── Desktop: dense table (price, location and status can be changed right in the row) */}
       <div className="hidden overflow-x-auto rounded-2xl border border-line bg-panel/80 md:block">
         <table className="data">
           <thead>
             <tr>
               <th className="w-12 !px-1"><Box checked={allChecked} onClick={toggleAll} label="Tout sélectionner" /></th>
-              <th>SKU</th><th>Statut</th><th>Article</th><th>Taille</th><th>Emplacement</th><th className="num">Prix</th><th className="num">Âge</th>
+              <th>SKU</th><th>Statut</th><th>Article</th><th>Taille</th><th title="Cliquez pour déplacer">Emplacement</th><th className="num" title="Cliquez pour changer le prix">Prix</th><th className="num">Âge</th>
               {isManager && <th className="w-12"><span className="sr-only">Actions</span></th>}
             </tr>
           </thead>
@@ -239,11 +278,25 @@ export function StockTable({ rows, categories, isManager = false, trash = false 
               <tr key={r.id} className={selected.has(r.id) ? "!bg-accent/10" : ""}>
                 <td className="!px-1 !py-0"><Box checked={selected.has(r.id)} onClick={(e) => toggle(i, e.shiftKey)} label={`Sélectionner ${r.sku}`} /></td>
                 <td><Link prefetch={false} href={`/stock/${r.sku}`} className="font-mono font-semibold text-fg hover:text-accent">{r.sku}</Link></td>
-                <td><StatusChip status={r.status} /></td>
+                <td>{editable(r) ? <StatusPicker sku={r.sku} status={r.status} onPick={(v) => saveStatus(r, v)} disabled={busy} /> : <StatusChip status={r.status} />}</td>
                 <td className="max-w-96 truncate">{r.label}</td>
                 <td>{r.size ?? "—"}</td>
-                <td className="font-mono text-xs text-muted">{r.location?.replace("EMP-", "") ?? "—"}</td>
-                <td className="num font-medium">{money(r.priceCents)}</td>
+                <td className="font-mono text-xs text-muted">
+                  {editable(r)
+                    ? <InlineEdit value={r.location?.replace("EMP-", "") ?? ""} display={r.location?.replace("EMP-", "") ?? "—"} label={`Emplacement de ${r.sku}`}
+                        list="stock-locations" upper mono onSave={(v) => v && saveLocation(r, v)} disabled={busy} />
+                    : r.location?.replace("EMP-", "") ?? "—"}
+                </td>
+                <td className="num font-medium">
+                  {editable(r)
+                    ? <InlineEdit value={eurosInput(r.priceCents)} display={money(r.priceCents)} label={`Prix de ${r.sku}`} align="right" inputMode="decimal"
+                        onSave={(v) => {
+                          const cents = v.trim() ? parsePrice(v) : null;
+                          if (v.trim() && cents == null) return toast("Prix invalide", "error");
+                          if (cents !== r.priceCents) savePrice(r, cents);
+                        }} disabled={busy} />
+                    : money(r.priceCents)}
+                </td>
                 <td className="num"><Age row={r} /></td>
                 {isManager && <td className="!px-1 !py-0"><RowAction r={r} /></td>}
               </tr>

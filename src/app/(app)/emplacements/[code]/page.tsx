@@ -29,7 +29,7 @@ export default async function LocationPage({ params }: { params: Promise<{ code:
       {ctx.isManager && loc.kind === "storage" && (
         <div className="mb-4"><LocationEditor key={loc.code} loc={loc} count={items?.length ?? 0} /></div>
       )}
-      {!items?.length ? <Empty>Emplacement vide.</Empty> : (
+      {!items?.length ? <Empty>Emplacement vide. Pour y ranger un article, scannez-le au poste Rangement, puis scannez cet emplacement.</Empty> : (
         <Card>
           <table className="data">
             <tbody>

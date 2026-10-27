@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkPendingMigrations } from "@/lib/migrations";
 
 export const dynamic = "force-dynamic";
 
@@ -23,22 +24,8 @@ export async function GET() {
     fetch(`${url}/auth/v1/health`, { headers: { apikey: key } }).then((r) => r.ok).catch(() => false),
   ]);
 
-  // one function per later migration: tells which files still have to be run in the SQL Editor
-  const later = [
-    ["20261026000004_vinted_sync", "vinted_sync_preview", { p_listings: [] }],
-    ["20261026000005_bulk_actions", "bulk_transition", { p_item_ids: [], p_to: "listed" }],
-    ["20261027000007_delete_import", "import_items", { p_rows: [] }],
-    ["20261027000008_import_sales", "import_sales", { p_sales: [], p_historical: true }],
-    ["20261028000009_vinted_orders", "vinted_orders_preview", { p_orders: [] }],
-    ["20261029000010_void_sales", "void_order", { p_order_id: "00000000-0000-0000-0000-000000000000" }],
-    ["20261030000011_batch_skus_on_sale_locations", "bulk_put_on_sale", { p_item_ids: [] }],
-    ["20261031000012_production_board", "production_overview", {}],
-    ["20261101000013_advisor", "advisor_facts", {}],
-    ["20261102000014_niches", "niche_stats", {}],
-    ["20261103000015_sellthrough", "sellthrough_stats", {}],
-  ] as const;
-  const checks = await Promise.all(later.map(([, fn, args]) => supabase.rpc(fn, args)));
-  const toRun = later.filter((_, i) => missing(checks[i].error?.code)).map(([file]) => `${file}.sql`);
+  // database updates still to run in the SQL Editor (also shown to administrators in the app)
+  const toRun = (await checkPendingMigrations()).map((f) => `${f}.sql`);
 
   const schema = !missing(table.error?.code) && !missing(rpc.error?.code);
   return NextResponse.json(

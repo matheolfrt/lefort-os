@@ -65,10 +65,10 @@ export default async function Conseils() {
         subtitle="Calculés à partir de vos ventes, de votre stock et de votre production. Pas d'IA : chaque conseil montre les chiffres d'où il vient." />
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Stat label="Marge moyenne / article" value={eur(r.reference.profitPerItemCents)} hint={`sur ${r.reference.sold} ventes, après frais et coût d'achat`} />
-        <Stat label="Délai moyen de vente" value={r.reference.avgDays == null ? "—" : `${Math.round(r.reference.avgDays)} j`} hint="de la réception à la vente" />
-        <Stat label="Stock payé non vendu" value={eur(f.stock.cost_cents)} hint={`${f.stock.n} articles`} />
-        <Stat label="Stock dormant" value={eur(f.dormant.cost_cents)} hint={`${f.dormant.n} en ligne depuis + de ${f.dead_days} j`} />
+        <Stat label="Marge moyenne / article" value={eur(r.reference.profitPerItemCents)} hint={`sur ${r.reference.sold} ventes, après frais et coût d'achat`} help="Prix de vente moins le coût d'achat de l'article et les frais, en moyenne sur vos ventes. Sert de référence pour juger un lot, une marque ou un fournisseur." />
+        <Stat label="Délai moyen de vente" value={r.reference.avgDays == null ? "—" : `${Math.round(r.reference.avgDays)} j`} hint="de la réception à la vente" help="Jours entre la réception d'un article et sa vente, en moyenne. Les ventes importées sans date de réception fiable ne sont pas comptées." />
+        <Stat label="Stock payé non vendu" value={eur(f.stock.cost_cents)} hint={`${f.stock.n} articles`} help="Ce que vous avez payé pour les articles pas encore vendus : de l'argent qui dort tant qu'ils ne partent pas." />
+        <Stat label="Stock dormant" value={eur(f.dormant.cost_cents)} hint={`${f.dormant.n} en ligne depuis + de ${f.dead_days} j`} help="Coût d'achat des articles en ligne depuis trop longtemps sans se vendre. Baisser leur prix libère de la trésorerie pour racheter." />
       </div>
 
       <section aria-labelledby="todo">

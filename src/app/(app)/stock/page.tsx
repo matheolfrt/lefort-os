@@ -26,7 +26,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
 
   let query = supabase
     .from("items")
-    .select("id, sku, status, title, size_label, list_price_cents, status_changed_at, received_at, status_before_hold, categories(name), brands(name), locations(code)", { count: "exact" })
+    .select("id, sku, status, title, size_label, list_price_cents, min_price_cents, category_id, status_changed_at, received_at, status_before_hold, categories(name), brands(name), locations(code)", { count: "exact" })
     ;
   query = trash ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
   if (sp.status) query = query.eq("status", sp.status);
@@ -35,13 +35,15 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
     const q = sp.q.replace(/[%,()]/g, " ").trim();
     query = query.or(`sku.ilike.%${q}%,title.ilike.%${q}%,size_label.eq.${q}`);
   }
-  const [{ data: items, count }, { data: categories }, { data: pipeline }, { count: trashCount }] = await Promise.all([
+  const [{ data: items, count }, { data: categories }, { data: pipeline }, { count: trashCount }, { data: locations }] = await Promise.all([
     query.order("received_at", { ascending: false }).range((page - 1) * PAGE, page * PAGE - 1),
     supabase.from("categories").select("id, name").order("name"),
     supabase.from("v_pipeline").select("status, items"),
     ctx.isManager
       ? supabase.from("items").select("id", { count: "exact", head: true }).not("deleted_at", "is", null)
       : Promise.resolve({ count: 0 }),
+    // suggestions when a location is typed in the table
+    supabase.from("locations").select("code, label").eq("active", true).order("pick_order").order("code"),
   ]);
   const byStatus = new Map((pipeline ?? []).map((p) => [p.status as ItemStatus, Number(p.items)]));
   const total = [...byStatus.values()].reduce((a, b) => a + b, 0);
@@ -113,7 +115,10 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
       </form>
 
       {!items?.length ? (
-        <Empty>{trash ? "La corbeille est vide." : "Aucun article ne correspond."}</Empty>
+        <Empty action={trash ? undefined : total === 0 ? { href: "/lots/nouveau", label: "Créer un lot" } : { href: "/stock", label: "Effacer les filtres" }}
+          secondary={!trash && total === 0 ? { href: "/stock/import", label: "Importer mon stock" } : undefined}>
+          {trash ? "La corbeille est vide." : total === 0 ? "Votre stock est vide : créez un lot pour réceptionner vos articles, ou importez le stock que vous avez déjà." : "Aucun article ne correspond."}
+        </Empty>
       ) : (
         <>
           <StockTable
@@ -126,9 +131,12 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
               size: i.size_label,
               location: (i.locations as unknown as { code: string } | null)?.code ?? null,
               priceCents: i.list_price_cents,
+              minPriceCents: i.min_price_cents,
+              categoryId: i.category_id,
               receivedAt: i.received_at,
             }))}
             categories={categories ?? []}
+            locations={(locations ?? []).map((l) => ({ code: l.code as string, label: l.label as string | null }))}
             isManager={ctx.isManager}
             trash={trash}
           />
