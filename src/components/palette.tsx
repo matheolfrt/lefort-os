@@ -12,6 +12,7 @@ import { classifyScan } from "@/lib/scan";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { money } from "@/lib/format";
 import { STATUS_LABEL } from "@/i18n/fr";
+import { REPEAT_LABEL, dueLabel, parisToday, parseQuick } from "@/lib/todos";
 import type { ItemStatus } from "@/lib/types";
 
 // ⌘K / "/" palette: search items by title, brand, size or SKU, sales by number, and jump to any page.
@@ -58,6 +59,7 @@ export function Palette({ isManager, onCode, onCamera, onClose }: {
   useEffect(() => {
     const cmd = parseCommand(q);
     if (!cmd) { setAction(null); return; }
+    if (cmd.kind === "todo") { setAction(describeTodo(cmd.text)); return; }
     let live = true;
     const t = setTimeout(async () => {
       const { data } = await supabaseBrowser().from("items")
@@ -69,7 +71,26 @@ export function Palette({ isManager, onCode, onCamera, onClose }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  function describe(cmd: Command, it: Target): Result {
+  function describeTodo(text: string): Result {
+    const today = parisToday();
+    const t = parseQuick(text, today);
+    const meta = [t.due_on ? dueLabel(t.due_on, today) : "sans date", t.repeat !== "none" && REPEAT_LABEL[t.repeat].toLowerCase(), t.important && "important"]
+      .filter(Boolean).join(" · ");
+    return { kind: "action", key: "a:todo", label: `Ajouter la tâche « ${t.title} »`, meta, run: async () => {
+      if (!t.title) return;
+      const db = supabaseBrowser();
+      const { data, error } = await db.from("todos").insert({ title: t.title, due_on: t.due_on, repeat: t.repeat, important: t.important }).select("id").single();
+      if (error) return toast(error.message, "error");
+      toast(`Tâche ajoutée : ${t.title}`, "ok", { action: { label: "Annuler", run: async () => {
+        await db.from("todos").delete().eq("id", data.id);
+        toast("Tâche retirée", "info");
+        router.refresh();
+      } } });
+      router.refresh();
+    } };
+  }
+
+  function describe(cmd: Exclude<Command, { kind: "todo" }>, it: Target): Result {
     const sold = ["sold", "shipped", "completed"].includes(it.status);
     const done = (text: string, undo?: () => Promise<unknown>) => {
       toast(text, "ok", undo ? { action: { label: "Annuler", run: async () => {
@@ -237,7 +258,8 @@ export function Palette({ isManager, onCode, onCamera, onClose }: {
           {!q && (
             <p className="px-4 pt-3 text-xs text-muted">
               Vous pouvez aussi agir : <span className="font-mono text-fg/80">M-12 29</span> (prix), <span className="font-mono text-fg/80">ranger M-5 en A-01-02</span>,{" "}
-              <span className="font-mono text-fg/80">vendre M-12</span>, <span className="font-mono text-fg/80">en ligne M-12</span>, <span className="font-mono text-fg/80">étiquette M-12</span>.
+              <span className="font-mono text-fg/80">vendre M-12</span>, <span className="font-mono text-fg/80">en ligne M-12</span>, <span className="font-mono text-fg/80">étiquette M-12</span>,{" "}
+              <span className="font-mono text-fg/80">tâche Appeler le fournisseur demain</span>.
             </p>
           )}
           {q.length >= 2 && !items.length && !orders.length && !pages.length && (

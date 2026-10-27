@@ -6,7 +6,7 @@ import { requireManager } from "@/lib/session";
 import { MIN_SAMPLE, buildAdvice, eur, eur2, type Advice, type Ranked, type Verdict } from "@/lib/advisor";
 import type { Facts } from "@/lib/advisor";
 import { sellThroughAdvice, type SellThroughStats } from "@/lib/sellthrough";
-import { Prioritize } from "./prioritize";
+import { AddToTodos, Prioritize } from "./prioritize";
 
 export const metadata = { title: "Conseils" };
 
@@ -184,6 +184,7 @@ function AdviceCard({ a, n, compact }: { a: Advice; n?: number; compact?: boolea
             </div>
           )}
           {a.prioritize && a.items && <Prioritize ids={a.items.map((i) => i.id)} />}
+          {!compact && a.tone !== "info" && <AddToTodos title={a.title} important={a.tone === "urgent"} />}
           {a.href && (
             <Link href={a.href} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-line bg-panel-2 px-3 text-sm font-medium hover:border-fg/30">
               {a.hrefLabel ?? "Ouvrir"} <ArrowRight size={15} />

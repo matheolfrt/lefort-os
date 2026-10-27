@@ -24,6 +24,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "20261101000013_advisor", marker: "advisor_facts", args: {} },
   { file: "20261102000014_niches", marker: "niche_stats", args: {} },
   { file: "20261103000015_sellthrough", marker: "sellthrough_stats", args: {} },
+  { file: "20261104000016_goals_todos", marker: "goal_progress", args: {} },
 ];
 
 const notFound = (code?: string) => code === "PGRST202" || code === "PGRST205" || code === "42883" || code === "42P01";

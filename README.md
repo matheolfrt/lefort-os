@@ -137,6 +137,18 @@ terminés, puis détail par fournisseur, marque, catégorie et mois de réceptio
 alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `sellthrough_stats()`, migration
 `supabase/migrations/20261103000015_sellthrough.sql`.
 
+## Objectifs et tâches
+
+- **Objectifs** (Pilotage → Objectifs) : chiffre d'affaires, articles vendus et articles mis en ligne, par jour, semaine,
+  mois ou année. Une case vide est déduite des autres au même rythme (6 000 € par mois → 194 € par jour en octobre).
+  Progression en direct (calendrier de Paris) sur le tableau de bord, avec le reste à faire par jour et la projection.
+  L'équipe voit les objectifs en nombre d'articles, pas le chiffre d'affaires.
+- **Tâches** (`/taches`) : liste partagée, avec date, personne, répétition (chaque jour / semaine / mois) et
+  « important ». Saisie rapide : « Appeler Fripes & Co demain ! », « Faire la compta chaque lundi », ou
+  « tâche … » dans ⌘K. Une tâche répétée cochée revient à sa prochaine date. Les conseils peuvent être ajoutés
+  aux tâches du jour. Les tâches du jour sont sur le tableau de bord.
+- Migration `supabase/migrations/20261104000016_goals_todos.sql`, tests `supabase/tests/goals_todos_test.sql`.
+
 ## Pilotage et confort d'utilisation
 
 - **Pilotage** : une seule entrée de menu pour Conseils, Écoulement, Niches, Statistiques et Scénarios (onglets,
@@ -147,7 +159,7 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   de statut : un retour refusé est signalé, jamais forcé.
 - **⌘K exécute des actions** (`src/lib/commands.ts`) : « M-12 29 », « baisser M-12 à 29,90 », « ranger M-12 en
   A-01-02 », « en ligne M-12 », « vendre M-12 », « étiquette M-12 ».
-- **Raccourcis clavier** (`src/components/keyboard-shortcuts.tsx`) : `g` puis `d` `p` `r` `o` `s` `l` `v` `e`,
+- **Raccourcis clavier** (`src/components/keyboard-shortcuts.tsx`) : `g` puis `d` `p` `t` `r` `o` `s` `l` `v` `e`,
   `n` nouvelle vente, `?` aide. Ignorés pendant la saisie et pendant un scan (touches trop rapprochées).
 - **Fiche article** : photos en grand, carte « En bref » modifiable, historique unique (statuts + emplacements).
 - **Aide** : écrans vides avec l'action suivante, bulles « ? » sur les chiffres clés.

@@ -14,6 +14,8 @@ import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/l
 import { StartWork } from "@/components/dashboard/start-work";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { Help } from "@/components/ui";
+import { GoalsCard, GoalsSkeleton } from "@/components/goals/goals-card";
+import { TodosCard } from "@/components/todos/todos-card";
 import type { ItemStatus } from "@/lib/types";
 
 const euro0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -69,12 +71,22 @@ export default async function Dashboard() {
         </Link>
       )}
 
+      {/* ── Objectives: today and this month */}
+      <Suspense fallback={<GoalsSkeleton />}>
+        <GoalsCard isManager={ctx.isManager} />
+      </Suspense>
+
       {/* ── What to do now */}
       <Section title="À faire maintenant">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-flow-col xl:auto-cols-fr xl:grid-cols-none">
           {todo.map((t) => <TodoTile key={t.label} {...t} />)}
         </div>
       </Section>
+
+      {/* ── The day's to-dos */}
+      <Suspense fallback={<div className="skeleton h-28 rounded-2xl" />}>
+        <TodosCard me={ctx.userId} isManager={ctx.isManager} />
+      </Suspense>
 
       {/* ── Advice: the heaviest figures, streamed in after the rest of the page */}
       {ctx.isManager && (

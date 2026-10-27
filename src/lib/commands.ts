@@ -4,13 +4,15 @@
 //   « vendre M-12 »                               → open a sale with the item
 //   « en ligne M-12 », « mettre en vente M-12 »   → put on sale
 //   « étiquette M-12 »                            → print its label
+//   « tâche Appeler Fripes & Co demain »         → add a to-do
 
 export type Command =
   | { kind: "price"; sku: string; cents: number }
   | { kind: "move"; sku: string; location: string }
   | { kind: "sell"; sku: string }
   | { kind: "list"; sku: string }
-  | { kind: "label"; sku: string };
+  | { kind: "label"; sku: string }
+  | { kind: "todo"; text: string };
 
 const SKU = "([A-Za-z]{1,6}-?\\d{1,8})";
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -23,6 +25,10 @@ export function parseCommand(input: string): Command | null {
   const q = norm(input);
   if (!q) return null;
   let m: RegExpMatchArray | null;
+
+  // the text of a to-do keeps its accents and capitals: taken from the input, not the folded query
+  const todo = input.trim().match(/^(?:t[aâ]che|todo|à faire|a faire|rappel)\s*:?\s+(.+)$/i);
+  if (todo) return { kind: "todo", text: todo[1].trim() };
 
   if ((m = q.match(new RegExp(`^(?:vendre|vente|vendu)\\s+${SKU}$`)))) return { kind: "sell", sku: m[1].toUpperCase() };
   if ((m = q.match(new RegExp(`^(?:etiquette|etiquettes|imprimer)\\s+${SKU}$`)))) return { kind: "label", sku: m[1].toUpperCase() };

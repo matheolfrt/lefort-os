@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, LayoutDashboard, Lightbulb, MapPin, Package, Radar, Settings, ShoppingBag, Truck, type LucideIcon,
+  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, Radar, Settings, ShoppingBag, Target, Truck, type LucideIcon,
 } from "lucide-react";
 
 export type NavGroup = "Pilotage" | "Opérations" | "Gestion";
@@ -15,12 +15,14 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard", group: "Pilotage" },
   { href: "/conseils", label: "Pilotage", icon: Radar, manager: true, keywords: "pilotage analyse", group: "Pilotage",
-    match: ["/conseils", "/ecoulement", "/niches", "/statistiques", "/scenarios"] },
+    match: ["/conseils", "/objectifs", "/ecoulement", "/niches", "/statistiques", "/scenarios"] },
   { href: "/conseils", label: "Conseils", icon: Lightbulb, manager: true, keywords: "priorités rentabilité recommandations à faire acheter", group: "Pilotage" , tab: true },
+  { href: "/objectifs", label: "Objectifs", icon: Target, manager: true, keywords: "objectif chiffre d'affaires ca ventes jour semaine mois année but", group: "Pilotage", tab: true },
   { href: "/ecoulement", label: "Écoulement", icon: Gauge, manager: true, keywords: "rotation 30 jours 80% vente rapide taux lot objectif", group: "Pilotage" , tab: true },
   { href: "/niches", label: "Niches", icon: Compass, manager: true, keywords: "tester nouvelles niches marques idées essai lot de test", group: "Pilotage" , tab: true },
   { href: "/statistiques", label: "Statistiques", icon: BarChart3, manager: true, keywords: "kpi graphiques marge chiffre", group: "Pilotage" , tab: true },
   { href: "/scenarios", label: "Scénarios", icon: FlaskConical, manager: true, keywords: "simulation prévision business plan hypothèses", group: "Pilotage" , tab: true },
+  { href: "/taches", label: "Tâches", icon: ListTodo, manager: false, keywords: "à faire todo liste rappel", group: "Opérations" },
   { href: "/postes", label: "Postes", icon: Factory, manager: false, keywords: "travail production kanban", group: "Opérations" },
   { href: "/stock", label: "Stock", icon: Package, manager: false, keywords: "articles inventaire", group: "Opérations" },
   { href: "/lots", label: "Lots", icon: Boxes, manager: false, keywords: "achats batch", group: "Opérations" },
@@ -31,7 +33,7 @@ export const NAV: NavItem[] = [
   { href: "/parametres", label: "Paramètres", icon: Settings, manager: true, keywords: "réglages équipe extension", group: "Gestion" },
 ];
 
-/** Tabs of the Pilotage page (one menu entry, five screens) */
+/** Tabs of the Pilotage page (one menu entry, several screens) */
 export const PILOTAGE_TABS = NAV.filter((n) => n.tab);
 
 /** Shortcuts to the stations and frequent screens */
