@@ -13,6 +13,7 @@ import { money } from "@/lib/format";
 import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/lib/compliance";
 import { StartWork } from "@/components/dashboard/start-work";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { SalesTrend } from "@/components/dashboard/sales-trend";
 import { Help } from "@/components/ui";
 import { GoalsCard, GoalsSkeleton } from "@/components/goals/goals-card";
 import { TodosCard } from "@/components/todos/todos-card";
@@ -125,6 +126,9 @@ export default async function Dashboard() {
           )}
         </div>
       </Section>
+
+      {/* ── This month / this week, day by day */}
+      {f && <SalesTrend trend={f.trend} />}
 
       {/* ── Production line */}
       <Section

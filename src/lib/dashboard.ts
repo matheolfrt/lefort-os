@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ItemStatus, Organization } from "@/lib/types";
+import { buildTrend, type TrendPeriod } from "@/lib/trend";
 
 // Everything on the dashboard is derived from existing tables/views; nothing is stored.
 
@@ -42,6 +43,7 @@ export interface FinanceData {
   avgBasket: { cents: number | null; n: number };
   avgDaysToSell: { days: number | null; n: number };
   contributionRatePct: number;
+  trend: { month: TrendPeriod; week: TrendPeriod };
 }
 
 const DAY = 86_400_000;
@@ -125,7 +127,7 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
 
   // ── Money (RLS returns nothing for operators anyway)
   const since12 = new Date(Date.UTC(p.year, p.monthIdx - 11, 1)).toISOString().slice(0, 10);
-  const [econ, { data: turnover }, { data: monthOrders }, { data: rates }] = await Promise.all([
+  const [econ, { data: turnover }, { data: monthOrders }, { data: rates }, { data: goals }] = await Promise.all([
     fetchAll<{ status: ItemStatus; sold_at: string | null; cost_cents: number; revenue_cents: number; variable_costs_cents: number;
       vat_cents: number; gross_profit_cents: number; is_sold: boolean; days_to_sell: number | null }>(
       (from, to) => supabase.from("v_item_economics")
@@ -136,6 +138,8 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
     supabase.from("orders").select("gross_cents").neq("status", "cancelled").gte("sold_at", p.monthStart),
     supabase.from("tax_rates").select("kind, rate_pct, valid_from").lte("valid_from", new Date(now).toISOString().slice(0, 10))
       .order("valid_from", { ascending: false }),
+    // objectives (Objectifs) draw the pace line; absent until the database update that adds them
+    supabase.from("goals").select("period, metric, target").then((r) => (r.error ? { data: [] } : r)),
   ]);
 
   // current contribution rate: latest rate of each kind
@@ -176,6 +180,8 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
       n: recentDelays.length,
     },
     contributionRatePct: ratePct,
+    trend: buildTrend(econ.filter((e) => e.is_sold), new Date(now),
+      ((goals ?? []) as { period: string; metric: string; target: number }[])),
   };
   return data;
 }
