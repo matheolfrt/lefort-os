@@ -198,7 +198,7 @@ export function InventoryImport({ batches }: { batches: { id: string; code: stri
             <span>Mettre à jour les articles existants (même SKU). Les cellules vides ne modifient rien ; le statut n&apos;est jamais changé par import.</span>
           </label>
           <button className={`${btn.huge} mt-3`} disabled={busy || valid.length === 0} onClick={run}>
-            {busy ? `Import… ${progress}/${valid.length}` : `Importer ${valid.length} ligne${valid.length > 1 ? "s" : ""}`}
+            {busy ? `Import… ${progress}/${valid.length}` : valid.length ? `Importer ${valid.length} ligne${valid.length > 1 ? "s" : ""}` : "Choisissez d'abord un fichier"}
           </button>
         </Card>
       </div>

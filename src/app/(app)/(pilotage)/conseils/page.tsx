@@ -167,7 +167,7 @@ function AdviceCard({ a, n, compact }: { a: Advice; n?: number; compact?: boolea
               <ul className="mt-2 divide-y divide-line rounded-xl border border-line text-sm">
                 {a.items.map((it) => (
                   <li key={it.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2">
-                    <Link prefetch={false} href={`/stock/${encodeURIComponent(it.sku)}`} className="font-mono font-semibold hover:text-accent">{it.sku}</Link>
+                    <Link prefetch={false} href={`/stock/${encodeURIComponent(it.sku)}`} className="-my-2 inline-block py-2 font-mono font-semibold hover:text-accent">{it.sku}</Link>
                     <span className="min-w-0 flex-1 truncate text-muted">{it.label}</span>
                     {it.extra && <span className="font-mono text-xs text-fg/85">{it.extra}</span>}
                   </li>

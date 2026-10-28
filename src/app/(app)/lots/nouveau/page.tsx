@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Field, PageHeader, btn, input } from "@/components/ui";
-import { parseEuros } from "@/lib/format";
+import { parseEuros, parisToday } from "@/lib/format";
 import { errorMessage } from "@/lib/errors";
 import { SkuFields } from "../sku-fields";
 
@@ -61,7 +61,7 @@ export default async function NewBatch({ searchParams }: { searchParams: Promise
     // missing table (migration not run yet) simply hides the field
     supabase.from("niches").select("id, name, status").in("status", ["idea", "testing"]).order("name"),
   ]);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = parisToday();
   const suggestedCode = `LOT-${today.slice(0, 4)}-${String((count ?? 0) + 1).padStart(2, "0")}`;
 
   if (!suppliers?.length) redirect("/fournisseurs?error=" + encodeURIComponent("Ajoutez d'abord un fournisseur."));

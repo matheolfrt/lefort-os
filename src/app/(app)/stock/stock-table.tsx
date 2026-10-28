@@ -50,6 +50,9 @@ const labelFormat = () => {
 
 const SOLD: ItemStatus[] = ["sold", "shipped", "completed"];
 
+/** An item with no title, brand or category yet: it was labelled but not yet sorted at Réception */
+const Blank = () => <span className="italic text-muted/70">À compléter au tri</span>;
+
 // Items still on sale age; sold/discarded ones don't
 const AGEING: ItemStatus[] = ["received", "sorted", "photographed", "measured", "listing_ready", "listed", "reserved", "on_hold", "returned"];
 
@@ -245,7 +248,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                   <span className="font-mono text-sm font-bold">{r.sku}</span>
                   <StatusChip status={r.status} />
                 </div>
-                <div className="truncate text-sm">{r.label || "—"}</div>
+                <div className="truncate text-sm">{r.label || <Blank />}</div>
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
                   {r.size && <span>T. {r.size}</span>}
                   {r.location && <span className="font-mono">{r.location.replace("EMP-", "")}</span>}
@@ -279,7 +282,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                 <td className="!px-1 !py-0"><Box checked={selected.has(r.id)} onClick={(e) => toggle(i, e.shiftKey)} label={`Sélectionner ${r.sku}`} /></td>
                 <td><Link prefetch={false} href={`/stock/${r.sku}`} className="font-mono font-semibold text-fg hover:text-accent">{r.sku}</Link></td>
                 <td>{editable(r) ? <StatusPicker sku={r.sku} status={r.status} onPick={(v) => saveStatus(r, v)} disabled={busy} /> : <StatusChip status={r.status} />}</td>
-                <td className="max-w-96 truncate">{r.label}</td>
+                <td className="max-w-96 truncate">{r.label || <Blank />}</td>
                 <td>{r.size ?? "—"}</td>
                 <td className="font-mono text-xs text-muted">
                   {editable(r)

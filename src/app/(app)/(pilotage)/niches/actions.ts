@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { parseEuros } from "@/lib/format";
+import { parseEuros, parisToday } from "@/lib/format";
 import { LIBRARY, type NicheStatus } from "@/lib/niches";
 
 const list = (v: FormDataEntryValue | null) =>
@@ -97,7 +97,7 @@ export async function decide(bound: NicheStatus | null, formData: FormData) {
   const status = (bound ?? String(formData.get("status"))) as NicheStatus;
   if (!["idea", "testing", "validated", "dropped"].includes(status)) fail(`/niches/${id}`, "Statut inconnu.");
   const note = String(formData.get("note") ?? "").trim() || null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = parisToday();
   const { data: cur } = await supabase.from("niches").select("started_at").eq("id", id).single();
   const patch: Record<string, unknown> = { status };
   if (status === "testing") { patch.started_at = cur?.started_at ?? today; patch.decided_at = null; }
@@ -133,7 +133,7 @@ export async function linkBatch(formData: FormData) {
     // linking a test batch starts the test
     const { data: n } = await supabase.from("niches").select("status, started_at").eq("id", id).single();
     if (n?.status === "idea") {
-      await supabase.from("niches").update({ status: "testing", started_at: n.started_at ?? new Date().toISOString().slice(0, 10) }).eq("id", id);
+      await supabase.from("niches").update({ status: "testing", started_at: n.started_at ?? parisToday() }).eq("id", id);
     }
   }
   revalidatePath("/niches");

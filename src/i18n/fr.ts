@@ -90,3 +90,11 @@ export const STATION_LABEL: Record<Station, string> = {
   listing: "Publication",
   shipping: "Expédition",
 };
+
+/** Contribution rates kept in tax_rates, as the URSSAF names them */
+export const TAX_LABEL: Record<string, string> = {
+  urssaf_bic_vente: "Cotisations sociales (vente de marchandises)",
+  cfp: "Formation professionnelle (CFP)",
+  versement_liberatoire: "Versement libératoire de l'impôt",
+};
+export const taxLabel = (kind: string) => TAX_LABEL[kind] ?? kind;

@@ -29,54 +29,48 @@ export function GoalsForm({ progress, action }: { progress: GoalProgress; action
   };
   return (
     <form action={action} className="space-y-3">
-      <div className="overflow-x-auto rounded-2xl border border-line bg-panel/80">
-        <table className="w-full min-w-[560px] text-sm">
-          <thead>
-            <tr className="text-left text-muted">
-              <th className="eyebrow-tight px-4 py-3 font-normal">Objectif par…</th>
-              {PERIODS.map((p) => <th key={p} className="eyebrow-tight px-2 py-3 font-normal">{PERIOD_NAME[p]}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {METRICS.map((m) => {
-              const t = targets(live, m);
-              const ideas = suggestions(progress, "month", m);
-              return (
-                <tr key={m} className="border-t border-line align-top">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{METRIC_LABEL[m]}</div>
-                    <div className="text-xs text-muted">{m === "revenue" ? "en euros, ventes du jour" : m === "sales" ? "articles vendus" : "articles publiés"}</div>
-                    {ideas.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {ideas.map((s) => (
-                          <button key={s.label} type="button" title={`Mois : ${s.label}`}
-                            onClick={() => setValues((v) => ({ ...v, [key("month", m)]: toInput(m, s.value) }))}
-                            className="rounded-lg border border-line px-2 py-1 text-xs text-muted hover:border-accent/50 hover:text-fg">
-                            {formatValue(m, s.value, true)}/mois <span className="opacity-70">· {s.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  {PERIODS.map((p) => {
-                    const derived = t[p] && !t[p]!.own ? t[p]!.value : null;
-                    return (
-                      <td key={p} className="px-2 py-3">
-                        <div className="relative">
-                          <input name={key(p, m)} inputMode={m === "revenue" ? "decimal" : "numeric"} aria-label={`${METRIC_LABEL[m]} par ${PERIOD_NAME[p]}`}
-                            value={values[key(p, m)] ?? ""} onChange={(e) => setValues((v) => ({ ...v, [key(p, m)]: e.target.value }))}
-                            placeholder={derived != null ? `≈ ${toInput(m, derived)}` : "—"}
-                            className={`h-11 w-full min-w-24 rounded-xl border border-line bg-bg/70 px-3 font-mono tabular-nums outline-none placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/25 ${m === "revenue" ? "pr-7" : ""}`} />
-                          {m === "revenue" && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">€</span>}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {/* one block per measure: its label and ideas, then one box per period (2 × 2 on a phone, a row on a computer) */}
+      <div className="divide-y divide-line rounded-2xl border border-line bg-panel/80">
+        {METRICS.map((m) => {
+          const t = targets(live, m);
+          const ideas = suggestions(progress, "month", m);
+          return (
+            <div key={m} data-metric={m} className="gap-4 p-4 md:grid md:grid-cols-[minmax(180px,240px)_1fr]">
+              <div>
+                <div className="font-medium">{METRIC_LABEL[m]}</div>
+                <div className="text-xs text-muted">{m === "revenue" ? "en euros, ventes du jour" : m === "sales" ? "articles vendus" : "articles publiés"}</div>
+                {ideas.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {ideas.map((s) => (
+                      <button key={s.label} type="button" title={`Mois : ${s.label}`}
+                        onClick={() => setValues((v) => ({ ...v, [key("month", m)]: toInput(m, s.value) }))}
+                        className="min-h-9 rounded-lg border border-line px-2.5 text-left text-xs text-muted hover:border-accent/50 hover:text-fg">
+                        <span className="font-semibold text-fg/90">{formatValue(m, s.value, true)}/mois</span> · {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 md:mt-0 md:grid-cols-4">
+                {PERIODS.map((p) => {
+                  const derived = t[p] && !t[p]!.own ? t[p]!.value : null;
+                  return (
+                    <label key={p} className="block">
+                      <span className="eyebrow-tight mb-1 block text-muted">par {PERIOD_NAME[p]}</span>
+                      <span className="relative block">
+                        <input name={key(p, m)} inputMode={m === "revenue" ? "decimal" : "numeric"} aria-label={`${METRIC_LABEL[m]} par ${PERIOD_NAME[p]}`}
+                          value={values[key(p, m)] ?? ""} onChange={(e) => setValues((v) => ({ ...v, [key(p, m)]: e.target.value }))}
+                          placeholder={derived != null ? `≈ ${toInput(m, derived)}` : "—"}
+                          className={`h-11 w-full rounded-xl border border-line bg-bg/70 px-3 font-mono tabular-nums outline-none placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/25 ${m === "revenue" ? "pr-7" : ""}`} />
+                        {m === "revenue" && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">€</span>}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
       <p className="text-xs text-muted">
         Une case vide prend la valeur grisée « ≈ », calculée au même rythme que l&apos;objectif rempli (le mois d&apos;abord) :

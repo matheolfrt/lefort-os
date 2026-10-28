@@ -34,7 +34,7 @@ export function LabelPrinter({ batchId, unused, suggested, open, total = 0 }: {
       </select>
       {open && (
         <div className="flex gap-2">
-          <input className={`${input} w-24`} type="number" min={1} max={1000} value={qty} onChange={(e) => setQty(Number(e.target.value))} inputMode="numeric" />
+          <input className={`${input} w-24`} type="number" min={1} max={1000} value={qty} onChange={(e) => setQty(Number(e.target.value))} inputMode="numeric" aria-label="Nombre d'étiquettes à générer" />
           <button
             className={`${btn.primary} flex-1`}
             disabled={pending || qty < 1}

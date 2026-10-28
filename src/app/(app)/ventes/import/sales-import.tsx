@@ -253,7 +253,7 @@ export function SalesImport() {
             </select>
           </label>
           <button className={`${btn.huge} mt-4`} disabled={busy || ready.length === 0 || historical == null || !!done} onClick={run}>
-            {busy ? "Import…" : `Importer ${ready.length} vente${ready.length > 1 ? "s" : ""}`}
+            {busy ? "Import…" : ready.length ? `Importer ${ready.length} vente${ready.length > 1 ? "s" : ""}` : "Choisissez d'abord un fichier"}
           </button>
           {ready.length > 0 && historical == null && <p className="mt-2 text-center text-xs text-muted">Choisissez Historique ou À comptabiliser.</p>}
         </Card>

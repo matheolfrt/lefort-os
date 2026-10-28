@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, PageHeader, Stat, btn } from "@/components/ui";
 import { date, money } from "@/lib/format";
 import { MICRO_TURNOVER_CEILING_CENTS, VAT_FRANCHISE_THRESHOLD_CENTS } from "@/lib/compliance";
+import { taxLabel } from "@/i18n/fr";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
@@ -59,7 +60,7 @@ export default async function Accounting({ searchParams }: { searchParams: Promi
           </table>
         </div>
         <p className="mt-2 text-xs text-muted">
-          Taux utilisés : {(rates ?? []).map((r) => `${r.kind} ${String(r.rate_pct).replace(".", ",")} % (depuis ${date(r.valid_from)})`).join(" · ")}.
+          Taux utilisés : {(rates ?? []).map((r) => `${taxLabel(r.kind)} ${String(r.rate_pct).replace(".", ",")} % (depuis ${date(r.valid_from)})`).join(" · ")}.
           Vérifiez les taux en vigueur sur urssaf.fr — ils se modifient dans Paramètres.
         </p>
       </Card>

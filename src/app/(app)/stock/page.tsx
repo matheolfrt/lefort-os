@@ -31,9 +31,15 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
   query = trash ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.category) query = query.eq("category_id", sp.category);
-  if (sp.q) {
-    const q = sp.q.replace(/[%,()]/g, " ").trim();
-    query = query.or(`sku.ilike.%${q}%,title.ilike.%${q}%,size_label.eq.${q}`);
+  // every word must match somewhere: SKU, title, size or brand (« blazer bleu 50 », « hugo boss »)
+  const words = (sp.q ?? "").replace(/[%,()*"\\]/g, " ").split(/\s+/).filter(Boolean).slice(0, 6);
+  if (words.length) {
+    const { data: brands } = await supabase.from("brands").select("id, name").or(words.map((w) => `name.ilike.%${w}%`).join(","));
+    const fold = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    for (const w of words) {
+      const ids = (brands ?? []).filter((b) => fold(b.name as string).includes(fold(w))).map((b) => b.id as string);
+      query = query.or(`sku.ilike.%${w}%,title.ilike.%${w}%,size_label.ilike.${w}${ids.length ? `,brand_id.in.(${ids.join(",")})` : ""}`);
+    }
   }
   const [{ data: items, count }, { data: categories }, { data: pipeline }, { count: trashCount }, { data: locations }] = await Promise.all([
     query.order("received_at", { ascending: false }).range((page - 1) * PAGE, page * PAGE - 1),
@@ -57,6 +63,8 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
     const qs = new URLSearchParams(Object.entries(next).filter(([, v]) => v) as [string, string][]);
     return `/stock${qs.size ? `?${qs}` : ""}`;
   };
+  // a page past the end (old link, filters changed): say so instead of an empty list
+  const pastEnd = page > 1 && !(items?.length);
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
@@ -115,6 +123,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
       </form>
 
       {!items?.length ? (
+        pastEnd ? <Empty action={{ href: href({ page: undefined }), label: "Revenir à la première page" }}>Cette page n&apos;existe plus : la liste a changé.</Empty> :
         <Empty action={trash ? undefined : total === 0 ? { href: "/lots/nouveau", label: "Créer un lot" } : { href: "/stock", label: "Effacer les filtres" }}
           secondary={!trash && total === 0 ? { href: "/stock/import", label: "Importer mon stock" } : undefined}>
           {trash ? "La corbeille est vide." : total === 0 ? "Votre stock est vide : créez un lot pour réceptionner vos articles, ou importez le stock que vous avez déjà." : "Aucun article ne correspond."}

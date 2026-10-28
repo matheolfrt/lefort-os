@@ -7,7 +7,7 @@ import { useConfirm } from "@/components/confirm";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import { btn, input } from "@/components/ui";
 import { rpc } from "@/lib/client-data";
-import { parseEuros } from "@/lib/format";
+import { parseEuros, parisToday } from "@/lib/format";
 
 /** `compact` (sales table): one "⋯" button opening the actions, so rows stay one line high */
 export function OrderActions({ orderId, status, items, compact = false }: {
@@ -17,7 +17,7 @@ export function OrderActions({ orderId, status, items, compact = false }: {
   const toast = useToast();
   const confirm = useConfirm();
   const [panel, setPanel] = useState<"complete" | "refund" | null>(null);
-  const [paidAt, setPaidAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paidAt, setPaidAt] = useState(() => parisToday());
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("Rétractation");
   const [returned, setReturned] = useState<string[]>([]);

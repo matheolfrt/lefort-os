@@ -47,7 +47,9 @@ export function SkuFields({ defaultCount = 0, defaultPrefix = "", optional = fal
               <input className={`${input} font-mono`} name="sku_count" type="number" min={1} max={1000} value={count} onChange={(e) => { edited.current = true; setCount(Number(e.target.value)); }} required />
             </label>
           </div>
-          <p className={`rounded-xl px-3 py-2 font-mono text-sm ring-1 ring-inset ${valid ? "bg-accent/10 text-accent ring-accent/25" : "bg-red-500/10 text-red-200 ring-red-400/30"}`}>
+          {/* nothing typed yet is not a mistake: the rule is shown as a hint, in red only once something wrong is typed */}
+          <p className={`rounded-xl px-3 py-2 text-sm ring-1 ring-inset ${valid ? "bg-accent/10 font-mono text-accent ring-accent/25"
+            : prefix.trim() ? "bg-red-500/10 text-red-200 ring-red-400/30" : "bg-panel-2 text-muted ring-line"}`}>
             {valid ? `${p}${start} → ${p}${start + count - 1} · ${count} SKU` : "Préfixe : 1 à 6 lettres, tiret facultatif (M-, BLZ, COST-)"}
           </p>
           <label className="flex min-h-11 cursor-pointer items-start gap-3">

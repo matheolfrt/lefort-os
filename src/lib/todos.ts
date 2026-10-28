@@ -19,9 +19,8 @@ export const TODO_COLUMNS = "id, title, notes, due_on, important, assigned_to, r
 
 export const REPEAT_LABEL: Record<Repeat, string> = { none: "Une fois", daily: "Chaque jour", weekly: "Chaque semaine", monthly: "Chaque mois" };
 
-/** Today in Paris, as YYYY-MM-DD */
-export const parisToday = (now = new Date()) =>
-  new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+import { parisToday } from "@/lib/format";
+export { parisToday };
 
 export function addDays(day: string, n: number): string {
   const d = new Date(`${day}T12:00:00Z`);

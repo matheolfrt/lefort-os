@@ -2,6 +2,10 @@ const eur = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeZone: "Europe/Paris" });
 const dateTimeFmt = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" });
 
+/** Today in Paris as YYYY-MM-DD (the server runs in UTC: between midnight and 2 a.m. its date is still yesterday) */
+export const parisToday = (now = new Date()) =>
+  new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+
 export const money = (cents: number | null | undefined) => (cents == null ? "—" : eur.format(cents / 100));
 export const date = (iso: string | null | undefined) => (iso ? dateFmt.format(new Date(iso)) : "—");
 export const dateTime = (iso: string | null | undefined) => (iso ? dateTimeFmt.format(new Date(iso)) : "—");

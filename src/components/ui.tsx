@@ -84,7 +84,7 @@ export function Help({ text }: { text: string }) {
         <span className="flex size-5 items-center justify-center rounded-full text-[11px] font-semibold">?</span>
       </button>
       <span role="tooltip"
-        className="pointer-events-none invisible fixed inset-x-4 bottom-4 z-[60] rounded-xl border border-line bg-panel-2 p-3 font-sans text-sm font-normal leading-relaxed text-fg opacity-0 shadow-xl transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-full sm:mt-1 sm:w-64 sm:-translate-x-1/2 sm:text-xs">
+        className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] hidden rounded-xl border border-line bg-panel-2 p-3 font-sans text-sm font-normal leading-relaxed text-fg shadow-xl group-hover:block group-focus-within:block sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-1 sm:w-64 sm:text-xs">
         {text}
       </span>
     </span>

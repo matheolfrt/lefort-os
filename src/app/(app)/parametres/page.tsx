@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getContext, requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Field, PageHeader, btn, input } from "@/components/ui";
-import { ROLE_LABEL } from "@/i18n/fr";
+import { ROLE_LABEL, TAX_LABEL, taxLabel } from "@/i18n/fr";
 import { date } from "@/lib/format";
 import type { AppRole } from "@/lib/types";
 
@@ -121,32 +121,28 @@ export default async function Settings({ searchParams }: { searchParams: Promise
 
         <div className="space-y-4">
           <Card title="Équipe">
-            <div className="mb-4 overflow-x-auto"><table className="data">
-              <tbody>
-                {(members ?? []).map((m) => (
-                  <tr key={m.user_id}>
-                    <td>{name.get(m.user_id) || m.user_id.slice(0, 8)}</td>
-                    <td colSpan={2}>
-                      {admin ? (
-                        <form action={setMember} className="flex items-center gap-2">
-                          <input type="hidden" name="user_id" value={m.user_id} />
-                          <select name="role" defaultValue={m.role} className={`${input} w-auto`}>
-                            {(Object.keys(ROLE_LABEL) as AppRole[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-                          </select>
-                          <label className="flex items-center gap-1 text-xs"><input type="checkbox" name="active" defaultChecked={m.active} /> actif</label>
-                          <button className="text-sm underline">OK</button>
-                        </form>
-                      ) : `${ROLE_LABEL[m.role as AppRole]}${m.active ? "" : " (inactif)"}`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
+            <ul className="mb-4 divide-y divide-line">
+              {(members ?? []).map((m) => (
+                <li key={m.user_id} className="py-3 first:pt-0" data-member={name.get(m.user_id) || m.user_id.slice(0, 8)}>
+                  <div className="font-medium">{name.get(m.user_id) || m.user_id.slice(0, 8)}</div>
+                  {admin ? (
+                    <form action={setMember} className="mt-2 flex flex-wrap items-center gap-2">
+                      <input type="hidden" name="user_id" value={m.user_id} />
+                      <select name="role" defaultValue={m.role} aria-label={`Rôle de ${name.get(m.user_id) || "ce membre"}`} className={`${input} min-w-0 flex-1 sm:w-auto sm:flex-none`}>
+                        {(Object.keys(ROLE_LABEL) as AppRole[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                      </select>
+                      <label className="flex min-h-11 items-center gap-2 px-1 text-sm"><input type="checkbox" name="active" defaultChecked={m.active} className="size-4" /> Actif</label>
+                      <button className={btn.secondary}>Enregistrer</button>
+                    </form>
+                  ) : <div className="text-sm text-muted">{ROLE_LABEL[m.role as AppRole]}{m.active ? "" : " (inactif)"}</div>}
+                </li>
+              ))}
+            </ul>
             {admin && (
               <form action={addMember} className="grid gap-2 sm:grid-cols-2">
-                <input className={input} name="email" type="email" placeholder="E-mail du compte" required />
+                <input className={input} name="email" type="email" placeholder="E-mail du compte" aria-label="E-mail du compte" required />
                 <input className={input} name="full_name" placeholder="Nom" />
-                <select className={input} name="role" defaultValue="operator">
+                <select className={input} name="role" defaultValue="operator" aria-label="Rôle">
                   {(Object.keys(ROLE_LABEL) as AppRole[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                 </select>
                 <button className={btn.primary}>Ajouter</button>
@@ -176,17 +172,17 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           <Card title="Taux URSSAF (historisés)">
             <table className="data mb-3">
               <tbody>
-                {(rates ?? []).map((r) => <tr key={r.id}><td>{r.kind}</td><td className="num">{String(r.rate_pct).replace(".", ",")} %</td><td>depuis le {date(r.valid_from)}</td></tr>)}
+                {(rates ?? []).map((r) => <tr key={r.id}><td>{taxLabel(r.kind)}</td><td className="num">{String(r.rate_pct).replace(".", ",")} %</td><td>depuis le {date(r.valid_from)}</td></tr>)}
               </tbody>
             </table>
             {admin && (
-              <form action={addRate} className="grid grid-cols-[1fr_80px_1fr_auto] gap-2">
-                <select className={input} name="kind">
-                  <option value="urssaf_bic_vente">urssaf_bic_vente</option><option value="cfp">cfp</option><option value="versement_liberatoire">versement_liberatoire</option>
+              <form action={addRate} className="grid grid-cols-[1fr_88px] gap-2 sm:grid-cols-[1fr_88px_150px_auto]">
+                <select className={`${input} col-span-2 sm:col-span-1`} name="kind" aria-label="Taux concerné">
+                  {Object.entries(TAX_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                 </select>
-                <input className={input} name="rate" placeholder="%" inputMode="decimal" required />
-                <input className={input} name="valid_from" type="date" required />
-                <button className={btn.secondary}>+</button>
+                <input className={input} name="rate" placeholder="%" inputMode="decimal" required aria-label="Taux en %" />
+                <input className={input} name="valid_from" type="date" required aria-label="À partir du" />
+                <button className={`${btn.secondary} col-span-2 sm:col-span-1`}>Ajouter le taux</button>
               </form>
             )}
             <p className="mt-2 text-xs text-muted">Un nouveau taux s&apos;applique à partir de sa date ; les mois passés gardent l&apos;ancien taux.</p>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -122,8 +123,11 @@ export default async function BatchDetail({ params, searchParams }: {
                       <td>{COST_KIND[l.kind]}{l.description && <div className="text-xs text-muted">{l.description}</div>}</td>
                       <td className="num">{money(l.amount_cents)}</td>
                       {open && (
-                        <td className="w-8">
-                          <form action={deleteCostLine.bind(null, batch.id, l.id)}><button className="text-red-600" aria-label="Supprimer">×</button></form>
+                        <td className="w-11 !py-0">
+                          <form action={deleteCostLine.bind(null, batch.id, l.id)}>
+                            <button aria-label={`Supprimer le coût « ${COST_KIND[l.kind]} »`} title="Supprimer"
+                              className="flex size-11 items-center justify-center rounded-xl text-muted/70 hover:bg-red-500/15 hover:text-red-300"><Trash2 size={16} /></button>
+                          </form>
                         </td>
                       )}
                     </tr>
@@ -136,14 +140,14 @@ export default async function BatchDetail({ params, searchParams }: {
               {open ? (
                 <>
                   <form action={addCostLine.bind(null, batch.id)} className="mb-3 grid grid-cols-[1fr_90px_auto] gap-2">
-                    <select name="kind" className={input}>
+                    <select name="kind" className={input} aria-label="Type de coût">
                       {Object.entries(COST_KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                     <input name="amount" className={input} inputMode="decimal" placeholder="€" required />
                     <button className={btn.secondary}>+</button>
                   </form>
                   <form className="flex gap-2" action={async (fd: FormData) => { "use server"; await setAllocation(batch.id, String(fd.get("m"))); }}>
-                    <select name="m" defaultValue={batch.allocation_method} className={input}>
+                    <select name="m" defaultValue={batch.allocation_method} className={input} aria-label="Répartition du coût">
                       <option value="weighted">Répartition pondérée</option>
                       <option value="equal">Répartition égale</option>
                     </select>

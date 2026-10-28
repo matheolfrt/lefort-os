@@ -160,17 +160,19 @@ export function NewSale({ initialSku = null, focus = false }: { initialSku?: str
           <StatusChip status={i.status} />
           <span className="flex-1 truncate text-sm text-muted">{i.title}</span>
           <span className="text-sm tabular-nums">{money(i.list_price_cents)}</span>
-          <button onClick={() => setItems((x) => x.filter((y) => y.id !== i.id))} aria-label="Retirer"><X size={16} /></button>
+          <button onClick={() => setItems((x) => x.filter((y) => y.id !== i.id))} aria-label={`Retirer ${i.sku}`}
+            className="-my-2 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted hover:text-fg"><X size={16} /></button>
         </div>
       ))}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Prix de vente total (€)" hint={items.length > 1 ? "Lot : réparti au prorata des prix" : undefined}>
-          <input className={`${input} text-xl`} inputMode="decimal" value={gross} onChange={(e) => setGross(e.target.value)} />
+          <input className={`${input} text-xl`} inputMode="decimal" value={gross} onChange={(e) => setGross(e.target.value)} placeholder="0,00" />
         </Field>
-        <Field label="Date de vente">
+        {/* the date and time need the whole width to be readable on a phone */}
+        <div className="col-span-2"><Field label="Date de vente">
           <input className={input} type="datetime-local" value={soldAt} onChange={(e) => { setSoldAt(e.target.value); setDateTouched(true); }}
             onFocus={() => { if (!dateTouched) setSoldAt(nowLocal()); }} />
-        </Field>
+        </Field></div>
         <Field label="Acheteur"><input className={input} value={buyer} onChange={(e) => setBuyer(e.target.value)} /></Field>
         <Field label="Réf. commande"><input className={input} value={ref} onChange={(e) => setRef(e.target.value)} /></Field>
         <Field label="Frais de port à ma charge (€)"><input className={input} inputMode="decimal" value={shipping} onChange={(e) => setShipping(e.target.value)} placeholder="0" /></Field>

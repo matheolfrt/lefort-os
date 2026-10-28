@@ -138,20 +138,40 @@ export default async function ItemPage({ params }: { params: Promise<{ sku: stri
           </Card>
           <Card title="Historique">
             {timeline.length === 0 ? <p className="text-sm text-muted">Aucun événement.</p> : (
-              <ol className="relative space-y-3 border-l border-line pl-4 text-sm">
-                {timeline.map((t, i) => (
-                  <li key={i} className="relative">
-                    <span className={`absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-panel ${t.main ? "bg-accent" : "bg-muted/60"}`} />
-                    <div className={t.main ? "font-medium" : "text-fg/80"}>{t.text}</div>
-                    <div className="text-xs text-muted">{dateTime(t.at)}{t.who ? ` · ${t.who}` : ""}</div>
-                  </li>
-                ))}
-              </ol>
+              <>
+                <Timeline entries={timeline.slice(0, HISTORY_SHOWN)} />
+                {/* the most recent first; the rest folded away so the page stays short */}
+                {timeline.length > HISTORY_SHOWN && (
+                  <details className="group mt-3">
+                    <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-series-1 hover:underline">
+                      <span className="group-open:hidden">Voir les {timeline.length - HISTORY_SHOWN} événements plus anciens</span>
+                      <span className="hidden group-open:inline">Masquer les plus anciens</span>
+                    </summary>
+                    <div className="mt-2"><Timeline entries={timeline.slice(HISTORY_SHOWN)} /></div>
+                  </details>
+                )}
+              </>
             )}
           </Card>
         </div>
       </div>
     </>
+  );
+}
+
+const HISTORY_SHOWN = 12;
+
+function Timeline({ entries }: { entries: { text: string; at: string; who?: string | null; main?: boolean }[] }) {
+  return (
+    <ol className="relative space-y-3 border-l border-line pl-4 text-sm">
+      {entries.map((t, i) => (
+        <li key={i} className="relative">
+          <span className={`absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-panel ${t.main ? "bg-accent" : "bg-muted/60"}`} />
+          <div className={t.main ? "font-medium" : "text-fg/80"}>{t.text}</div>
+          <div className="text-xs text-muted">{dateTime(t.at)}{t.who ? ` · ${t.who}` : ""}</div>
+        </li>
+      ))}
+    </ol>
   );
 }
 

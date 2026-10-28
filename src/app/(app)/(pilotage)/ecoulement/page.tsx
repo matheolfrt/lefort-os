@@ -150,7 +150,7 @@ function RunningRow({ v, target, days }: { v: BatchView; target: number; days: n
   return (
     <article className="rounded-2xl border border-line bg-panel/80 p-4" data-batch={v.code}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Link prefetch={false} href={`/lots/${v.id}`} className="font-mono text-base font-semibold hover:text-accent">{v.code}</Link>
+        <Link prefetch={false} href={`/lots/${v.id}`} className="-my-2 inline-block py-2 font-mono text-base font-semibold hover:text-accent">{v.code}</Link>
         <span className="text-sm text-muted">{v.supplier}</span>
         <span className="font-mono text-xs text-muted">J+{Math.round(v.age_days)} / {days}</span>
         <span className={`ml-auto whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${PACE[v.pace].cls}`}>{PACE[v.pace].label}</span>
