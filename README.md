@@ -160,6 +160,18 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   achats et ventes sur 12 mois, coordonnées et notes modifiables, « Nouveau lot chez lui », archivage.
 - Migration `supabase/migrations/20261105000017_suppliers.sql`, tests `supabase/tests/suppliers_test.sql`.
 
+## Prix à baisser
+
+- **Suggestions, jamais automatiques** (Pilotage → Prix, `/prix`) : selon le temps en ligne, par défaut −10 % après
+  14 jours, −20 % après 30, −30 % après 45, calculés sur le prix de mise en ligne. Jamais sous le prix minimum de
+  l'article ni sous coût + frais Vinted + envoi moyen + 1 € ; pas de nouvelle baisse moins de 7 jours après la
+  précédente (une baisse annulée ne compte pas). Règles modifiables sur la page.
+- « Appliquer » baisse le prix dans Lefort OS (avec « Annuler ») ; le prix Vinted se change à la main (lien vers
+  l'annonce, liste « Baissés cette semaine »). « Pas maintenant » met une suggestion de côté 7 jours.
+- Effet mesuré : part des articles vendus dans les 14 jours après une baisse, selon sa taille.
+- Rappel sur le tableau de bord. Migration `supabase/migrations/20261106000018_price_suggestions.sql`,
+  tests `supabase/tests/pricing_test.sql`.
+
 ## Pilotage et confort d'utilisation
 
 - **Pilotage** : une seule entrée de menu pour Conseils, Écoulement, Niches, Statistiques et Scénarios (onglets,

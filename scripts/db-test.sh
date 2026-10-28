@@ -38,4 +38,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_sup -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_sup -f supabase/tests/suppliers_test.sql >/dev/null
+# Price suggestions on their own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_price" -c "create database ${DB}_price"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_price -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_price -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_price -f supabase/tests/pricing_test.sql >/dev/null
 echo "DB tests passed"

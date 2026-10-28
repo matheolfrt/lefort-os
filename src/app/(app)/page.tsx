@@ -17,6 +17,7 @@ import { SalesTrend } from "@/components/dashboard/sales-trend";
 import { Help } from "@/components/ui";
 import { GoalsCard, GoalsSkeleton } from "@/components/goals/goals-card";
 import { TodosCard } from "@/components/todos/todos-card";
+import { PriceReminder } from "@/components/dashboard/price-reminder";
 import type { ItemStatus } from "@/lib/types";
 
 const euro0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -72,17 +73,19 @@ export default async function Dashboard() {
         </Link>
       )}
 
-      {/* ── Objectives: today and this month */}
-      <Suspense fallback={<GoalsSkeleton />}>
-        <GoalsCard isManager={ctx.isManager} />
-      </Suspense>
-
       {/* ── What to do now */}
       <Section title="À faire maintenant">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-flow-col xl:auto-cols-fr xl:grid-cols-none">
           {todo.map((t) => <TodoTile key={t.label} {...t} />)}
         </div>
       </Section>
+
+      {/* ── Objectives: today and this month. Streamed in below the to-do tiles so that the tiles do not move under a finger */}
+      <Suspense fallback={<GoalsSkeleton />}>
+        <GoalsCard isManager={ctx.isManager} />
+      </Suspense>
+
+      {ctx.isManager && <Suspense fallback={null}><PriceReminder /></Suspense>}
 
       {/* ── The day's to-dos */}
       <Suspense fallback={<div className="skeleton h-28 rounded-2xl" />}>
