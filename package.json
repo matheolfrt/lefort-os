@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:db": "scripts/db-test.sh",
+    "test:finance": "npx --yes tsx scripts/finance-test.ts",
     "typecheck": "tsc --noEmit",
     "build:extension": "rm -f public/lefort-os-vinted.zip && cd extension && zip -qr ../public/lefort-os-vinted.zip . -x \"*.DS_Store\""
   },

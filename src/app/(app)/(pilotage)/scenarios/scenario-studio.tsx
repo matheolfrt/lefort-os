@@ -9,7 +9,7 @@ import { Legend, MonthBars, MonthLine, type Series } from "@/components/charts";
 import { btn, input } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { errorMessage } from "@/lib/errors";
-import { FIELDS, capacityLevels, compute, project, type ScenarioInputs } from "@/lib/scenario";
+import { FIELDS, PRESETS, capacityLevels, compute, funding, project, type ScenarioInputs } from "@/lib/scenario";
 import type { Baseline } from "@/lib/scenario-baseline";
 
 export interface SavedScenario { id: string; name: string; inputs: ScenarioInputs }
@@ -35,6 +35,7 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
   const [busy, setBusy] = useState(false);
 
   const r = useMemo(() => compute(current.inputs), [current.inputs]);
+  const fund = useMemo(() => funding(current.inputs), [current.inputs]);
   const months = useMemo(() => project(current.inputs), [current.inputs]);
   const real = useMemo(() => compute(baseline.inputs), [baseline.inputs]);
   const original = source === REAL ? baseline.inputs : saved.find((s) => s.id === source)?.inputs;
@@ -69,6 +70,10 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
   function duplicate() {
     setCurrent((c) => ({ id: null, name: `${c.name} (copie)`, inputs: { ...c.inputs } }));
     setSource("");
+  }
+  function preset(p: (typeof PRESETS)[number]) {
+    setCurrent({ id: null, name: p.label, inputs: p.apply(baseline.inputs) });
+    setSource(`preset:${p.key}`);
   }
   function blank() {
     setCurrent({ id: null, name: "Nouveau scénario", inputs: { ...baseline.inputs } });
@@ -120,8 +125,20 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
         </ul>
       </nav>
 
+      {/* Starting points around the real figures */}
+      <div className="flex flex-wrap items-center gap-2" data-testid="presets">
+        <span className="text-sm text-muted">Partir d&apos;un scénario type :</span>
+        {PRESETS.map((p) => (
+          <button key={p.key} type="button" onClick={() => preset(p)} title={p.change} aria-pressed={source === `preset:${p.key}`}
+            className={`inline-flex min-h-10 items-center rounded-lg border px-3 text-sm transition ${source === `preset:${p.key}` ? "border-accent/50 bg-accent/10 text-accent" : "border-line hover:border-fg/25"}`}>
+            {p.label}
+          </button>
+        ))}
+        {source.startsWith("preset:") && <span className="text-xs text-muted">{PRESETS.find((p) => `preset:${p.key}` === source)?.change} · enregistrez-le pour le garder</span>}
+      </div>
+
       {/* Headline numbers */}
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Kpi label="CA / mois" value={eur(r.revenue)} hint={`≈ ${eur(r.annualRevenue)} / an`} />
         <Kpi label="Résultat net / mois" value={eur(r.net)} hint={`${pct(r.marginPct)} du CA`} bad={r.net < 0} />
         <Kpi label="Ventes / mois" value={num(r.sales)} hint={r.daysToSell ? `≈ ${Math.round(r.daysToSell)} j en stock` : "—"} />
@@ -129,6 +146,10 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
         <Kpi label="Achats / mois" value={eur(r.cogs)} hint="pour garder ce stock" />
         <Kpi label="Point mort" value={r.breakevenSales == null ? "—" : `${Math.ceil(r.breakevenSales)} ventes`}
           hint={r.breakevenStock == null ? "par mois" : `soit ${num(r.breakevenStock)} articles en stock`} />
+        <Kpi label="Cash nécessaire" value={eur(fund.cashNeeded)}
+          hint={`stock ${eur(r.capital)} + 1 mois de charges ${eur(r.fixed)}${fund.dip > 0 ? ` + creux ${eur(fund.dip)}` : ""}`} />
+        <Kpi label="Retour sur capital" value={pct(fund.rocPct)}
+          hint={fund.velocity == null ? "résultat annuel / cash nécessaire" : `vélocité ${fund.velocity.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € de marge / € de stock / an`} />
       </div>
 
       {r.warnings.length > 0 && (
@@ -289,19 +310,25 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
             <p className="mb-3 text-xs text-muted">Touchez une ligne pour l&apos;ouvrir</p>
             <div className="-mx-4 overflow-x-auto">
               <table className="data">
-                <thead><tr><th>Scénario</th><th className="num">Stock</th><th className="num">CA / mois</th><th className="num">Résultat / mois</th><th className="num">Marge</th><th className="num">Stock immobilisé</th><th className="num">Équipe</th></tr></thead>
+                <thead><tr><th>Scénario</th><th className="num">Stock</th><th className="num">CA / mois</th><th className="num">Résultat / mois</th><th className="num">Marge</th><th className="num">Stock immobilisé</th><th className="num">Cash nécessaire</th><th className="num">Retour</th><th className="num">Équipe</th></tr></thead>
                 <tbody>
-                  {[{ id: REAL, name: "Mes chiffres réels", inputs: baseline.inputs }, ...saved].map((s) => {
+                  {[{ id: REAL, name: "Mes chiffres réels", inputs: baseline.inputs },
+                    ...PRESETS.filter((p) => p.key !== "base").map((p) => ({ id: `preset:${p.key}`, name: p.label, inputs: p.apply(baseline.inputs) })),
+                    ...saved].map((s) => {
                     const c = compute(s.id === source ? current.inputs : s.inputs);
+                    const fd = funding(s.id === source ? current.inputs : s.inputs);
+                    const pr = PRESETS.find((p) => `preset:${p.key}` === s.id);
                     return (
-                      <tr key={s.id} className={`cursor-pointer ${s.id === source ? "bg-accent/8" : ""}`}
-                        onClick={() => load(s.id === REAL ? null : (s as SavedScenario))}>
+                      <tr key={s.id} className={`cursor-pointer ${s.id === source ? "bg-accent/8" : ""}`} data-scenario={s.name}
+                        onClick={() => (pr ? preset(pr) : load(s.id === REAL ? null : (s as SavedScenario)))}>
                         <td className="font-medium">{s.id === source ? current.name : s.name}{s.id === source && dirty && <span className="ml-1 text-xs text-highlight">modifié</span>}</td>
                         <td className="num">{num((s.id === source ? current.inputs : s.inputs).stock)}</td>
                         <td className="num">{eur(c.revenue)}</td>
                         <td className={`num font-semibold ${tone(c.net)}`}>{eur(c.net)}</td>
                         <td className="num">{pct(c.marginPct)}</td>
                         <td className="num">{eur(c.capital)}</td>
+                        <td className="num">{eur(fd.cashNeeded)}</td>
+                        <td className="num">{pct(fd.rocPct)}</td>
                         <td className="num">{c.peopleNeeded}</td>
                       </tr>
                     );
@@ -309,6 +336,7 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
                 </tbody>
               </table>
             </div>
+            <p className="mt-2 text-xs text-muted">Conservateur et Agressif partent de vos chiffres réels ({PRESETS.filter((p) => p.key !== "base").map((p) => `${p.label.toLowerCase()} : ${p.change}`).join(" ; ")}). Ce sont des hypothèses, pas des prévisions.</p>
             {!saved.length && <p className="mt-3 text-sm text-muted">Enregistrez un scénario pour le comparer à vos chiffres réels.</p>}
           </section>
         </div>

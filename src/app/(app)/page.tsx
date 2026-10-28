@@ -18,6 +18,7 @@ import { Help } from "@/components/ui";
 import { GoalsCard, GoalsSkeleton } from "@/components/goals/goals-card";
 import { TodosCard } from "@/components/todos/todos-card";
 import { PriceReminder } from "@/components/dashboard/price-reminder";
+import { FinanceCard } from "@/components/dashboard/finance-card";
 import type { ItemStatus } from "@/lib/types";
 
 const euro0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -86,6 +87,8 @@ export default async function Dashboard() {
       </Suspense>
 
       {ctx.isManager && <Suspense fallback={null}><PriceReminder /></Suspense>}
+
+      {ctx.isManager && <Suspense fallback={<div className="skeleton h-28 rounded-2xl" />}><FinanceCard /></Suspense>}
 
       {/* ── The day's to-dos */}
       <Suspense fallback={<div className="skeleton h-28 rounded-2xl" />}>

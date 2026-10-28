@@ -45,4 +45,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_price -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_price -f supabase/tests/pricing_test.sql >/dev/null
+# Financial command center on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_fin" -c "create database ${DB}_fin"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_fin -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_fin -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_fin -f supabase/tests/finance_test.sql >/dev/null
 echo "DB tests passed"

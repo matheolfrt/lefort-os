@@ -24,7 +24,7 @@ async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ da
 
 export async function loadBaseline(supabase: SupabaseClient, org: Organization, now = Date.now()): Promise<Baseline> {
   const since = new Date(now - 90 * DAY).toISOString();
-  const [econ, orders, { data: rates }, { data: expenses }] = await Promise.all([
+  const [econ, orders, { data: rates }, { data: expenses }, { data: recurring }] = await Promise.all([
     fetchAll<{ status: ItemStatus; cost_cents: number; revenue_cents: number; is_sold: boolean; sold_at: string | null }>((from, to) =>
       supabase.from("v_item_economics").select("status, cost_cents, revenue_cents, is_sold, sold_at").range(from, to)),
     fetchAll<{ shipping_cost_cents: number; packaging_cost_cents: number; order_lines: { id: string }[] }>((from, to) =>
@@ -32,7 +32,9 @@ export async function loadBaseline(supabase: SupabaseClient, org: Organization, 
         .neq("status", "cancelled").gte("sold_at", since).range(from, to)),
     supabase.from("tax_rates").select("kind, rate_pct, valid_from").lte("valid_from", new Date(now).toISOString().slice(0, 10))
       .order("valid_from", { ascending: false }),
-    supabase.from("expenses").select("amount_cents").gte("spent_on", since.slice(0, 10)),
+    supabase.from("expenses").select("amount_cents, category").gte("spent_on", since.slice(0, 10)),
+    // recurring charges of the finance settings (absent before that database update: then simply none)
+    supabase.from("recurring_expenses").select("category, amount_cents, frequency, ends_on"),
   ]);
 
   const basis: string[] = [];
@@ -54,11 +56,19 @@ export async function loadBaseline(supabase: SupabaseClient, org: Organization, 
   for (const r of rates ?? []) if (!latest.has(r.kind)) latest.set(r.kind, Number(r.rate_pct));
   const urssaf = (latest.get("urssaf_bic_vente") ?? 0) + (latest.get("cfp") ?? 0)
     + (org.versement_liberatoire ? latest.get("versement_liberatoire") ?? 0 : 0);
-  const fixed = (expenses ?? []).reduce((s, e) => s + Number(e.amount_cents), 0) / 3;
+  // a category with a recurring charge is counted from it; its one-off expenses are its payments (no double count)
+  const today = new Date(now).toISOString().slice(0, 10);
+  const perMonth = { weekly: 52 / 12, monthly: 1, quarterly: 1 / 3, yearly: 1 / 12 } as Record<string, number>;
+  const live = (recurring ?? []).filter((r) => !r.ends_on || r.ends_on >= today);
+  const covered = new Set(live.map((r) => r.category as string));
+  const monthlyOf = (cat?: string) => live.filter((r) => (cat ? r.category === cat : r.category !== "rent"))
+    .reduce((a, r) => a + Number(r.amount_cents) * (perMonth[r.frequency] ?? 1), 0);
+  const rent = monthlyOf("rent");
+  const fixed = (expenses ?? []).filter((e) => !covered.has(e.category)).reduce((s, e) => s + Number(e.amount_cents), 0) / 3 + monthlyOf();
 
   basis.push(`${stock.length} articles en stock`);
   basis.push(`${recent.length} ventes sur 90 jours${recent.length < 5 ? " (prix moyen calculé sur toutes les ventes)" : ""}`);
-  if (fixed > 0) basis.push(`charges saisies en Compta : ${Math.round(fixed / 100)} € / mois en moyenne`);
+  if (fixed > 0 || rent > 0) basis.push(`charges saisies (dépenses et charges récurrentes) : ${Math.round((fixed + rent) / 100)} € / mois`);
 
   return {
     basis,
@@ -73,6 +83,7 @@ export async function loadBaseline(supabase: SupabaseClient, org: Organization, 
       perSale: perSale != null ? round(perSale / 100, 0.1) : DEFAULTS.perSale,
       urssafPct: urssaf || DEFAULTS.urssafPct,
       otherFixed: fixed > 0 ? round(fixed / 100, 10) : DEFAULTS.otherFixed,
+      rent: rent > 0 ? round(rent / 100, 10) : DEFAULTS.rent,
     },
   };
 }

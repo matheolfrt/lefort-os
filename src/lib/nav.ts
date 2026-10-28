@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, Radar, Settings, ShoppingBag, Target, Truck, type LucideIcon,
+  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, Radar, Settings, ShoppingBag, Target, Truck, type LucideIcon,
 } from "lucide-react";
 
 export type NavGroup = "Pilotage" | "Opérations" | "Gestion";
@@ -16,6 +16,8 @@ export const NAV: NavItem[] = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard", group: "Pilotage" },
   { href: "/conseils", label: "Pilotage", icon: Radar, manager: true, keywords: "pilotage analyse", group: "Pilotage",
     match: ["/conseils", "/objectifs", "/prix", "/ecoulement", "/niches", "/statistiques", "/scenarios"] },
+  { href: "/finance", label: "Finance", icon: Landmark, manager: true, group: "Pilotage", match: ["/finance"],
+    keywords: "où est mon argent trésorerie cash capital budget d'achat prévision stock dormant immobilisé rotation rentabilité" },
   { href: "/conseils", label: "Conseils", icon: Lightbulb, manager: true, keywords: "priorités rentabilité recommandations à faire acheter", group: "Pilotage" , tab: true },
   { href: "/objectifs", label: "Objectifs", icon: Target, manager: true, keywords: "objectif chiffre d'affaires ca ventes jour semaine mois année but", group: "Pilotage", tab: true },
   { href: "/prix", label: "Prix", icon: TrendingDown, manager: true, keywords: "baisser prix stock dormant démarque solde rotation suggestion", group: "Pilotage", tab: true },

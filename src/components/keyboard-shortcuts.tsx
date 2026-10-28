@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 const GO: { key: string; href: string; label: string; manager?: boolean }[] = [
   { key: "d", href: "/", label: "Tableau de bord" },
   { key: "p", href: "/conseils", label: "Pilotage", manager: true },
+  { key: "f", href: "/finance", label: "Finance", manager: true },
   { key: "t", href: "/taches", label: "Tâches" },
   { key: "r", href: "/postes/production", label: "Production" },
   { key: "o", href: "/postes", label: "Postes" },

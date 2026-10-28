@@ -113,3 +113,32 @@ export function capacityLevels(stock: number): number[] {
   const base = [100, 250, 500, 1000, 2500, 5000, 10000];
   return [...new Set([...base, Math.round(stock)])].filter((v) => v > 0).sort((a, b) => a - b);
 }
+
+/** Money a scenario needs: the stock at cost, a month of fixed charges, and the deepest dip of the 12-month cash curve */
+export function funding(s: ScenarioInputs, from = new Date()) {
+  const r = compute(s);
+  const dip = Math.max(0, -Math.min(0, ...project(s, from).map((m) => m.cash)));
+  const cashNeeded = r.capital + r.fixed + dip;
+  return {
+    cashNeeded, dip,
+    /** margin after costs per year for one euro of stock */
+    velocity: r.capital > 0 ? (r.gross * 12) / r.capital : null,
+    /** net result per year / cash needed */
+    rocPct: cashNeeded > 0 ? (r.annualNet / cashNeeded) * 100 : null,
+  };
+}
+
+const step = (v: number, s: number) => Math.round(v / s) * s;
+
+/** Three starting points around the real figures. Each change is written out so nothing is hidden. */
+export const PRESETS: { key: string; label: string; change: string; apply: (b: ScenarioInputs) => ScenarioInputs }[] = [
+  {
+    key: "conservateur", label: "Conservateur", change: "ventes −25 %, prix −5 %, coût d'achat +5 %, stock constant",
+    apply: (b) => ({ ...b, sellThrough: step(b.sellThrough * 0.75, 0.5), price: step(b.price * 0.95, 0.5), cost: step(b.cost * 1.05, 0.5), growth: 0 }),
+  },
+  { key: "base", label: "Base", change: "vos chiffres réels, sans changement", apply: (b) => ({ ...b }) },
+  {
+    key: "agressif", label: "Agressif", change: "ventes +20 %, stock +5 % par mois",
+    apply: (b) => ({ ...b, sellThrough: Math.min(100, step(b.sellThrough * 1.2, 0.5)), growth: Math.max(b.growth, 5) }),
+  },
+];

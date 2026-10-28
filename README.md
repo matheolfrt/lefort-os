@@ -182,7 +182,7 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   de statut : un retour refusé est signalé, jamais forcé.
 - **⌘K exécute des actions** (`src/lib/commands.ts`) : « M-12 29 », « baisser M-12 à 29,90 », « ranger M-12 en
   A-01-02 », « en ligne M-12 », « vendre M-12 », « étiquette M-12 ».
-- **Raccourcis clavier** (`src/components/keyboard-shortcuts.tsx`) : `g` puis `d` `p` `t` `r` `o` `s` `l` `v` `e`,
+- **Raccourcis clavier** (`src/components/keyboard-shortcuts.tsx`) : `g` puis `d` `p` `f` `t` `r` `o` `s` `l` `v` `e`,
   `n` nouvelle vente, `?` aide. Ignorés pendant la saisie et pendant un scan (touches trop rapprochées).
 - **Fiche article** : photos en grand, carte « En bref » modifiable, historique unique (statuts + emplacements).
 - **Aide** : écrans vides avec l'action suivante, bulles « ? » sur les chiffres clés.
@@ -194,7 +194,34 @@ emballage et port, cotisations URSSAF, équipe, local, charges fixes, croissance
 mensuel, point mort, stock immobilisé, achats nécessaires, équipe nécessaire, projection et trésorerie sur 12 mois,
 niveaux de stock, comparateur. « Mes chiffres réels » part des 90 derniers jours (`src/lib/scenario-baseline.ts`) ;
 le moteur est `src/lib/scenario.ts`. Les scénarios sont enregistrés dans la table `scenarios` (lecture et écriture
-réservées aux responsables).
+réservées aux responsables). Trois scénarios types partent des chiffres réels : Conservateur (ventes −25 %, prix
+−5 %, coût +5 %), Base, Agressif (ventes +20 %, stock +5 %/mois) ; chacun affiche le cash nécessaire (stock + un mois de
+charges + creux de trésorerie sur 12 mois) et le retour sur capital.
+
+## Où est mon argent ? (Financial Command Center)
+
+`/finance` (responsables, menu « Finance », raccourci `g f`, carte sur le tableau de bord). Huit sections : capital
+(cash, stock, stock dormant, à recevoir), stock et capital immobilisé (coût, prix affiché, liquidation, âge, dormant),
+performance, rotation et rendement du capital, trésorerie et prévision 7/30/60/90 j, budget d'achat, recommandations,
+analyse par catégorie / marque / fournisseur / taille / matière / plateforme. Chaque chiffre a son « Comment est calculé
+ce chiffre ? » et mène aux articles ou ventes qui le composent (`/finance/articles`, `/finance/ventes`,
+`/finance/a-recevoir`).
+
+- **Trésorerie** : dernier solde déclaré + encaissements Vinted − remboursements − frais d'envoi − lots achetés −
+  charges depuis ce solde. Jamais devinée : sans solde, elle est « non déclarée ».
+- **Charges** : récurrentes (comptées à chaque échéance) et ponctuelles ; une catégorie qui a une charge récurrente ne
+  compte pas ses dépenses ponctuelles en plus (pas de double comptage).
+- **Prévision** : rythme réel des N derniers jours, limité par le stock, délai de paiement Vinted, charges, achats
+  prévus, cotisations à leur échéance ; fourchette ±25 % ; saisonnalité seulement avec plus d'un an d'historique.
+- **Budget d'achat** : le plus petit de (trésorerie + à recevoir − dépenses 30 j − achats engagés − réserve), du plus
+  bas niveau de trésorerie prévu au-dessus de la réserve et du stock nécessaire. La réserve n'est jamais dépensable.
+- **Paramètres** (`/finance/parametres`) : solde, réserve, seuils d'immobilisation, âge du stock et stock dormant,
+  facteur de liquidation, hypothèses de prévision, charges récurrentes, dépenses, achats prévus. Rien n'est figé dans le
+  code.
+- Calculs : `src/lib/finance/calc.ts` et `insights.ts` (fonctions pures), agrégats SQL dans
+  `supabase/migrations/20261107000019_finance.sql` (`finance_overview`, `finance_items`, `finance_sales`,
+  `finance_receivables`, `finance_segments`, `price_plan`, `finance_snapshot`). Tests : `npm run test:finance`
+  et `supabase/tests/finance_test.sql`.
 
 ## SKU par lot, mise en vente groupée, emplacements nommés
 
