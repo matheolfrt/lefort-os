@@ -51,9 +51,9 @@ async function createBatch(formData: FormData) {
   redirect(`/lots/${batch.id}`);
 }
 
-export default async function NewBatch({ searchParams }: { searchParams: Promise<{ error?: string; niche?: string }> }) {
+export default async function NewBatch({ searchParams }: { searchParams: Promise<{ error?: string; niche?: string; fournisseur?: string }> }) {
   await requireManager();
-  const { error, niche } = await searchParams;
+  const { error, niche, fournisseur } = await searchParams;
   const supabase = await createClient();
   const [{ data: suppliers }, { count }, { data: niches }] = await Promise.all([
     supabase.from("suppliers").select("id, name").eq("active", true).order("name"),
@@ -74,7 +74,7 @@ export default async function NewBatch({ searchParams }: { searchParams: Promise
           <div className="space-y-3">
             <Field label="Code du lot"><input className={`${input} font-mono`} name="code" defaultValue={suggestedCode} pattern="LOT-[A-Za-z0-9-]+" required /></Field>
             <Field label="Fournisseur">
-              <select className={input} name="supplier_id" required>
+              <select className={input} name="supplier_id" required defaultValue={suppliers.some((x) => x.id === fournisseur) ? fournisseur : undefined}>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>

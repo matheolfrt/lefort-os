@@ -149,6 +149,17 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   aux tâches du jour. Les tâches du jour sont sur le tableau de bord.
 - Migration `supabase/migrations/20261104000016_goals_todos.sql`, tests `supabase/tests/goals_todos_test.sql`.
 
+## Fournisseurs
+
+- **Classement** (`/fournisseurs`) : verdict par fournisseur (« À racheter », « Correct », « Rentable mais lent »,
+  « À éviter », « Trop tôt pour juger ») avec sa raison. La marge est mesurée sur les articles vendus : le stock restant
+  n'est pas compté comme une perte ; « Remboursé » dit quelle part de ce qui a été payé est revenue (ventes moins frais).
+  Coût d'un article → prix de vente, écoulement à 30 jours, délai, articles écartés. Le stock d'avant Lefort OS est
+  hors classement. Règles dans `src/lib/suppliers.ts` (mêmes seuils que les Conseils).
+- **Fiche fournisseur** (`/fournisseurs/[id]`) : ce qui marche chez lui (marques, catégories, tailles), ses lots,
+  achats et ventes sur 12 mois, coordonnées et notes modifiables, « Nouveau lot chez lui », archivage.
+- Migration `supabase/migrations/20261105000017_suppliers.sql`, tests `supabase/tests/suppliers_test.sql`.
+
 ## Pilotage et confort d'utilisation
 
 - **Pilotage** : une seule entrée de menu pour Conseils, Écoulement, Niches, Statistiques et Scénarios (onglets,
