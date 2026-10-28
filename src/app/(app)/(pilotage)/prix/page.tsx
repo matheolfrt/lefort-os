@@ -57,7 +57,7 @@ export default async function Prices({ searchParams }: { searchParams: Promise<{
       </div>
 
       <section aria-labelledby="todo" className="space-y-2">
-        <h2 id="todo" className="eyebrow text-muted">Suggestions du jour</h2>
+        <h2 id="todo" className="section-title">Suggestions du jour</h2>
         <PriceList items={p.items} />
       </section>
 

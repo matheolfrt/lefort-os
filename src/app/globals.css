@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
-/* The app is dark only: every `dark:` variant applies (html carries the .dark class) */
-@custom-variant dark (&:where(.dark, .dark *));
+/* Dark by default; light and « auto » (follows the device) are options. `dark:` variants follow the theme in use */
+@custom-variant dark {
+  &:where([data-theme=dark], [data-theme=dark] *) { @slot; }
+  @media (prefers-color-scheme: dark) { &:where([data-theme=auto], [data-theme=auto] *) { @slot; } }
+}
 
 /* Night-green palette: deep green-black surfaces, green for actions, orange for highlights */
 :root {
@@ -20,6 +23,50 @@
   /* chart series (validated categorical pair on the panel surface: green, orange) */
   --series-1: #199e70;
   --series-2: #d95926;
+}
+
+/* Light theme (chosen, or « auto » on a device in light mode). Same green identity, on paper-white surfaces */
+:root[data-theme=light] {
+  color-scheme: light;
+  --bg: #f3f6f3;
+  --panel: #ffffff;
+  --panel-2: #edf2ee;
+  --line: #d8e0da;
+  --fg: #10201a;
+  --muted: #5a6a60;
+  --accent: #15803d;
+  --accent-fg: #ffffff;
+  --highlight: #c2410c;
+  --ink: #ffffff;
+  --ink-fg: #10201a;
+  /* light tints written for the dark theme become dark enough to read on white */
+  --color-red-100: #7f1d1d; --color-red-200: #991b1b; --color-red-300: #b91c1c;
+  --color-amber-200: #92400e; --color-amber-300: #b45309;
+  --color-sky-200: #075985; --color-sky-300: #0369a1;
+  --color-emerald-200: #065f46; --color-yellow-200: #854d0e; --color-orange-200: #9a3412;
+  --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme=auto] {
+    color-scheme: light;
+    --bg: #f3f6f3;
+    --panel: #ffffff;
+    --panel-2: #edf2ee;
+    --line: #d8e0da;
+    --fg: #10201a;
+    --muted: #5a6a60;
+    --accent: #15803d;
+    --accent-fg: #ffffff;
+    --highlight: #c2410c;
+    --ink: #ffffff;
+    --ink-fg: #10201a;
+    /* light tints written for the dark theme become dark enough to read on white */
+    --color-red-100: #7f1d1d; --color-red-200: #991b1b; --color-red-300: #b91c1c;
+    --color-amber-200: #92400e; --color-amber-300: #b45309;
+    --color-sky-200: #075985; --color-sky-300: #0369a1;
+    --color-emerald-200: #065f46; --color-yellow-200: #854d0e; --color-orange-200: #9a3412;
+    --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46;
+  }
 }
 
 @theme inline {
@@ -58,6 +105,8 @@ body {
 
 /* Small mono label in capitals, widely spaced (section titles, eyebrows) */
 .eyebrow { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; }
+/* Title of a section of a page: readable at a glance, few of them per page */
+.section-title { font-size: 1rem; line-height: 1.4; font-weight: 600; letter-spacing: -0.01em; color: var(--fg); }
 /* Tighter variant for labels inside tiles and forms */
 .eyebrow-tight { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
 
@@ -106,12 +155,24 @@ table.data td.font-mono, table.data td > .font-mono, table.data td:has(> a.font-
 @keyframes page-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .page-in { animation: page-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
+/* Dashboard cards and grids of figures arrive one after the other, a few tens of ms apart */
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.stagger > * { animation: rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.stagger > :nth-child(2) { animation-delay: 30ms; } .stagger > :nth-child(3) { animation-delay: 60ms; }
+.stagger > :nth-child(4) { animation-delay: 90ms; } .stagger > :nth-child(5) { animation-delay: 120ms; }
+.stagger > :nth-child(6) { animation-delay: 150ms; } .stagger > :nth-child(n+7) { animation-delay: 180ms; }
+
+/* « Enregistré » and other confirmations: a short glow */
+@keyframes saved { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+.saved { animation: saved 0.9s ease-out; border-radius: 0.75rem; }
+
 /* Small menus and popovers */
 @keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
 .pop-in { animation: pop-in 0.14s ease-out; transform-origin: top right; }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton, .nav-progress::after, .page-in, .pop-in { animation: none; }
+  .skeleton, .nav-progress::after, .page-in, .pop-in, .rise, .stagger > *, .saved { animation: none; }
 }
 
 /* ── Finish ─────────────────────────────────────────────────────────────── */

@@ -18,7 +18,10 @@ import { Help } from "@/components/ui";
 import { GoalsCard, GoalsSkeleton } from "@/components/goals/goals-card";
 import { TodosCard } from "@/components/todos/todos-card";
 import { PriceReminder } from "@/components/dashboard/price-reminder";
-import { FinanceCard } from "@/components/dashboard/finance-card";
+import { FinanceCard, FinanceCardSkeleton } from "@/components/dashboard/finance-card";
+import { DashboardCustomize } from "@/components/dashboard/customize";
+import { resolveLayout } from "@/lib/dashboard-layout";
+import { getDashLayout } from "@/lib/prefs";
 import type { ItemStatus } from "@/lib/types";
 
 const euro0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -49,60 +52,28 @@ export default async function Dashboard() {
 
   const today = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
   const lateShip = d.shipping.orders > 0 && (d.shipping.oldestDays ?? 0) >= 1;
+  // late work other than shipping (which has its own line): the oldest item waits longer than it should
+  const lateWork = todo.filter((t) => t.href !== "/postes/expedition" && t.count > 0 && t.lateAfter != null && (t.oldestDays ?? 0) >= t.lateAfter);
+  const { order, hidden } = resolveLayout(await getDashLayout(), ctx.isManager);
 
-  return (
-    <div className="mx-auto max-w-7xl space-y-5">
-      {/* ── Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="eyebrow text-highlight">{today}</p>
-          <h1 className="mt-1 text-3xl font-bold leading-tight tracking-[-0.04em] sm:text-[40px]">Tableau de bord</h1>
-        </div>
-        <StartWork counts={{
-          receive: q("received").count, photo: q("sorted").count, measure: q("photographed").count,
-          publish: q("listing_ready").count, store: toStore, ship: d.shipping.orders,
-        }} />
-      </header>
-
-      {lateShip && (
-        <Link href="/postes/expedition" className="flex min-h-12 items-center gap-3 rounded-2xl bg-red-500/15 px-4 py-3 font-semibold text-red-200 ring-1 ring-inset ring-red-400/40 transition hover:bg-red-500/20">
-          <AlertTriangle size={20} className="shrink-0" />
-          <span className="flex-1">
-            {d.shipping.orders} commande{d.shipping.orders > 1 ? "s" : ""} à expédier, la plus ancienne vendue il y a {d.shipping.oldestDays} j
-          </span>
-          <ChevronRight size={20} />
-        </Link>
-      )}
-
-      {/* ── What to do now */}
+  const cards: Record<string, ReactNode> = {
+    todo: (
       <Section title="À faire maintenant">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-flow-col xl:auto-cols-fr xl:grid-cols-none">
           {todo.map((t) => <TodoTile key={t.label} {...t} />)}
         </div>
       </Section>
-
-      {/* ── Objectives: today and this month. Streamed in below the to-do tiles so that the tiles do not move under a finger */}
-      <Suspense fallback={<GoalsSkeleton />}>
-        <GoalsCard isManager={ctx.isManager} />
-      </Suspense>
-
-      {ctx.isManager && <Suspense fallback={null}><PriceReminder /></Suspense>}
-
-      {ctx.isManager && <Suspense fallback={<div className="skeleton h-28 rounded-2xl" />}><FinanceCard /></Suspense>}
-
-      {/* ── The day's to-dos */}
+    ),
+    goals: <Suspense fallback={<GoalsSkeleton />}><GoalsCard isManager={ctx.isManager} /></Suspense>,
+    money: <Suspense fallback={<FinanceCardSkeleton />}><FinanceCard /></Suspense>,
+    tasks: (
       <Suspense fallback={<div className="skeleton h-28 rounded-2xl" />}>
         <TodosCard me={ctx.userId} isManager={ctx.isManager} />
       </Suspense>
-
-      {/* ── Advice: the heaviest figures, streamed in after the rest of the page */}
-      {ctx.isManager && (
-        <Suspense fallback={<AdviceSkeleton />}>
-          <AdviceCard quarterly={ctx.org.declaration_frequency === "quarterly"} />
-        </Suspense>
-      )}
-
-      {/* ── KPI */}
+    ),
+    // the heaviest figures, streamed in after the rest of the page
+    advice: <Suspense fallback={<AdviceSkeleton />}><AdviceCard quarterly={ctx.org.declaration_frequency === "quarterly"} /></Suspense>,
+    month: (
       <Section title={f ? "Ce mois-ci" : "Stock"}>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {f && (
@@ -132,27 +103,26 @@ export default async function Dashboard() {
           )}
         </div>
       </Section>
-
-      {/* ── This month / this week, day by day */}
-      {f && <SalesTrend trend={f.trend} />}
-
-      {/* ── Production line */}
+    ),
+    trend: f ? <SalesTrend trend={f.trend} /> : null,
+    pipeline: (
       <Section
         title="Chaîne de production"
         aside={(q("on_hold").count > 0 || q("returned").count > 0) && (
           <span className="flex gap-3 text-sm">
             {q("on_hold").count > 0 && <Link className="inline-flex min-h-11 items-center font-semibold text-amber-700 underline-offset-2 hover:underline dark:text-amber-400" href="/stock?status=on_hold">{q("on_hold").count} en attente</Link>}
-            {q("returned").count > 0 && <Link className="inline-flex min-h-11 items-center font-semibold text-rose-700 underline-offset-2 hover:underline" href="/stock?status=returned">{q("returned").count} retour{q("returned").count > 1 ? "s" : ""}</Link>}
+            {q("returned").count > 0 && <Link className="inline-flex min-h-11 items-center font-semibold text-rose-700 underline-offset-2 hover:underline dark:text-rose-400" href="/stock?status=returned">{q("returned").count} retour{q("returned").count > 1 ? "s" : ""}</Link>}
           </span>
         )}
       >
         <Pipeline counts={PIPELINE.map((s) => ({ status: s, ...q(s) }))} />
       </Section>
-
-      {/* ── Money & stock health */}
-      <div className={`grid gap-5 ${f ? "lg:grid-cols-[1.6fr_1fr]" : ""}`}>
-        {f && (
-          <Section title="Finance">
+    ),
+    // money and stock health: one section, three panels
+    health: (
+      <Section title="Santé de l'activité">
+        <div className={`grid gap-3 ${f ? "lg:grid-cols-[1.6fr_1fr]" : ""}`}>
+          {f && (
             <div className="rounded-2xl border border-line bg-panel/80 p-4">
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="eyebrow text-muted">CA encaissé · 12 derniers mois</span>
@@ -163,22 +133,70 @@ export default async function Dashboard() {
               <RevenueChart months={f.months} />
               <FinanceTable month={f.month} year={f.year} ratePct={f.contributionRatePct} />
             </div>
-          </Section>
-        )}
-        <div className="space-y-5">
-          <Section title="Âge du stock">
+          )}
+          <div className="space-y-3">
             <StockAge buckets={d.ageBuckets} total={d.stock.count} />
-          </Section>
-          {f && (
-            <Section title="Seuils micro-entreprise">
+            {f && (
               <div className="space-y-3 rounded-2xl border border-line bg-panel/80 p-4">
+                <span className="eyebrow text-muted">Seuils micro-entreprise</span>
                 <Gauge label="Franchise de TVA" value={f.yearCashedCents} max={VAT_FRANCHISE_THRESHOLD_CENTS} />
                 <Gauge label="Plafond micro" value={f.yearCashedCents} max={MICRO_TURNOVER_CEILING_CENTS} />
               </div>
-            </Section>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </Section>
+    ),
+  };
+  const shown = order.filter((c) => !hidden.has(c.id) && cards[c.id] != null);
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-6">
+      {/* ── Header */}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="eyebrow text-highlight">{today}</p>
+          <h1 className="mt-1 text-3xl font-bold leading-tight tracking-[-0.04em] sm:text-[40px]">Tableau de bord</h1>
+        </div>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <DashboardCustomize cards={order.map(({ id, label, hint }) => ({ id, label, hint }))} hidden={[...hidden]} />
+          <StartWork counts={{
+            receive: q("received").count, photo: q("sorted").count, measure: q("photographed").count,
+            publish: q("listing_ready").count, store: toStore, ship: d.shipping.orders,
+          }} />
+        </div>
+      </header>
+
+      {/* ── Urgent: always first, never hidden */}
+      {(lateShip || lateWork.length > 0 || ctx.isManager) && (
+        <div className="space-y-2 empty:hidden" data-testid="urgent">
+          {lateShip && (
+            <Link href="/postes/expedition" className="flex min-h-12 items-center gap-3 rounded-2xl bg-red-500/15 px-4 py-3 font-semibold text-red-200 ring-1 ring-inset ring-red-400/40 transition hover:bg-red-500/20">
+              <AlertTriangle size={20} className="shrink-0" />
+              <span className="flex-1">
+                {d.shipping.orders} commande{d.shipping.orders > 1 ? "s" : ""} à expédier, la plus ancienne vendue il y a {d.shipping.oldestDays} j
+              </span>
+              <ChevronRight size={20} />
+            </Link>
+          )}
+          {lateWork.map((t) => (
+            <Link key={t.label} href={t.href} data-late={t.label}
+              className="flex min-h-12 items-center gap-3 rounded-2xl bg-amber-400/10 px-4 py-2.5 text-sm ring-1 ring-inset ring-amber-400/35 transition hover:bg-amber-400/15">
+              <t.icon size={18} className="shrink-0 text-amber-300" />
+              <span className="flex-1"><strong className="font-semibold">{t.count} {t.label.toLowerCase()}</strong> <span className="text-muted">en retard : le plus ancien attend depuis {t.oldestDays} j</span></span>
+              <ChevronRight size={18} className="text-muted" />
+            </Link>
+          ))}
+          {ctx.isManager && <Suspense fallback={null}><PriceReminder /></Suspense>}
+        </div>
+      )}
+
+      {shown.map((c, i) => (
+        <div key={c.id} data-dash-card={c.id} className="rise empty:hidden" style={{ animationDelay: `${Math.min(i, 6) * 45}ms` }}>
+          {cards[c.id]}
+        </div>
+      ))}
+      {!shown.length && <p className="text-sm text-muted">Toutes les cartes sont masquées : « Personnaliser » pour en afficher.</p>}
     </div>
   );
 }
@@ -187,7 +205,7 @@ function Section({ title, aside, children }: { title: string; aside?: ReactNode;
   return (
     <section>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 className="eyebrow text-muted">{title}</h2>
+        <h2 className="section-title">{title}</h2>
         {aside}
       </div>
       {children}
@@ -205,7 +223,7 @@ function TodoTile({ label, icon: Icon, href, count, oldestDays, lateAfter, note 
   return (
     <Link
       href={href}
-      className={`group flex min-h-[92px] flex-col justify-between rounded-xl border bg-panel p-3 transition hover:border-fg/30 active:scale-[0.98] ${
+      className={`group flex min-h-[92px] flex-col justify-between rounded-xl border bg-panel p-3 transition hover:-translate-y-px hover:border-fg/30 hover:shadow-lg active:scale-[0.98] ${
         late ? "border-red-400 dark:border-red-500/60" : "border-line"
       }`}
     >

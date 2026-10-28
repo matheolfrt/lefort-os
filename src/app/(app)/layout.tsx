@@ -5,15 +5,16 @@ import { ToastProvider } from "@/components/toast";
 import { ConfirmProvider } from "@/components/confirm";
 import { pendingMigrations } from "@/lib/migrations";
 import { DbUpdatesBanner } from "@/components/db-updates-banner";
+import { getTheme } from "@/lib/prefs";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getContext();
-  const pending = ctx.isManager ? await pendingMigrations().catch(() => [] as string[]) : [];
+  const [pending, theme] = await Promise.all([ctx.isManager ? pendingMigrations().catch(() => [] as string[]) : [], getTheme()]);
   return (
     <ToastProvider>
       <ConfirmProvider>
       <ScanProvider isManager={ctx.isManager}>
-        <Shell isManager={ctx.isManager} orgName={ctx.org.trade_name} userName={ctx.fullName || ctx.email}>
+        <Shell theme={theme} isManager={ctx.isManager} orgName={ctx.org.trade_name} userName={ctx.fullName || ctx.email}>
           <DbUpdatesBanner count={pending.length} />
           {children}
         </Shell>

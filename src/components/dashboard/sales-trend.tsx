@@ -68,7 +68,7 @@ export function SalesTrend({ trend }: { trend: { month: TrendPeriod; week: Trend
   return (
     <section data-testid="sales-trend" aria-labelledby="trend-title">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h2 id="trend-title" className="eyebrow text-muted">Évolution des ventes</h2>
+        <h2 id="trend-title" className="section-title">Évolution des ventes</h2>
         <div role="radiogroup" aria-label="Période" className="inline-flex rounded-xl border border-line bg-panel/70 p-1 text-sm">
           {(["month", "week"] as Kind[]).map((k) => (
             <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => choose(k)}

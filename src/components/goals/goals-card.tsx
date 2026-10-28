@@ -35,7 +35,7 @@ export async function GoalsCard({ isManager }: { isManager: boolean }) {
   return (
     <section data-testid="dashboard-goals">
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 className="eyebrow text-muted">Objectifs</h2>
+        <h2 className="section-title">Objectifs</h2>
         {isManager && (
           <Link href="/objectifs" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline">
             Modifier <ChevronRight size={16} />

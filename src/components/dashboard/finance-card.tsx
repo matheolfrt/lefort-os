@@ -16,7 +16,7 @@ export async function FinanceCard() {
   ];
   return (
     <Link href="/finance" data-testid="finance-card"
-      className="group block rounded-2xl border border-line bg-panel/80 p-4 transition hover:border-fg/25">
+      className="group block rounded-2xl border border-line bg-panel/80 p-4 transition hover:-translate-y-px hover:border-fg/25 hover:shadow-lg">
       <div className="mb-2 flex items-center gap-2">
         <Landmark size={18} className="text-accent" aria-hidden />
         <h2 className="flex-1 font-semibold">Où est mon argent ?</h2>
@@ -31,5 +31,19 @@ export async function FinanceCard() {
         ))}
       </dl>
     </Link>
+  );
+}
+
+/** Same shape as the card, so nothing below it moves when the figures arrive */
+export function FinanceCardSkeleton() {
+  return (
+    <div aria-hidden className="rounded-2xl border border-line bg-panel/80 p-4">
+      <div className="mb-2 flex items-center gap-2"><div className="skeleton size-[18px] rounded" /><div className="skeleton h-5 w-44 rounded" /></div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="space-y-1.5 py-0.5"><div className="skeleton h-3 w-20 rounded" /><div className="skeleton h-6 w-24 rounded" /></div>
+        ))}
+      </div>
+    </div>
   );
 }

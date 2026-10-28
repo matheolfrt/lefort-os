@@ -50,19 +50,19 @@ export default async function Suppliers({ searchParams }: { searchParams: Promis
 
       {ranked.length > 0 && (
         <section aria-labelledby="ranked" className="space-y-2">
-          <h2 id="ranked" className="eyebrow text-muted">Classement</h2>
+          <h2 id="ranked" className="section-title">Classement</h2>
           <div className="grid gap-3 lg:grid-cols-2">{ranked.map((s) => <SupplierCard key={s.id} s={s} target={target} />)}</div>
         </section>
       )}
       {early.length > 0 && (
         <section aria-labelledby="early" className="space-y-2">
-          <h2 id="early" className="eyebrow text-muted">Trop tôt pour juger · {early.length}</h2>
+          <h2 id="early" className="section-title">Trop tôt pour juger · {early.length}</h2>
           <div className="grid gap-3 lg:grid-cols-2">{early.map((s) => <SupplierCard key={s.id} s={s} target={target} />)}</div>
         </section>
       )}
       {noLot.length > 0 && (
         <section aria-labelledby="nolot" className="space-y-2">
-          <h2 id="nolot" className="eyebrow text-muted">Sans lot pour l&apos;instant · {noLot.length}</h2>
+          <h2 id="nolot" className="section-title">Sans lot pour l&apos;instant · {noLot.length}</h2>
           <ul className="flex flex-wrap gap-2">
             {noLot.map((s) => (
               <li key={s.id}><Link href={`/fournisseurs/${s.id}`} data-supplier={s.name}
@@ -74,7 +74,7 @@ export default async function Suppliers({ searchParams }: { searchParams: Promis
       {!ranked.length && !early.length && !noLot.length && <Empty>Ajoutez votre premier fournisseur ci-dessous, puis créez un lot chez lui.</Empty>}
       {opening.length > 0 && (
         <section aria-labelledby="opening" className="space-y-2">
-          <h2 id="opening" className="eyebrow text-muted">Hors classement</h2>
+          <h2 id="opening" className="section-title">Hors classement</h2>
           <div className="grid gap-3 lg:grid-cols-2">{opening.map((s) => <SupplierCard key={s.id} s={s} target={target} />)}</div>
         </section>
       )}

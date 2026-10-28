@@ -15,7 +15,7 @@ export async function TodosCard({ me, isManager }: { me: string; isManager: bool
   return (
     <section data-testid="dashboard-todos">
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 className="eyebrow text-muted">Mes tâches du jour</h2>
+        <h2 className="section-title">Mes tâches du jour</h2>
         <Link href="/taches" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline">
           Toutes les tâches <ChevronRight size={16} />
         </Link>

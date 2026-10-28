@@ -49,7 +49,7 @@ export default async function Goals({ searchParams }: { searchParams: Promise<{ 
 
       {any && (
         <section aria-labelledby="where" className="space-y-2">
-          <h2 id="where" className="eyebrow text-muted">Où j&apos;en suis</h2>
+          <h2 id="where" className="section-title">Où j&apos;en suis</h2>
           <div className="grid gap-2 md:grid-cols-2">
             {PERIODS.map((period) => {
               const list = METRICS.flatMap((m) => { const t = all[m][period]; const s = t ? standing(p, period, m, t) : null; return s ? [s] : []; });
@@ -67,12 +67,12 @@ export default async function Goals({ searchParams }: { searchParams: Promise<{ 
       )}
 
       <section aria-labelledby="set" className="space-y-2">
-        <h2 id="set" className="eyebrow text-muted">{any ? "Mes objectifs" : "Fixer mes objectifs"}</h2>
+        <h2 id="set" className="section-title">{any ? "Mes objectifs" : "Fixer mes objectifs"}</h2>
         <GoalsForm progress={p} action={saveGoals} />
       </section>
 
       <section aria-labelledby="days" className="space-y-2">
-        <h2 id="days" className="eyebrow text-muted">30 derniers jours</h2>
+        <h2 id="days" className="section-title">30 derniers jours</h2>
         <div className="grid gap-2 lg:grid-cols-2">
           {(["revenue", "sales"] as GoalMetric[]).map((m) => <DayChart key={m} p={p} metric={m} perDay={all[m].day?.value ?? null} />)}
         </div>

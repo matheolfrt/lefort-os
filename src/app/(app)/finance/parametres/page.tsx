@@ -39,7 +39,7 @@ export default async function FinanceSettings({ searchParams }: { searchParams: 
   const ended = (recurring.data ?? []).filter((r) => r.ends_on && r.ends_on < today);
   const monthly = active.reduce((a, r) => a + (r.frequency === "weekly" ? (r.amount_cents * 52) / 12 : r.frequency === "quarterly" ? r.amount_cents / 3 : r.frequency === "yearly" ? r.amount_cents / 12 : r.amount_cents), 0);
   const Msg = ({ id }: { id: string }) => sp.ok === id
-    ? <p role="status" className="mb-3 flex items-center gap-1.5 text-sm text-accent"><CheckCircle2 size={16} /> Enregistré.</p>
+    ? <p role="status" className="saved mb-3 flex w-fit items-center gap-1.5 px-1 text-sm text-accent"><CheckCircle2 size={16} /> Enregistré.</p>
     : sp.erreur && sp.s === id ? <p role="alert" className="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{sp.erreur}</p> : null;
 
   return (

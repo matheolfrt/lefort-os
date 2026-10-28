@@ -10,7 +10,7 @@ export function Kpi({ label, value, sub, delta, href, lines, note, badge, big, i
   href?: string; lines?: Line[]; note?: string; badge?: ReactNode; big?: boolean; id?: string; children?: ReactNode;
 }) {
   return (
-    <div id={id} data-kpi={label} className="flex min-w-0 scroll-mt-24 flex-col rounded-2xl border border-line bg-panel/80 p-4">
+    <div id={id} data-kpi={label} className={`flex min-w-0 scroll-mt-24 flex-col rounded-2xl border border-line bg-panel/80 p-4 transition-[border-color,box-shadow,transform] duration-200 ${href ? "hover:-translate-y-px hover:border-fg/20 hover:shadow-lg" : ""}`}>
       <div className="flex items-start justify-between gap-2">
         <span className="eyebrow-tight text-muted">{label}</span>
         {badge}

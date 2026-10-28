@@ -96,7 +96,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
       )}
 
       {/* the figures that matter first, in the order they matter on a phone */}
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="fcc-top">
+      <div className="stagger grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="fcc-top">
         <Kpi label="Trésorerie" value={cash.known ? euro(cash.cents) : "—"} href="/finance/parametres#tresorerie"
           sub={cash.known ? `Solde du ${frShort(cash.asOf!)} + mouvements depuis${stale ? " · à revérifier" : ""}` : "Non déclarée : déclarez votre solde"}
           lines={cash.lines} />

@@ -7,6 +7,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { NAV, type NavGroup } from "@/lib/nav";
 import { useScanApi } from "./scan-provider";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
+import { ThemeSwitch } from "./theme-switch";
+import type { Theme } from "@/lib/prefs";
 
 const MOBILE = ["/", "/postes", "/stock", "/ventes"];
 const GROUPS: NavGroup[] = ["Pilotage", "Opérations", "Gestion"];
@@ -17,8 +19,8 @@ function Pending() {
   return <span aria-hidden className={`size-1.5 rounded-full bg-accent transition-opacity duration-200 ${pending ? "animate-pulse opacity-100" : "opacity-0"}`} />;
 }
 
-export function Shell({ children, isManager, orgName, userName }: {
-  children: ReactNode; isManager: boolean; orgName: string; userName: string;
+export function Shell({ children, isManager, orgName, userName, theme }: {
+  children: ReactNode; isManager: boolean; orgName: string; userName: string; theme: Theme;
 }) {
   const path = usePathname();
   const { openCamera, openQuick } = useScanApi();
@@ -79,9 +81,12 @@ export function Shell({ children, isManager, orgName, userName }: {
             <span className="truncate">{userName}</span>
             <span title="Raccourcis clavier" className="shrink-0">Raccourcis <kbd className="rounded-md border border-line px-1.5 font-mono text-[10px]">?</kbd></span>
           </div>
-          <form action="/logout" method="post">
-            <button className="mt-1 underline">Se déconnecter</button>
-          </form>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <form action="/logout" method="post">
+              <button className="underline">Se déconnecter</button>
+            </form>
+            <ThemeSwitch initial={theme} compact />
+          </div>
         </div>
       </aside>
 
@@ -115,7 +120,11 @@ export function Shell({ children, isManager, orgName, userName }: {
                 </Link>
               ))}
             </div>
-            <div className="mt-3 flex items-center justify-between border-t border-line px-2 pt-3 text-sm text-muted">
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-line px-2 pt-3 text-sm text-muted">
+              <span>Thème</span>
+              <ThemeSwitch initial={theme} />
+            </div>
+            <div className="mt-2 flex items-center justify-between px-2 text-sm text-muted">
               {userName}
               <form action="/logout" method="post"><button className="min-h-11 underline">Se déconnecter</button></form>
             </div>

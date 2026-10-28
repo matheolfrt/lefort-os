@@ -186,6 +186,10 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   `n` nouvelle vente, `?` aide. Ignorés pendant la saisie et pendant un scan (touches trop rapprochées).
 - **Fiche article** : photos en grand, carte « En bref » modifiable, historique unique (statuts + emplacements).
 - **Aide** : écrans vides avec l'action suivante, bulles « ? » sur les chiffres clés.
+- **Thème** : sombre par défaut, clair ou « Auto » (suit l'appareil), au bas du menu ; gardé sur l'appareil (cookie
+  `lf_theme`, `src/lib/prefs.ts`).
+- **Tableau de bord** : urgences toujours en haut (expéditions et travail en retard, prix à baisser), puis objectifs,
+  argent et le reste ; « Personnaliser » masque et réordonne les cartes (cookie `lf_dash`, `src/lib/dashboard-layout.ts`).
 
 ## Scénarios
 
