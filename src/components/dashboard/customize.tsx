@@ -36,7 +36,7 @@ export function DashboardCustomize({ cards, hidden: initialHidden }: { cards: Ca
   return (
     <div className="relative max-sm:order-2 max-sm:ml-auto">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} data-testid="customize"
-        className={`${btn.secondary} max-sm:min-h-10 max-sm:px-3 max-sm:text-sm`}>
+        className={`${btn.secondary} max-sm:px-3 max-sm:text-sm`}>
         <SlidersHorizontal size={16} /> Personnaliser
       </button>
       {open && (
@@ -44,7 +44,7 @@ export function DashboardCustomize({ cards, hidden: initialHidden }: { cards: Ca
           className="pop-in absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] max-h-[75dvh] overflow-y-auto rounded-2xl border border-line bg-panel p-3 shadow-2xl">
           <div className="mb-2 flex items-center justify-between gap-2 px-1">
             <span className="text-sm font-semibold">Cartes du tableau de bord</span>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Fermer" className="flex size-9 items-center justify-center rounded-lg text-muted hover:text-fg"><X size={18} /></button>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Fermer" className="flex size-9 max-sm:size-11 items-center justify-center rounded-lg text-muted hover:text-fg"><X size={18} /></button>
           </div>
           <p className="mb-2 px-1 text-xs text-muted">Les alertes urgentes restent toujours en haut. Réglage gardé sur cet appareil.</p>
           <ol className="space-y-1">
@@ -57,9 +57,9 @@ export function DashboardCustomize({ cards, hidden: initialHidden }: { cards: Ca
                     <span className="block truncate text-[11px] text-muted">{off ? "masquée" : c.hint}</span>
                   </span>
                   <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Monter ${c.label}`}
-                    className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-fg/5 hover:text-fg disabled:opacity-30"><ArrowUp size={16} /></button>
+                    className="flex size-9 max-sm:size-11 items-center justify-center rounded-lg text-muted hover:bg-fg/5 hover:text-fg disabled:opacity-30"><ArrowUp size={16} /></button>
                   <button type="button" onClick={() => move(i, 1)} disabled={i === order.length - 1} aria-label={`Descendre ${c.label}`}
-                    className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-fg/5 hover:text-fg disabled:opacity-30"><ArrowDown size={16} /></button>
+                    className="flex size-9 max-sm:size-11 items-center justify-center rounded-lg text-muted hover:bg-fg/5 hover:text-fg disabled:opacity-30"><ArrowDown size={16} /></button>
                   <button type="button" onClick={() => toggle(c.id)} aria-pressed={!off} aria-label={off ? `Afficher ${c.label}` : `Masquer ${c.label}`}
                     className={`flex size-9 items-center justify-center rounded-lg hover:bg-fg/5 ${off ? "text-muted" : "text-accent"}`}>
                     {off ? <EyeOff size={16} /> : <Eye size={16} />}

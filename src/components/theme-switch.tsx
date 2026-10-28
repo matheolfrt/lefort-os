@@ -28,7 +28,7 @@ export function ThemeSwitch({ initial, compact }: { initial: Theme; compact?: bo
     <div role="radiogroup" aria-label="Thème" data-testid="theme-switch" className="inline-flex rounded-lg border border-line bg-bg/50 p-0.5">
       {OPTIONS.map(({ key, label, icon: Icon }) => (
         <button key={key} type="button" role="radio" aria-checked={theme === key} title={label} onClick={() => choose(key)}
-          className={`inline-flex items-center gap-1 rounded-md px-2 transition-colors ${compact ? "min-h-8 text-[11px]" : "min-h-10 text-sm"} ${
+          className={`inline-flex items-center gap-1 rounded-md px-2 transition-colors ${compact ? "min-h-8 text-[11px]" : "min-h-11 text-sm"} ${
             theme === key ? "bg-accent/15 font-medium text-accent" : "text-muted hover:text-fg"}`}>
           <Icon size={compact ? 13 : 15} aria-hidden />{compact ? <span className="sr-only">{label}</span> : label}
         </button>
