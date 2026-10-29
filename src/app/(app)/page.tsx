@@ -297,7 +297,7 @@ function Kpi({ label, value, hint, n, tone, help, cmp, fmt, unit, href }: {
         {n != null && <SampleSize n={n} />}
       </div>
       <div className={`mt-1 text-[26px] font-mono font-semibold leading-tight tabular-nums tracking-tight ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
-        {href ? <Link href={href} className="kpi-link after:absolute after:inset-0 after:rounded-2xl">{value}<ChevronRight size={18} aria-hidden className="ml-1 inline align-middle text-muted" /><span className="sr-only"> : voir le détail</span></Link> : value}
+        {href ? <Link href={href} className="kpi-link inline-flex min-h-11 items-center after:absolute after:inset-0 after:rounded-2xl">{value}<ChevronRight size={18} aria-hidden className="ml-1 inline align-middle text-muted" /><span className="sr-only"> : voir le détail</span></Link> : value}
       </div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
       {cmp && fmt && (
