@@ -177,6 +177,13 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   achats et ventes sur 12 mois, coordonnées et notes modifiables, « Nouveau lot chez lui », archivage.
 - Migration `supabase/migrations/20261105000017_suppliers.sql`, tests `supabase/tests/suppliers_test.sql`.
 
+## Produits repérés chez les fournisseurs
+
+Mise à jour `20261112000024_supplier_products`. Sur la fiche d'un fournisseur (et dès sa création), « Produits qui me
+plaisent » : le lien de la page produit, sa référence, le prix vu et une note, pour les retrouver et les racheter.
+Les liens s'ouvrent dans un nouvel onglet ; une adresse sans « https:// » est complétée, tout ce qui n'est pas une adresse
+web est refusé. Réservé aux gérants, supprimés avec le fournisseur.
+
 ## Prix à baisser
 
 - **Suggestions, jamais automatiques** (Rotation → Prix à baisser, `/prix`) : selon le temps en ligne, par défaut −10 % après

@@ -86,6 +86,12 @@ export default async function Suppliers({ searchParams }: { searchParams: Promis
             <Field label="Pays"><input className={input} name="country" placeholder="France" /></Field>
             <div className="sm:col-span-2"><Field label="Contact"><input className={input} name="contact" placeholder="Téléphone, e-mail, site…" /></Field></div>
             <div className="sm:col-span-2"><Field label="Notes"><textarea className={`${input} min-h-20 py-2`} name="notes" placeholder="Conditions, prix au kilo, qualité…" /></Field></div>
+            <fieldset className="grid gap-3 rounded-xl border border-line p-3 sm:col-span-2 sm:grid-cols-2">
+              <legend className="px-1 text-sm font-medium">Un produit qui me plaît <span className="font-normal text-muted">(facultatif)</span></legend>
+              <div className="sm:col-span-2"><Field label="Lien du produit"><input className={input} name="product_url" inputMode="url" placeholder="https://…" /></Field></div>
+              <Field label="Référence"><input className={input} name="product_ref" placeholder="Ex. Blazer laine Boss 12345" /></Field>
+              <Field label="Prix vu (€)"><input className={input} name="product_price" inputMode="decimal" placeholder="Ex. 18" /></Field>
+            </fieldset>
             <button className={`${btn.primary} sm:col-span-2`}>Ajouter</button>
           </form>
         </Card>
