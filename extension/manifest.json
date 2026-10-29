@@ -1,15 +1,30 @@
 {
   "manifest_version": 3,
   "name": "Lefort OS – Vinted",
-  "version": "1.1.0",
-  "description": "Importe votre dressing et vos ventes Vinted dans Lefort OS et les resynchronise.",
+  "version": "1.2.0",
+  "description": "Synchronise vos ventes et votre dressing Vinted avec Lefort OS, automatiquement et sans doublon.",
   "action": {
     "default_title": "Lefort OS – Vinted",
-    "default_icon": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" }
+    "default_icon": {
+      "16": "icons/16.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
   },
-  "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" },
-  "background": { "service_worker": "background.js" },
-  "permissions": ["storage", "scripting"],
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "scripting",
+    "alarms"
+  ],
   "host_permissions": [
     "https://www.vinted.fr/*",
     "https://*.vinted.net/*",

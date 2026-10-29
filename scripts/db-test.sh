@@ -52,4 +52,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_fin -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_fin -f supabase/tests/finance_test.sql >/dev/null
+# Vinted synchronisation (reconciliation) on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_vsync" -c "create database ${DB}_vsync"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_vsync -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_vsync -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_vsync -f supabase/tests/vinted_sync_test.sql >/dev/null
 echo "DB tests passed"

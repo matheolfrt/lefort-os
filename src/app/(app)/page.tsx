@@ -19,6 +19,7 @@ import { GoalsCard, GoalsSkeleton } from "@/components/goals/goals-card";
 import { TodosCard } from "@/components/todos/todos-card";
 import { PriceReminder } from "@/components/dashboard/price-reminder";
 import { FinanceCard, FinanceCardSkeleton } from "@/components/dashboard/finance-card";
+import { VintedAlert } from "@/components/dashboard/vinted-alert";
 import { DashboardCustomize } from "@/components/dashboard/customize";
 import { resolveLayout } from "@/lib/dashboard-layout";
 import { getDashLayout } from "@/lib/prefs";
@@ -188,6 +189,7 @@ export default async function Dashboard() {
             </Link>
           ))}
           {ctx.isManager && <Suspense fallback={null}><PriceReminder /></Suspense>}
+          {ctx.isManager && <Suspense fallback={null}><VintedAlert /></Suspense>}
         </div>
       )}
 

@@ -18,6 +18,7 @@ interface Row {
   id: string; sku: string; title: string | null; brand: string | null; category: string | null; size: string | null; status: string;
   cost_cents: number; price_cents: number | null; age: number; location: string | null; platform: string | null; url: string | null;
   suggested_cents: number | null; suggest_todo: boolean | null; held_by: string | null;
+  views: number | null; favourites: number | null; offers: number | null; stats_at: string | null;
 }
 interface Result { total: number; cost_cents: number; price_cents: number; dead_stock_days: number; rows: Row[] }
 
@@ -84,7 +85,7 @@ export default async function FinanceItems({ searchParams }: {
                       <Link prefetch={false} href={href({ tri: s.key })} className={tri === s.key ? "text-accent" : "hover:text-fg"}>{s.label}{tri === s.key && " ↓"}</Link>
                     </th>
                   ))}
-                  <th title="Données non enregistrées pour l'instant">Vues · favoris · offres</th>
+                  <th title="Relevés par la synchronisation Vinted">Vues · favoris · offres</th>
                   <th>Plateforme</th><th>Emplacement</th><th>Recommandation</th>
                 </tr>
               </thead>
@@ -97,7 +98,10 @@ export default async function FinanceItems({ searchParams }: {
                     <td className="num">{euro(x.cost_cents)}</td>
                     <td className={`num ${x.age > r.dead_stock_days ? "text-amber-300" : ""}`}>{x.age} j</td>
                     <td className="num">{x.price_cents == null ? <span className="text-muted">sans prix</span> : euro(x.price_cents)}</td>
-                    <td className="text-xs text-muted">non disponible</td>
+                    <td className="whitespace-nowrap font-mono text-xs tabular-nums">
+                      {x.views == null && x.favourites == null ? <span className="font-sans text-muted">non relevé</span>
+                        : `${x.views ?? "—"} · ${x.favourites ?? "—"} · ${x.offers ?? "—"}`}
+                    </td>
                     <td>
                       {x.platform ? (x.url
                         ? <a href={x.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-accent">{PLATFORM[x.platform] ?? x.platform}<ExternalLink size={12} /></a>
@@ -129,6 +133,9 @@ function recommendation(x: Row, dead: number) {
   if (!x.platform && x.status !== "reserved") return <span className="text-amber-300">À publier</span>;
   if (x.suggest_todo && x.suggested_cents != null && x.suggested_cents < x.price_cents)
     return <Link prefetch={false} href="/prix" className="text-amber-300 hover:underline">Baisser à {euro(x.suggested_cents)}</Link>;
+  // the Vinted audience says why it does not sell
+  if (x.age > 14 && x.views === 0) return <span className="text-amber-300">0 vue : annonce peu visible (titre, photos, catégorie)</span>;
+  if (x.age > dead && (x.favourites ?? 0) >= 5) return <span className="text-amber-300">{x.favourites} favoris sans vente : prix trop haut</span>;
   if (x.held_by) return <span className="text-muted">Prix au plancher</span>;
   if (x.age > dead) return <span className="text-muted">Dormant : envisager un lot ou une autre plateforme</span>;
   return <span className="text-muted">—</span>;

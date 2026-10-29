@@ -94,6 +94,7 @@ export async function readWardrobe(options) {
     const sold = Boolean(it.is_sold || it.item_closing_action === "sold" || it.closing_action === "sold" ||
       (it.is_closed && !it.is_hidden && !it.is_draft));
     const condText = text(it.status ?? it.item_condition ?? it.condition)?.toLowerCase().trim();
+    const count = (...v) => { const n = v.map(Number).find((x) => Number.isFinite(x) && x >= 0); return n ?? null; };
     return {
       external_id: String(it.id),
       url: it.url?.startsWith("http") ? it.url : `${location.origin}${it.path ?? `/items/${it.id}`}`,
@@ -107,13 +108,24 @@ export async function readWardrobe(options) {
       // The wardrobe list has no creation date: the oldest photo upload is the closest proxy
       listed_at: toIso(it.created_at_ts ?? it.created_at ?? oldestPhoto(it)),
       photos,
+      photo: photos[0] ?? null,
+      // audience of the listing, when Vinted gives it in the list (null = unknown, never 0 by default)
+      views: count(it.view_count, it.views_count, it.view_counts),
+      favourites: count(it.favourite_count, it.favourites_count, it.favorite_count, it.like_count),
+      offers: count(it.offer_count, it.offers_count),
     };
   };
   let listings = raw.map(normalise).filter((l) => l.state !== "draft");
 
-  // ── Optional: descriptions are not always in the wardrobe list
-  if (options?.descriptions) {
-    const missing = listings.filter((l) => !l.description && l.state !== "sold");
+  // ── Descriptions are not always in the wardrobe list. Either all of them (option), or only those of listings not
+  // linked to an item yet, where a « Réf. » can prove which item it is — a few per run
+  // (options.detailsExcept: the ids already linked, or already read before)
+  const except = options?.detailsExcept ? new Set(options.detailsExcept.map(String)) : null;
+  const detailedIds = [];
+  if (options?.descriptions || except) {
+    const missing = listings
+      .filter((l) => !l.description && (except ? !except.has(l.external_id) && l.state !== "hidden" : l.state !== "sold"))
+      .slice(0, options?.maxDetails ?? 10000);
     for (let i = 0; i < missing.length; i++) {
       progress(`Descriptions : ${i + 1} / ${missing.length}…`);
       for (const path of [`/api/v2/items/${missing[i].external_id}/details`, `/api/v2/items/${missing[i].external_id}`]) {
@@ -123,6 +135,7 @@ export async function readWardrobe(options) {
           if (d) { missing[i].description = d; break; }
         } catch { /* try next */ }
       }
+      detailedIds.push(missing[i].external_id);
       await sleep(450);
     }
   }
@@ -134,11 +147,14 @@ export async function readWardrobe(options) {
     listings,
     // Field names only (no values): lets support adapt the reader if Vinted changes its format
     sampleKeys: raw[0] ? Object.keys(raw[0]).sort() : [],
+    stats: listings.filter((l) => l.views != null || l.favourites != null).length,
+    detailedIds,
   };
 }
 
 // Reads the seller's Vinted orders (sales). Injected into the vinted.fr tab like readWardrobe, so self-contained.
 // options.skip: transaction ids already up to date in Lefort OS — their details are not fetched again.
+// options.since (ISO date): only sales from that day on are needed — paging stops once a whole page is older.
 export async function readSales(options) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const progress = (text) => {
@@ -177,6 +193,9 @@ export async function readSales(options) {
   let raw = [];
   let listEndpoint = null;
   let complete = false;
+  let stoppedAtSince = false;
+  const since = options?.since ? new Date(options.since).getTime() : null;
+  const rowDate = (o) => { const d = toIso(o.date ?? o.created_at ?? o.created_at_ts ?? o.transaction?.created_at); return d ? new Date(d).getTime() : null; };
   const tried = [];
   for (const build of listEndpoints) {
     raw = [];
@@ -189,6 +208,10 @@ export async function readSales(options) {
         progress(`Lecture des ventes : ${raw.length}…`);
         const totalPages = j.pagination?.total_pages;
         if (!rows.length || (totalPages && page >= totalPages)) { complete = true; break; }
+        // every sale of the page is older than needed: the next pages are older still
+        if (since && rows.length && rows.every((o) => { const t = rowDate(o); return t != null && t < since; })) {
+          complete = true; stoppedAtSince = true; break;
+        }
         await sleep(900);
       }
       if (raw.length || complete) { listEndpoint = build(1).split("?")[0]; break; }
@@ -210,6 +233,7 @@ export async function readSales(options) {
   };
 
   const skip = new Set((options?.skip ?? []).map(String));
+  if (since) raw = raw.filter((o) => { const t = rowDate(o); return t == null || t >= since; });
   const sales = [];
   const statusWords = {};
   let detailEndpoint = null;
@@ -281,10 +305,14 @@ export async function readSales(options) {
     sales.push(sale);
   }
 
+  // the period this read covers for sure: from `since`, or from the oldest sale when the whole list was read
+  const dates = sales.map((s) => s.sold_at).filter(Boolean).sort();
+  const coveredFrom = !complete ? null : stoppedAtSince || since ? new Date(since).toISOString() : (dates[0] ?? new Date().toISOString());
   return {
     listEndpoint,
     detailEndpoint,
     complete,
+    coveredFrom,
     sales,
     diagnostic: {
       list_endpoint: listEndpoint,

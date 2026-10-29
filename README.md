@@ -59,25 +59,42 @@ Taux URSSAF et seuils (franchise de TVA, plafond micro) évoluent : Paramètres 
 
 ## Extension Chrome Vinted
 
-Le dossier `extension/` contient une extension Chrome (Manifest V3, sans étape de build) qui :
+Le dossier `extension/` contient une extension Chrome (Manifest V3, sans étape de build).
 
-- lit le dressing Vinted de l'utilisateur connecté, depuis l'onglet vinted.fr ouvert, uniquement sur clic ;
-- importe les annonces inconnues de Lefort OS (statut « En ligne », SKU, photos, emplacement `EMP-A-ETIQUETER`,
-  lot « stock existant » exclu du registre des achats) ;
-- resynchronise : prix et réservations modifiés sur Vinted, ventes faites sur Vinted à saisir,
-  annonces disparues de Vinted ;
-- lit les **commandes Vinted** (ventes) : prix réel après offre, acheteur, dates, état. Les ventes inconnues sont
-  enregistrées (`import_sales`, référence = numéro de transaction Vinted ; articles inconnus créés), les commandes
-  déjà saisies sont reconnues par leur numéro ou leurs articles et avancées à l'état Vinted (`vinted_orders_preview`,
-  `vinted_orders_sync`, `supabase/migrations/20261028000009_vinted_orders.sql`). Une date de coupure choisit les
-  ventes historiques (déjà déclarées). Les commandes terminées ne sont plus rouvertes aux lectures suivantes.
+**Synchronisation des ventes (automatique)** — toutes les heures (réglable), tant que Chrome est ouvert, l'extension
+relit les ventes Vinted des 90 derniers jours depuis un onglet vinted.fr (ouvert en arrière-plan si besoin, puis
+refermé) et les envoie à Lefort OS, qui décide (`supabase/migrations/20261108000020_vinted_reconcile.sql`) :
 
-Les annonces sont identifiées par leur numéro Vinted : relancer un import ne crée jamais de doublon.
-Fonctions SQL : `vinted_sync_preview`, `vinted_apply_updates`, `vinted_import`
-(`supabase/migrations/20261026000004_vinted_sync.sql`, testées dans `supabase/tests/vinted_test.sql`).
+- chaque vente Vinted est gardée une seule fois (table `vinted_orders`, une ligne par numéro de transaction) et liée à
+  une seule vente Lefort OS ; le numéro est aussi unique sur `orders` : **jamais de doublon**, même relue cent fois ;
+- **vente sûre = enregistrée seule** : article reconnu par son annonce Vinted (lien fait à la publication, par l'import,
+  ou par la « Réf. SKU » écrite dans la description) et en vente, vendue après la date de début choisie ;
+- une **vente saisie à la main** est reconnue par son numéro ou par son article ; si elle ne fait que ressembler (même
+  prix ou même acheteur, à 3 jours près), elle est **proposée**, jamais liée seule ;
+- **tout ce qui est incertain attend une décision** sur la page **Ventes → Synchro Vinted** (`/ventes/vinted`) : article
+  inconnu (choisir l'article, ou le créer), vente ressemblante, article déjà vendu ailleurs, annulée sur Vinted, supprimée
+  dans Lefort OS, écart de prix, vente avant la date de début ;
+- **rien n'est perdu** : chaque passage relit 90 jours ; le rapprochement montre ce qui est sur Vinted et pas dans Lefort
+  OS, et l'inverse (après une lecture complète) ; une alerte apparaît sur le tableau de bord s'il y a des ventes à
+  vérifier ou si la synchro n'a pas réussi depuis 2 jours ;
+- **journal** de tout ce que fait la synchro, avec **Annuler** (une vente annulée n'est pas réenregistrée ; « Rétablir »
+  la remet) ; une seule synchro à la fois (verrou dans l'extension et dans la base) ;
+- l'extension relève aussi les **vues et favoris** de chaque annonce (`vinted_listings`, historique par jour dans
+  `vinted_listing_stats`), affichés dans Finance → articles et utilisés dans les recommandations.
+
+**Import du dressing (sur clic)** — importe les annonces inconnues de Lefort OS (statut « En ligne », SKU, photos,
+emplacement `EMP-A-ETIQUETER`, lot « stock existant » hors registre des achats). Une annonce dont la description porte la
+« Réf. » d'un article existant lui est reliée, jamais importée en double. Prix, réservations et annonces disparues se
+resynchronisent sur clic.
+
+Fonctions SQL : `vinted_sync_start`, `vinted_reconcile`, `vinted_listings_seen`, `vinted_sync_finish`, `vinted_known`,
+`vinted_resolve`, `vinted_undo`, `vinted_link_item`, `vinted_reconciliation` (0020) ; `vinted_sync_preview`,
+`vinted_apply_updates`, `vinted_import` (0004). Tests : `supabase/tests/vinted_sync_test.sql`, `vinted_test.sql`.
+Code : `extension/sync.js` (la synchro), `background.js` (le planning), `vinted.js` (la lecture de Vinted).
 
 Après toute modification : `npm run build:extension` régénère `public/lefort-os-vinted.zip`,
-téléchargeable depuis Paramètres.
+téléchargeable depuis Paramètres et depuis la page Synchro Vinted. Une nouvelle version de l'extension se recharge
+dans `chrome://extensions` (« Mettre à jour » ou réinstaller le dossier).
 
 ## Import / export CSV et suppression
 

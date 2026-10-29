@@ -25,12 +25,39 @@
     </section>
 
     <section id="sync" hidden>
+      <div class="card" id="auto">
+        <h1>Synchronisation des ventes</h1>
+        <p class="muted">Toutes les heures, l'extension relit vos ventes Vinted des 90 derniers jours et les envoie à Lefort OS.
+          Une vente sûre (article reconnu par son annonce) est enregistrée ; tout ce qui est incertain vous est demandé dans
+          Lefort OS, page « Synchro Vinted ». Une vente n'est jamais enregistrée deux fois. Rien n'est modifié sur Vinted.</p>
+        <div id="auto-start" class="notice" hidden>
+          Choisissez d'abord, dans Lefort OS, <b>à partir de quelle date</b> les ventes Vinted doivent être enregistrées :
+          <a id="auto-start-link" target="_blank">Synchro Vinted</a>. D'ici là, les ventes sont lues mais rien n'est enregistré.
+        </div>
+        <div class="summary" id="auto-summary"></div>
+        <p id="auto-status" class="muted"></p>
+        <p id="auto-issues" hidden><a id="auto-issues-link" class="primary" target="_blank"></a></p>
+        <div class="row">
+          <button id="sync-now" class="primary big">Synchroniser maintenant</button>
+          <button id="sync-full" class="secondary">Tout relire (tout l'historique)</button>
+        </div>
+        <p id="sync-progress" class="muted" hidden></p>
+        <p id="sync-error" class="error" hidden></p>
+        <fieldset class="acct">
+          <legend>Automatique</legend>
+          <label class="check"><input id="auto-on" type="checkbox"> Synchroniser automatiquement
+            <select id="auto-every"><option value="30">toutes les 30 min</option><option value="60">toutes les heures</option><option value="180">toutes les 3 heures</option></select></label>
+          <label class="check"><input id="auto-open" type="checkbox"> Si aucun onglet Vinted n'est ouvert, en ouvrir un en arrière-plan le temps de la synchronisation</label>
+          <p class="hint">Le navigateur doit être ouvert. Si la dernière synchronisation date de plus de 2 jours, Lefort OS vous le signale.</p>
+        </fieldset>
+      </div>
+
       <div class="card">
-        <h1>Synchroniser mon dressing</h1>
+        <h1>Importer mon dressing</h1>
         <ol class="steps">
           <li>Ouvrez <a href="https://www.vinted.fr" target="_blank" rel="noreferrer">vinted.fr</a> dans un autre onglet, connecté à votre compte.</li>
           <li>Allez sur <b>votre profil</b> (votre photo → Mon profil).</li>
-          <li>Revenez ici et cliquez sur « Lire mon dressing ». Rien n'est modifié sur Vinted.</li>
+          <li>Revenez ici et cliquez sur « Lire mon dressing ». Rien n'est modifié sur Vinted. Les annonces dont la description porte la « Réf. » d'un article de Lefort OS lui sont reliées, jamais importées en double.</li>
         </ol>
         <label class="check"><input id="opt-descriptions" type="checkbox"> Récupérer aussi les descriptions (plus lent : environ 2 minutes pour 250 annonces)</label>
         <button id="read" class="primary big">Lire mon dressing Vinted</button>
@@ -60,13 +87,6 @@
           <button id="apply-updates" class="primary">Appliquer dans Lefort OS</button>
         </div>
 
-        <div class="card" id="block-sold" hidden>
-          <h2>Vendues sur Vinted, pas encore saisies <span class="count" id="sold-count"></span></h2>
-          <p class="muted">Vérifiez le prix de vente réel (après offre éventuelle) avant d'enregistrer.</p>
-          <table class="table"><tbody id="sold-list"></tbody></table>
-          <button id="record-sales" class="primary">Enregistrer les ventes cochées</button>
-        </div>
-
         <div class="card" id="block-missing" hidden>
           <h2>En ligne dans Lefort OS mais absentes de Vinted <span class="count" id="missing-count"></span></h2>
           <p class="muted">Annonce supprimée ou masquée sur Vinted. Si l'article est toujours en stock, il repassera « Prêt à publier ».</p>
@@ -81,54 +101,6 @@
         </details>
       </div>
 
-      <div class="card">
-        <h1>Ventes Vinted</h1>
-        <p class="muted">Lit vos commandes Vinted et les enregistre dans Lefort OS avec le prix réel, l'acheteur, les dates et l'état
-          (à expédier, expédiée, terminée). Les articles absents de Lefort OS sont créés automatiquement. Rien n'est modifié sur Vinted.</p>
-        <p class="hint">La première lecture prend quelques minutes (une pause entre chaque commande, comme un humain). Les suivantes sont rapides.</p>
-        <button id="read-sales" class="primary big">Lire mes ventes Vinted</button>
-        <p id="sales-progress" class="muted" hidden></p>
-        <p id="sales-error" class="error" hidden></p>
-      </div>
-
-      <div id="sales-results" hidden>
-        <div class="summary" id="sales-summary"></div>
-
-        <div class="card" id="block-sales-new" hidden>
-          <h2>Ventes à enregistrer <span class="count" id="sales-new-count"></span></h2>
-          <fieldset class="acct">
-            <legend>Comptabilité (livre des recettes, CA URSSAF)</legend>
-            <label class="check"><input type="radio" name="acct" value="before" checked>
-              Ventes encaissées avant le <input id="acct-date" type="date"> : déjà déclarées (historique), les suivantes à comptabiliser</label>
-            <label class="check"><input type="radio" name="acct" value="all"> Toutes déjà déclarées (historique)</label>
-            <label class="check"><input type="radio" name="acct" value="none"> Toutes à comptabiliser</label>
-          </fieldset>
-          <p class="hint">Une vente historique compte dans les statistiques et les marges, mais pas dans le livre des recettes : rien n'est déclaré deux fois.</p>
-          <table class="table"><tbody id="sales-new-list"></tbody></table>
-          <p id="sales-new-more" class="muted" hidden></p>
-          <button id="import-sales" class="primary">Enregistrer</button>
-          <div id="import-sales-progress" class="bar" hidden><div></div></div>
-          <p id="import-sales-status" class="muted" hidden></p>
-        </div>
-
-        <div class="card" id="block-sales-updates" hidden>
-          <h2>Commandes à faire avancer <span class="count" id="sales-updates-count"></span></h2>
-          <p class="muted">Expédiées ou terminées sur Vinted, pas encore dans Lefort OS.</p>
-          <ul id="sales-updates-list" class="list"></ul>
-          <button id="apply-sales-updates" class="primary">Mettre à jour dans Lefort OS</button>
-        </div>
-
-        <div class="card" id="block-sales-check" hidden>
-          <h2>À vérifier <span class="count" id="sales-check-count"></span></h2>
-          <ul id="sales-check-list" class="list"></ul>
-        </div>
-
-        <details class="card diag">
-          <summary>Diagnostic des ventes</summary>
-          <pre id="sales-diag"></pre>
-          <button id="copy-sales-diag" class="secondary">Copier</button>
-        </details>
-      </div>
     </section>
   </main>
   <div id="toast" class="toast" hidden></div>
