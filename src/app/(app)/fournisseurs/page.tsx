@@ -13,7 +13,13 @@ export default async function Suppliers({ searchParams }: { searchParams: Promis
   const ctx = await requireManager();
   const sp = await searchParams;
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("supplier_stats");
+  const [{ data, error }, { data: products }] = await Promise.all([
+    supabase.rpc("supplier_stats"),
+    // products spotted, counted per supplier (migration 0024; none before it)
+    supabase.from("supplier_products").select("supplier_id"),
+  ]);
+  const productCount = new Map<string, number>();
+  for (const r of products ?? []) productCount.set(r.supplier_id, (productCount.get(r.supplier_id) ?? 0) + 1);
   if (error || !data) {
     return (
       <>
@@ -51,13 +57,13 @@ export default async function Suppliers({ searchParams }: { searchParams: Promis
       {ranked.length > 0 && (
         <section aria-labelledby="ranked" className="space-y-2">
           <h2 id="ranked" className="section-title">Classement</h2>
-          <div className="grid gap-3 lg:grid-cols-2">{ranked.map((s) => <SupplierCard key={s.id} s={s} target={target} />)}</div>
+          <div className="grid gap-3 lg:grid-cols-2">{ranked.map((s) => <SupplierCard key={s.id} s={s} target={target} products={productCount.get(s.id) ?? 0} />)}</div>
         </section>
       )}
       {early.length > 0 && (
         <section aria-labelledby="early" className="space-y-2">
           <h2 id="early" className="section-title">Trop tôt pour juger · {early.length}</h2>
-          <div className="grid gap-3 lg:grid-cols-2">{early.map((s) => <SupplierCard key={s.id} s={s} target={target} />)}</div>
+          <div className="grid gap-3 lg:grid-cols-2">{early.map((s) => <SupplierCard key={s.id} s={s} target={target} products={productCount.get(s.id) ?? 0} />)}</div>
         </section>
       )}
       {noLot.length > 0 && (
@@ -66,7 +72,7 @@ export default async function Suppliers({ searchParams }: { searchParams: Promis
           <ul className="flex flex-wrap gap-2">
             {noLot.map((s) => (
               <li key={s.id}><Link href={`/fournisseurs/${s.id}`} data-supplier={s.name}
-                className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel/70 px-3 text-sm hover:border-fg/25">{s.name}</Link></li>
+                className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel/70 px-3 text-sm hover:border-fg/25">{s.name}{productCount.get(s.id) ? <span className="ml-1.5 text-xs text-muted">· {productCount.get(s.id)} produit{productCount.get(s.id)! > 1 ? "s" : ""}</span> : null}</Link></li>
             ))}
           </ul>
         </section>
@@ -75,7 +81,7 @@ export default async function Suppliers({ searchParams }: { searchParams: Promis
       {opening.length > 0 && (
         <section aria-labelledby="opening" className="space-y-2">
           <h2 id="opening" className="section-title">Hors classement</h2>
-          <div className="grid gap-3 lg:grid-cols-2">{opening.map((s) => <SupplierCard key={s.id} s={s} target={target} />)}</div>
+          <div className="grid gap-3 lg:grid-cols-2">{opening.map((s) => <SupplierCard key={s.id} s={s} target={target} products={productCount.get(s.id) ?? 0} />)}</div>
         </section>
       )}
 

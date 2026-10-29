@@ -91,3 +91,29 @@ export async function deleteSupplierProduct(supplierId: string, id: string) {
   revalidatePath(`/fournisseurs/${supplierId}`);
   redirect(`/fournisseurs/${supplierId}?${error ? `error=${encodeURIComponent(error.message)}` : "retire=1"}#produits`);
 }
+
+/**
+ * Several links at once, one per line; what follows the link on its line is its reference
+ * (« https://site.fr/p/12 Blazer Boss 12 »). Lines that are not a web address are reported, the others are kept.
+ */
+export async function addSupplierProducts(supplierId: string, formData: FormData) {
+  await requireManager();
+  const supabase = await createClient();
+  const lines = String(formData.get("product_lines") ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const rows: { supplier_id: string; url: string; reference: string | null }[] = [];
+  const bad: string[] = [];
+  for (const line of lines.slice(0, 200)) {
+    const [first, ...rest] = line.split(/\s+/);
+    const url = normalizeUrl(first);
+    if (!url) { bad.push(line.slice(0, 40)); continue; }
+    rows.push({ supplier_id: supplierId, url, reference: rest.join(" ").replace(/^[-–—:;]\s*/, "").slice(0, 200) || null });
+  }
+  let err = !lines.length ? "Collez au moins un lien." : bad.length ? `Pas une adresse web : ${bad.slice(0, 3).join(", ")}${bad.length > 3 ? "…" : ""}` : null;
+  if (rows.length) {
+    const { error } = await supabase.from("supplier_products").insert(rows);
+    if (error) err = error.message;
+  }
+  revalidatePath(`/fournisseurs/${supplierId}`);
+  const ok = rows.length && !err ? `produits=${rows.length}` : rows.length ? `produits=${rows.length}&error=${encodeURIComponent(err!)}` : `error=${encodeURIComponent(err!)}`;
+  redirect(`/fournisseurs/${supplierId}?${ok}#produits`);
+}

@@ -37,7 +37,7 @@ export function Payback({ s }: { s: Judged }) {
   );
 }
 
-export function SupplierCard({ s, target }: { s: Judged; target: number }) {
+export function SupplierCard({ s, target, products = 0 }: { s: Judged; target: number; products?: number }) {
   return (
     <Link href={`/fournisseurs/${s.id}`} data-supplier={s.name}
       className="group flex flex-col gap-3 rounded-2xl border border-line bg-panel/80 p-4 transition hover:border-fg/25">
@@ -45,7 +45,8 @@ export function SupplierCard({ s, target }: { s: Judged; target: number }) {
         <div className="min-w-0">
           <div className="truncate text-[17px] font-semibold">{s.name}</div>
           <div className="truncate text-xs text-muted">
-            {[s.country, `${s.batches} lot${s.batches > 1 ? "s" : ""}`, s.last_purchase && `dernier achat ${ago(s.last_purchase)}`].filter(Boolean).join(" · ")}
+            {[s.country, `${s.batches} lot${s.batches > 1 ? "s" : ""}`, s.last_purchase && `dernier achat ${ago(s.last_purchase)}`,
+              products > 0 && `${products} produit${products > 1 ? "s" : ""} repéré${products > 1 ? "s" : ""}`].filter(Boolean).join(" · ")}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1"><VerdictChip v={s.verdict} /><ChevronRight size={16} className="text-muted transition group-hover:translate-x-0.5" /></div>

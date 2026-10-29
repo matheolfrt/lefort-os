@@ -5,7 +5,7 @@ import { requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Field, PageHeader, btn, input } from "@/components/ui";
 import { judge, type SupplierRow } from "@/lib/suppliers";
-import { addSupplierProduct, deleteSupplierProduct, setSupplierActive, updateSupplier } from "../actions";
+import { addSupplierProduct, addSupplierProducts, deleteSupplierProduct, setSupplierActive, updateSupplier } from "../actions";
 import { Payback, VerdictChip } from "../supplier-card";
 import { MonthsChart } from "./months-chart";
 
@@ -21,7 +21,7 @@ const pct = (v: number | null) => (v == null ? "—" : `${Math.round(v)} %`);
 const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 export default async function Supplier({ params, searchParams }: {
-  params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; enregistre?: string; cree?: string; produit?: string; retire?: string }>;
+  params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; enregistre?: string; cree?: string; produit?: string; produits?: string; retire?: string }>;
 }) {
   const ctx = await requireManager();
   const [{ id }, sp] = await Promise.all([params, searchParams]);
@@ -59,7 +59,9 @@ export default async function Supplier({ params, searchParams }: {
         subtitle={[s.country, s.contact, s.first_purchase && `client depuis le ${day(s.first_purchase)}`].filter(Boolean).join(" · ")}
         actions={s.active && <Link href={`/lots/nouveau?fournisseur=${s.id}`} className={btn.primary}><Plus size={18} /> Nouveau lot chez lui</Link>} />
       {sp.error && <p role="alert" className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm">{sp.error}</p>}
-      {(sp.enregistre || sp.cree || sp.produit || sp.retire) && <p role="status" className="rounded-xl bg-accent/10 p-3 text-sm text-accent">{sp.cree ? "Fournisseur ajouté. Créez son premier lot quand vous achetez chez lui." : sp.produit ? "Produit ajouté." : sp.retire ? "Produit retiré." : "Enregistré."}</p>}
+      {(sp.enregistre || sp.cree || sp.produit || sp.produits || sp.retire) && <p role="status" className="rounded-xl bg-accent/10 p-3 text-sm text-accent">{sp.cree ? "Fournisseur ajouté. Ajoutez les produits qui vous plaisent ci-dessous, et créez son premier lot quand vous achetez chez lui." : sp.produit ? "Produit ajouté. Vous pouvez en ajouter un autre." : sp.produits ? `${sp.produits} produit${Number(sp.produits) > 1 ? "s" : ""} ajouté${Number(sp.produits) > 1 ? "s" : ""}.` : sp.retire ? "Produit retiré." : "Enregistré."}</p>}
+
+      <Products supplierId={s.id} rows={(products.data ?? []) as Product[]} missing={!!products.error} focus={!!(sp.produit || sp.cree)} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
@@ -119,7 +121,6 @@ export default async function Supplier({ params, searchParams }: {
         </div>
 
         <div className="space-y-4">
-          {!products.error && <Products supplierId={s.id} rows={(products.data ?? []) as Product[]} />}
           <Card title="Coordonnées et notes">
             <form action={updateSupplier.bind(null, s.id)} className="space-y-3">
               <Field label="Nom"><input className={input} name="name" defaultValue={s.name} required /></Field>
@@ -180,39 +181,64 @@ interface Product { id: string; url: string; reference: string | null; price_cen
 const price = (c: number) => `${(c / 100).toLocaleString("fr-FR", { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 })} €`;
 const host = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; } };
 
-/** « Produits qui me plaisent »: links to product pages of this supplier, with their reference, to buy them again */
-function Products({ supplierId, rows }: { supplierId: string; rows: Product[] }) {
+/** « Produits qui me plaisent »: links to product pages of this supplier, with their reference, to buy them again. As many
+ * as wanted, one by one or several at once; always shown, with the way to install it when the database is not updated. */
+function Products({ supplierId, rows, missing, focus }: { supplierId: string; rows: Product[]; missing: boolean; focus: boolean }) {
   return (
-    <section id="produits" className="scroll-mt-24 rounded-2xl border border-line bg-panel/80 p-4" data-testid="supplier-products">
-      <h2 className="eyebrow mb-3 text-muted">Produits qui me plaisent · {rows.length}</h2>
-      {rows.length === 0 && <p className="mb-3 text-sm text-muted">Gardez ici les liens des produits repérés chez ce fournisseur, avec leur référence, pour les retrouver et les racheter.</p>}
-      {rows.length > 0 && (
-        <ul className="mb-4 divide-y divide-line">
-          {rows.map((p) => (
-            <li key={p.id} className="flex items-start gap-2 py-2" data-product={p.reference ?? p.url}>
-              <a href={p.url} target="_blank" rel="noopener noreferrer" className="group flex min-h-11 min-w-0 flex-1 flex-col justify-center">
-                <span className="flex items-center gap-1.5 font-medium group-hover:text-accent group-hover:underline">
-                  <span className="truncate">{p.reference ?? host(p.url)}</span><ExternalLink size={14} className="shrink-0 text-muted" aria-hidden />
-                  <span className="sr-only">(ouvre le site du fournisseur)</span>
-                </span>
-                <span className="truncate text-xs text-muted">{host(p.url)}{p.price_cents != null && ` · ${price(p.price_cents)}`}{p.note && ` · ${p.note}`}</span>
-              </a>
-              <form action={deleteSupplierProduct.bind(null, supplierId, p.id)}>
-                <button aria-label={`Retirer ${p.reference ?? host(p.url)}`} className="flex size-11 items-center justify-center rounded-xl text-muted hover:bg-red-500/10 hover:text-red-500"><Trash2 size={16} /></button>
+    <section id="produits" className="scroll-mt-24 rounded-2xl border border-line bg-panel/80 p-4 sm:p-5" data-testid="supplier-products">
+      <h2 className="section-title mb-3">Produits qui me plaisent{!missing && <span className="font-normal text-muted"> · {rows.length}</span>}</h2>
+      {missing ? (
+        <p className="text-sm text-muted" data-testid="products-missing">
+          Pour enregistrer les liens des produits repérés chez ce fournisseur, faites d&apos;abord la mise à jour de la base.{" "}
+          <Link href="/parametres/mises-a-jour" className="inline-flex min-h-11 items-center font-medium text-series-1 hover:underline">Mettre à jour la base</Link>
+        </p>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div>
+            {rows.length === 0 ? (
+              <p className="text-sm text-muted">Aucun produit pour l&apos;instant. Ajoutez les liens des produits repérés chez ce fournisseur, avec leur référence : autant que vous voulez, quand vous voulez.</p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {rows.map((p) => (
+                  <li key={p.id} className="flex items-start gap-2 py-2" data-product={p.reference ?? p.url}>
+                    <a href={p.url} target="_blank" rel="noopener noreferrer" className="group flex min-h-11 min-w-0 flex-1 flex-col justify-center">
+                      <span className="flex items-center gap-1.5 font-medium group-hover:text-accent group-hover:underline">
+                        <span className="truncate">{p.reference ?? host(p.url)}</span><ExternalLink size={14} className="shrink-0 text-muted" aria-hidden />
+                        <span className="sr-only">(ouvre le site du fournisseur)</span>
+                      </span>
+                      <span className="truncate text-xs text-muted">{host(p.url)}{p.price_cents != null && ` · ${price(p.price_cents)}`}{p.note && ` · ${p.note}`}</span>
+                    </a>
+                    <form action={deleteSupplierProduct.bind(null, supplierId, p.id)}>
+                      <button aria-label={`Retirer ${p.reference ?? host(p.url)}`} className="flex size-11 items-center justify-center rounded-xl text-muted hover:bg-red-500/10 hover:text-red-500"><Trash2 size={16} /></button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="space-y-3">
+            <form action={addSupplierProduct.bind(null, supplierId)} className="space-y-2 rounded-xl bg-bg/40 p-3 ring-1 ring-inset ring-line" data-testid="add-product">
+              <div className="text-sm font-semibold">Ajouter un produit</div>
+              {/* after an addition the link field is ready for the next one */}
+              <Field label="Lien du produit"><input className={input} name="product_url" inputMode="url" placeholder="https://…" required autoFocus={focus} /></Field>
+              <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-2">
+                <Field label="Référence"><input className={input} name="product_ref" placeholder="Ex. Boss 12345" /></Field>
+                <Field label="Prix vu (€)"><input className={input} name="product_price" inputMode="decimal" placeholder="18" /></Field>
+              </div>
+              <Field label="Note"><input className={input} name="product_note" placeholder="Taille, couleur, quantité…" /></Field>
+              <button className={`${btn.primary} w-full`}><Plus size={16} /> Ajouter</button>
+            </form>
+            <details className="rounded-xl ring-1 ring-inset ring-line" data-testid="add-products">
+              <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium text-muted hover:text-fg">Ajouter plusieurs liens d&apos;un coup</summary>
+              <form action={addSupplierProducts.bind(null, supplierId)} className="space-y-2 px-3 pb-3">
+                <textarea className={`${input} min-h-28 py-2 font-mono text-sm`} name="product_lines" required
+                  placeholder={"Un lien par ligne, suivi de sa référence :\nhttps://site.fr/p/12 Blazer Boss 12\nhttps://site.fr/p/34 Veste tweed 34"} />
+                <button className={`${btn.secondary} w-full`}><Plus size={16} /> Ajouter tous ces liens</button>
               </form>
-            </li>
-          ))}
-        </ul>
-      )}
-      <form action={addSupplierProduct.bind(null, supplierId)} className="space-y-2" data-testid="add-product">
-        <Field label="Lien du produit"><input className={input} name="product_url" inputMode="url" placeholder="https://…" required /></Field>
-        <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-2">
-          <Field label="Référence"><input className={input} name="product_ref" placeholder="Ex. Boss 12345" /></Field>
-          <Field label="Prix vu (€)"><input className={input} name="product_price" inputMode="decimal" placeholder="18" /></Field>
+            </details>
+          </div>
         </div>
-        <Field label="Note"><input className={input} name="product_note" placeholder="Taille, couleur, quantité…" /></Field>
-        <button className={`${btn.secondary} w-full`}><Plus size={16} /> Ajouter ce produit</button>
-      </form>
+      )}
     </section>
   );
 }

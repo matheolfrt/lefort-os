@@ -179,8 +179,10 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
 
 ## Produits repérés chez les fournisseurs
 
-Mise à jour `20261112000024_supplier_products`. Sur la fiche d'un fournisseur (et dès sa création), « Produits qui me
-plaisent » : le lien de la page produit, sa référence, le prix vu et une note, pour les retrouver et les racheter.
+Mise à jour `20261112000024_supplier_products`. Sur la fiche d'un fournisseur (en haut, et dès sa création), « Produits
+qui me plaisent » : le lien de la page produit, sa référence, le prix vu et une note, pour les retrouver et les racheter.
+Autant qu'on veut, à tout moment : un par un, ou plusieurs d'un coup (un lien par ligne, suivi de sa référence). Le
+nombre de produits repérés apparaît dans la liste des fournisseurs.
 Les liens s'ouvrent dans un nouvel onglet ; une adresse sans « https:// » est complétée, tout ce qui n'est pas une adresse
 web est refusé. Réservé aux gérants, supprimés avec le fournisseur.
 
