@@ -73,4 +73,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_kpi -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_kpi -f supabase/tests/kpi_precision_test.sql >/dev/null
+# Packaging cost of each parcel on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_pack" -c "create database ${DB}_pack"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_pack -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_pack -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_pack -f supabase/tests/packaging_test.sql >/dev/null
 echo "DB tests passed"

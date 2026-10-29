@@ -46,7 +46,9 @@ interface Line {
 }
 interface Sale {
   key: string; rows: number[]; lines: Line[]; grossCents: number; soldAt: string | null; paidAt: string | null;
-  buyer: string; ref: string; shipping: number; packaging: number; platform: number | null; problems: string[];
+  buyer: string; ref: string; shipping: number;
+  packaging: number | null; // null: no amount in the file, the database takes the one of Paramètres
+  platform: number | null; problems: string[];
 }
 
 export function SalesImport() {
@@ -91,7 +93,7 @@ export function SalesImport() {
       const ref = r.order_ref || r.order_number || "";
       const key = ref ? `ref:${ref}` : `row:${row}`;
       const s = byKey.get(key) ?? { key, rows: [], lines: [], grossCents: 0, soldAt: null, paidAt: null, buyer: r.buyer ?? "",
-        ref: r.order_ref ?? "", shipping: 0, packaging: 0, platform: null, problems: [] };
+        ref: r.order_ref ?? "", shipping: 0, packaging: null, platform: null, problems: [] };
       const sku = (r.sku ?? "").toUpperCase();
       const it = sku ? found.get(sku) : byExt.get(vintedId(r.vinted_url) ?? "");
       const at = (msg: string) => `${msg} (ligne ${row})`;
@@ -120,7 +122,7 @@ export function SalesImport() {
       });
       s.grossCents += Number.isNaN(price) ? 0 : price ?? 0;
       s.shipping += fee(r.shipping) ?? 0;
-      s.packaging += fee(r.packaging) ?? 0;
+      if (r.packaging) s.packaging = (s.packaging ?? 0) + (fee(r.packaging) ?? 0);
       if (r.platform_fee) s.platform = (s.platform ?? 0) + (fee(r.platform_fee) ?? 0);
       byKey.set(key, s);
     });

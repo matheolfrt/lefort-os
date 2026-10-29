@@ -47,8 +47,8 @@ do $$ declare s jsonb := t.sup('Fripes & Co'); begin
   assert (s->>'paid_cents')::int = 20000 and (s->>'items')::int = 10 and (s->>'sold')::int = 4, s::text;
   assert (s->>'rejected')::int = 1 and (s->>'in_stock')::int = 5, s::text;
   assert (s->>'revenue_cents')::int = 20000, s::text;
-  -- margin on the 4 sold: 4 × (50 − 20) = 120 €, the 5 unsold are not counted as a loss
-  assert (s->>'profit_cents')::int = 12000, s::text;
+  -- margin on the 4 sold: 4 × (50 − 20 − 0,15 € of packaging) = 119,40 €, the 5 unsold are not counted as a loss
+  assert (s->>'profit_cents')::int = 11940 and (s->>'variable_cents')::int = 60, s::text;
   assert (s->>'stock_cost_cents')::int = 10000, s::text;
   -- sold 40 days after reception: none within the 30-day window; 9 items old enough to tell (the rejected one is not)
   assert (s->>'matured')::int = 9 and (s->>'in_time')::int = 0, s::text;
@@ -59,7 +59,7 @@ end $$;
 
 do $$ declare d jsonb := public.supplier_detail((select id from suppliers where name = 'Fripes & Co')); begin
   assert jsonb_array_length(d->'batches') = 1, d::text;
-  assert (d->'batches'->0->>'sold')::int = 4 and (d->'batches'->0->>'profit_cents')::int = 12000, d::text;
+  assert (d->'batches'->0->>'sold')::int = 4 and (d->'batches'->0->>'profit_cents')::int = 11940, d::text;
   assert jsonb_array_length(d->'months') = 12, d::text;
   assert (d->'months'->11->>'sold')::int + (d->'months'->10->>'sold')::int = 4, d->'months';
   assert public.supplier_detail('00000000-0000-0000-0000-000000000000') is null;

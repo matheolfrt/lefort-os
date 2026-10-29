@@ -24,6 +24,9 @@ async function saveOrg(formData: FormData) {
     vinted_fee_pct: Number(s("vinted_fee_pct").replace(",", ".")) || 0,
     vinted_fee_fixed_cents: Math.round(Number(s("vinted_fee_fixed").replace(",", ".")) * 100) || 0,
     listing_signature: s("listing_signature"),
+    // only once the packaging update is installed (the column does not exist before)
+    ...(ctx.org.packaging_cost_cents !== undefined && s("packaging_cost") !== ""
+      ? { packaging_cost_cents: Math.max(0, Math.round(Number(s("packaging_cost").replace(",", ".")) * 100) || 0) } : {}),
   }).eq("id", ctx.org.id);
   if (error) fail(error.message);
   revalidatePath("/", "layout");
@@ -103,6 +106,11 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               </label>
               <Field label="Frais Vinted Pro (% du prix)"><input className={input} name="vinted_fee_pct" defaultValue={String(o.vinted_fee_pct).replace(".", ",")} inputMode="decimal" /></Field>
               <Field label="Frais Vinted Pro fixes (€ / vente)"><input className={input} name="vinted_fee_fixed" defaultValue={(o.vinted_fee_fixed_cents / 100).toFixed(2).replace(".", ",")} inputMode="decimal" /></Field>
+              {o.packaging_cost_cents !== undefined && (
+                <Field label="Emballage par envoi (€)" hint="Ajouté à chaque vente enregistrée sans montant d'emballage (un colis = un emballage)">
+                  <input className={input} name="packaging_cost" defaultValue={(o.packaging_cost_cents / 100).toFixed(2).replace(".", ",")} inputMode="decimal" />
+                </Field>
+              )}
               <Field label="Photos minimum par article"><input className={input} name="min_photos" type="number" min={0} defaultValue={o.min_photos} /></Field>
               <Field label="Stock dormant après (jours)"><input className={input} name="dead_stock_days" type="number" min={1} defaultValue={o.dead_stock_days} /></Field>
               <Field label="Objectif d'écoulement (%)" hint="Part des articles à vendre dans le délai ci-contre">

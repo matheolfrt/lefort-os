@@ -29,6 +29,8 @@ export interface Organization {
   sellthrough_days?: number;
   vinted_fee_pct: number;
   vinted_fee_fixed_cents: number;
+  /** packaging of each parcel, by default on every sale (optional until the packaging migration has run) */
+  packaging_cost_cents?: number;
   listing_signature: string;
 }
 

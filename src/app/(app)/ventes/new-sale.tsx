@@ -15,7 +15,11 @@ const SELLABLE = ["listed", "reserved", "listing_ready"];
 
 type Hit = { id: string; sku: string; title: string | null; size_label: string | null; list_price_cents: number | null; brands: { name: string } | null };
 
-export function NewSale({ initialSku = null, focus = false }: { initialSku?: string | null; focus?: boolean } = {}) {
+export function NewSale({ initialSku = null, focus = false, defaultPackagingCents = null }: {
+  initialSku?: string | null; focus?: boolean;
+  /** packaging of each parcel from Paramètres, taken when the field is left empty */
+  defaultPackagingCents?: number | null;
+} = {}) {
   const router = useRouter();
   const toast = useToast();
   const [items, setItems] = useState<Item[]>([]);
@@ -98,7 +102,8 @@ export function NewSale({ initialSku = null, focus = false }: { initialSku?: str
         p_external_order_id: ref || null,
         p_buyer: buyer || null,
         p_shipping_cost_cents: parseEuros(shipping) ?? 0,
-        p_packaging_cost_cents: parseEuros(packaging) ?? 0,
+        // left empty: the amount of Paramètres (set by the database)
+        p_packaging_cost_cents: packaging.trim() ? parseEuros(packaging) : null,
       });
       toast("Vente enregistrée → à expédier", "ok");
       setItems([]);
@@ -176,9 +181,10 @@ export function NewSale({ initialSku = null, focus = false }: { initialSku?: str
         <Field label="Acheteur"><input className={input} value={buyer} onChange={(e) => setBuyer(e.target.value)} /></Field>
         <Field label="Réf. commande"><input className={input} value={ref} onChange={(e) => setRef(e.target.value)} /></Field>
         <Field label="Frais de port à ma charge (€)"><input className={input} inputMode="decimal" value={shipping} onChange={(e) => setShipping(e.target.value)} placeholder="0" /></Field>
-        <Field label="Emballage (€)"><input className={input} inputMode="decimal" value={packaging} onChange={(e) => setPackaging(e.target.value)} placeholder="0" /></Field>
+        <Field label="Emballage (€)"><input className={input} inputMode="decimal" value={packaging} onChange={(e) => setPackaging(e.target.value)}
+          placeholder={defaultPackagingCents != null ? (defaultPackagingCents / 100).toFixed(2).replace(".", ",") : "0"} /></Field>
       </div>
-      <p className="text-xs text-muted">Les frais Vinted Pro sont calculés selon Paramètres (modifiables ensuite sur la commande).</p>
+      <p className="text-xs text-muted">Les frais Vinted Pro{defaultPackagingCents != null ? " et l'emballage (laissé vide)" : ""} sont calculés selon Paramètres (modifiables ensuite sur la commande).</p>
       <button className={`${btn.primary} w-full`} disabled={busy} onClick={submit}>Enregistrer la vente</button>
     </div>
   );

@@ -29,6 +29,8 @@ insert into auth.users values ('00000000-0000-0000-0000-0000000000a1', 'admin@ex
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 select public.bootstrap_organization('Lefort Second Hand', 'Mathéo');
+-- these sums are checked to the cent with the amounts typed for each sale: no default packaging here (packaging_test.sql covers it)
+update organizations set packaging_cost_cents = 0;
 select public.add_member('op@example.com', 'operator');
 -- simple fees for exact numbers: 0 % + 0 €
 update organizations set vinted_fee_pct = 0, vinted_fee_fixed_cents = 0;

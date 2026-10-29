@@ -78,7 +78,7 @@ export default async function Sales({ searchParams }: { searchParams: Promise<Pa
         )}
       />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
-        <Card title="Nouvelle vente"><NewSale initialSku={sp.article ?? null} focus={sp.nouvelle === "1"} /></Card>
+        <Card title="Nouvelle vente"><NewSale initialSku={sp.article ?? null} focus={sp.nouvelle === "1"} defaultPackagingCents={ctx.org.packaging_cost_cents ?? null} /></Card>
         {ctx.isManager && (
           <Card title={`Commandes · ${count}`}>
             <div className="mb-3 space-y-2">

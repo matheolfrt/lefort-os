@@ -268,6 +268,13 @@ Mise à jour de la base `20261110000022_kpi_precision` (gérants seulement : ce 
 - **Valeur de vente probable** : prix affichés du stock × ce que les acheteurs paient vraiment (ventes des 90 derniers
   jours, à partir de 10 ventes ; sinon la valeur affichée reste, avec la mention). (`realised_price`)
 
+## Emballage
+
+Mise à jour `20261111000023_packaging_cost` : chaque vente enregistrée sans montant d'emballage (champ laissé vide,
+CSV sans colonne « emballage », synchro Vinted) compte **0,15 € par envoi** (un colis = un emballage, même pour un lot
+de plusieurs articles). Modifiable dans Paramètres (« Emballage par envoi »). Un montant saisi, 0 compris, est gardé.
+Les ventes déjà enregistrées ne changent pas.
+
 ## Où est mon argent ? (Financial Command Center)
 
 `/finance` (responsables, menu « Finance », raccourci `g f`, carte sur le tableau de bord). Huit sections : capital
