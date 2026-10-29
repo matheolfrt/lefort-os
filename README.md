@@ -219,6 +219,27 @@ réservées aux responsables). Trois scénarios types partent des chiffres réel
 −5 %, coût +5 %), Base, Agressif (ventes +20 %, stock +5 %/mois) ; chacun affiche le cash nécessaire (stock + un mois de
 charges + creux de trésorerie sur 12 mois) et le retour sur capital.
 
+## Rotation des lots
+
+Fiche d'un lot → **Performance du lot** (`src/components/lots/lot-performance.tsx`, calculs `src/lib/lot-rotation.ts`,
+vue `v_lot_rotation` de `supabase/migrations/20261109000021_lot_rotation.sql`) :
+
+- **🚀 Premier article mis en ligne** : un clic enregistre `batches.listing_started_at` (date et heure). Cliquable une seule
+  fois ; jamais déplacé quand d'autres articles passent en ligne ; un responsable peut le corriger (« Modifier la date de
+  début », avec confirmation, tracé). Lot déjà en ligne sans date : alerte et date à choisir — jamais inventée (la
+  première publication connue est seulement proposée).
+- Trois indicateurs distincts, côte à côte :
+  - **Mise en ligne** = dernier article mis en ligne − premier (en cours : rythme articles/jour et fin estimée) ;
+  - **Vente moyenne** = moyenne de (vente − mise en ligne) de chaque article vendu, depuis **sa propre** date de mise en
+    ligne (`items.listed_at`, posée une seule fois) ;
+  - **Liquidation** = dernière vente − **premier** article mis en ligne, figée quand le lot est liquidé ; avant, une
+    projection d'après le rythme de ventes du lot (5 ventes et 7 jours minimum), toujours affichée comme estimation.
+- Statuts calculés : Stock reçu, Mise en ligne, 100 % en ligne, Liquidation, Liquidé (articles écartés non attendus ;
+  ventes annulées, supprimées ou retournées non comptées). Chronologie avec les dates réelles ; statut et vente moyenne
+  dans la liste des lots.
+- Tests : `npm run test:lots` et `supabase/tests/lot_rotation_test.sql` (300 blazers : 29 j de mise en ligne, 20 j de
+  vente moyenne, 59 j de liquidation depuis le premier listing).
+
 ## Où est mon argent ? (Financial Command Center)
 
 `/finance` (responsables, menu « Finance », raccourci `g f`, carte sur le tableau de bord). Huit sections : capital

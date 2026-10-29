@@ -78,3 +78,14 @@ export async function closeBatch(batchId: string): Promise<ActionResult> {
   revalidatePath(`/lots/${batchId}`);
   return error ? { error: errorMessage(error) } : {};
 }
+
+/** The official start of the lot's listing: now (the button), or a date chosen by the seller; changing it = edit */
+export async function startListing(batchId: string, at: string | null, edit: boolean): Promise<ActionResult> {
+  await getContext();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_listing_started", { p_batch_id: batchId, p_at: at, p_edit: edit });
+  if (error) return { error: errorMessage(error) };
+  revalidatePath(`/lots/${batchId}`);
+  revalidatePath("/lots");
+  return {};
+}

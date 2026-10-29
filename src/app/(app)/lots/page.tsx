@@ -4,6 +4,8 @@ import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Empty, PageHeader, btn } from "@/components/ui";
 import { date, money, pct } from "@/lib/format";
+import { LotStatusChip } from "@/components/lots/lot-performance";
+import { days, rotation, type LotRow } from "@/lib/lot-rotation";
 
 export default async function Batches({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const ctx = await getContext();
@@ -13,11 +15,13 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
     const { data } = await supabase.from("batches").select("id").eq("code", code).maybeSingle();
     if (data) redirect(`/lots/${data.id}`);
   }
-  const [{ data: progress }, { data: econ }] = await Promise.all([
+  const [{ data: progress }, { data: econ }, { data: rot }] = await Promise.all([
     supabase.from("v_batch_progress").select("*").order("purchased_at", { ascending: false }),
     ctx.isManager ? supabase.from("v_batch_profitability").select("*") : Promise.resolve({ data: [] }),
+    supabase.from("v_lot_rotation").select("*"),
   ]);
   const econById = new Map((econ ?? []).map((e) => [e.batch_id, e]));
+  const rotById = new Map((rot ?? []).map((x) => [x.batch_id as string, rotation(x as LotRow)]));
 
   return (
     <>
@@ -41,7 +45,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
                       <span className="font-mono font-bold">{b.code}</span>
                       <span className="text-xs text-muted">{b.status === "closed" ? "clôturé · " : ""}{date(b.purchased_at)}</span>
                     </div>
-                    <div className="mb-2 text-sm text-muted">{b.supplier_name}</div>
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted">{b.supplier_name}{rotById.get(b.batch_id) && <LotStatusChip status={rotById.get(b.batch_id)!.status} />}</div>
                     <Funnel b={b} />
                     {ctx.isManager && e && (
                       <div className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-2 text-sm">
@@ -60,7 +64,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
               <table className="data">
                 <thead>
                   <tr>
-                    <th>Lot</th><th>Fournisseur</th><th>Achat</th><th>Avancement</th>
+                    <th>Lot</th><th>Fournisseur</th><th>Achat</th><th>Statut</th><th>Avancement</th><th className="num" title="Délai moyen de vente d'un article, depuis sa propre mise en ligne">Vente moy.</th>
                     {ctx.isManager && (<><th className="num">Coût</th><th className="num">CA</th><th className="num">Profit</th><th className="num">ROI</th></>)}
                   </tr>
                 </thead>
@@ -75,7 +79,9 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
                         </td>
                         <td>{b.supplier_name}</td>
                         <td>{date(b.purchased_at)}</td>
+                        <td>{rotById.get(b.batch_id) ? <LotStatusChip status={rotById.get(b.batch_id)!.status} /> : "—"}</td>
                         <td className="min-w-48"><Funnel b={b} /></td>
+                        <td className="num">{days(rotById.get(b.batch_id)?.avgDaysToSell ?? null, 1)}</td>
                         {ctx.isManager && (
                           <>
                             <td className="num">{money(e?.total_cost_cents)}</td>

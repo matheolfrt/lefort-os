@@ -59,4 +59,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_vsync -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_vsync -f supabase/tests/vinted_sync_test.sql >/dev/null
+# Lot rotation (listing time, time to sell, liquidation) on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_lots" -c "create database ${DB}_lots"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_lots -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_lots -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_lots -f supabase/tests/lot_rotation_test.sql >/dev/null
 echo "DB tests passed"

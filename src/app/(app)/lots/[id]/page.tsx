@@ -10,6 +10,8 @@ import { addAdjustment, addCostLine, createSkus, deleteCostLine, setAllocation }
 import { SkuFields } from "../sku-fields";
 import { LabelPrinter } from "./label-printer";
 import { CloseBatchButton } from "./close-batch";
+import { LotPerformance } from "@/components/lots/lot-performance";
+import type { LotRow } from "@/lib/lot-rotation";
 
 const COST_KIND: Record<string, string> = { goods: "Marchandise", transport: "Transport", customs: "Douane", fees: "Frais", other: "Autre" };
 
@@ -24,7 +26,7 @@ export default async function BatchDetail({ params, searchParams }: {
   const { data: batch } = await supabase.from("batches").select("*, suppliers(name)").eq("id", id).maybeSingle();
   if (!batch) notFound();
 
-  const [{ data: progress }, { data: items }, { data: labels }, econ, lines, adjustments, costs] = await Promise.all([
+  const [{ data: progress }, { data: items }, { data: labels }, econ, lines, adjustments, costs, { data: rot }] = await Promise.all([
     supabase.from("v_batch_progress").select("*").eq("batch_id", id).single(),
     supabase.from("items").select("id, sku, status, size_label, categories(name), brands(name)").eq("batch_id", id).is("deleted_at", null),
     supabase.from("sku_labels").select("sku").eq("batch_id", id),
@@ -32,6 +34,8 @@ export default async function BatchDetail({ params, searchParams }: {
     ctx.isManager ? supabase.from("batch_cost_lines").select("*").eq("batch_id", id).order("created_at") : null,
     ctx.isManager ? supabase.from("batch_cost_adjustments").select("*").eq("batch_id", id).order("created_at") : null,
     ctx.isManager ? supabase.from("item_costs").select("item_id, allocated_cost_cents, manual") : null,
+    // rotation of the lot (migration 0021): absent before that database update, then the section is not shown
+    supabase.from("v_lot_rotation").select("*").eq("batch_id", id).maybeSingle(),
   ]);
   // natural order: M-2 before M-10
   items?.sort((a, b) => a.sku.localeCompare(b.sku, "fr", { numeric: true }));
@@ -57,6 +61,7 @@ export default async function BatchDetail({ params, searchParams }: {
 
       {notice.error && <p className="mb-4 rounded-xl bg-red-500/10 p-3 text-sm text-red-200 ring-1 ring-inset ring-red-400/30">{notice.error}</p>}
       {notice.ok && <p className="mb-4 rounded-xl bg-accent/10 p-3 text-sm text-accent ring-1 ring-inset ring-accent/25">{notice.ok}</p>}
+      {rot && <LotPerformance row={rot as LotRow} isManager={ctx.isManager} />}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label="Reçus" value={`${progress?.items ?? 0}${batch.expected_qty ? ` / ${batch.expected_qty}` : ""}`} />
         <Stat label="Photographiés" value={progress?.photographed ?? 0} />
