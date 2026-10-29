@@ -207,6 +207,15 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   `lf_theme`, `src/lib/prefs.ts`).
 - **Tableau de bord** : urgences toujours en haut (expéditions et travail en retard, prix à baisser), puis objectifs,
   argent et le reste ; « Personnaliser » masque et réordonne les cartes (cookie `lf_dash`, `src/lib/dashboard-layout.ts`).
+- **Ma journée** : tout en haut, une phrase écrite à partir des chiffres : hier (ventes, CA) contre votre journée
+  habituelle (les jours depuis la première vente, jamais des zéros d'avant l'ouverture), puis aujourd'hui : commandes à
+  expédier, articles prêts à publier, prix à baisser, et ce qu'il faut par jour pour tenir l'objectif du mois. Pour
+  l'équipe, la même phrase sans argent (`src/lib/day-brief.ts`).
+- **Comparaisons** (« Ce mois-ci ») : CA encaissé, bénéfice, ventes, panier moyen comparés aux **mêmes jours** du mois
+  dernier (du 1er au 29 contre du 1er au 29) et à la moyenne des 3 mois d'avant ; le délai de vente (90 jours glissants)
+  à lui-même un mois plus tôt. Flèche **et** mot « au-dessus / en dessous / au même niveau » (jamais la couleur seule),
+  vert ou rouge selon que c'est une bonne nouvelle (un délai plus court est en vert), gris sous 10 observations
+  (« peu de données »). Une courbe des 30 derniers jours dans chaque tuile (`src/lib/compare.ts`, `npm run test:compare`).
 
 ## Scénarios
 

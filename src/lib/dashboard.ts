@@ -1,7 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ItemStatus, Organization } from "@/lib/types";
-import { buildTrend, type TrendPeriod } from "@/lib/trend";
+import { buildTrend, parisDay, type TrendPeriod } from "@/lib/trend";
+import { compareAll, type Comparison, type MetricId } from "@/lib/compare";
 
 // Everything on the dashboard is derived from existing tables/views; nothing is stored.
 
@@ -44,6 +45,8 @@ export interface FinanceData {
   avgDaysToSell: { days: number | null; n: number };
   contributionRatePct: number;
   trend: { month: TrendPeriod; week: TrendPeriod };
+  /** each figure of the month against the same days of last month and the months before */
+  compare: Record<MetricId, Comparison>;
 }
 
 const DAY = 86_400_000;
@@ -127,7 +130,9 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
 
   // ── Money (RLS returns nothing for operators anyway)
   const since12 = new Date(Date.UTC(p.year, p.monthIdx - 11, 1)).toISOString().slice(0, 10);
-  const [econ, { data: turnover }, { data: monthOrders }, { data: rates }, { data: goals }] = await Promise.all([
+  // comparisons go back three months (same days); a day of margin for the Paris calendar
+  const since3 = new Date(Date.UTC(p.year, p.monthIdx - 3, 1) - DAY).toISOString().slice(0, 10);
+  const [econ, { data: turnover }, recentOrders, cashRows, { data: rates }, { data: goals }] = await Promise.all([
     fetchAll<{ status: ItemStatus; sold_at: string | null; cost_cents: number; revenue_cents: number; variable_costs_cents: number;
       vat_cents: number; gross_profit_cents: number; is_sold: boolean; days_to_sell: number | null }>(
       (from, to) => supabase.from("v_item_economics")
@@ -135,7 +140,10 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
         .range(from, to),
     ),
     supabase.from("v_monthly_turnover").select("month, turnover_cents").gte("month", since12).order("month"),
-    supabase.from("orders").select("gross_cents").neq("status", "cancelled").gte("sold_at", p.monthStart),
+    fetchAll<{ sold_at: string; gross_cents: number }>((from, to) => supabase.from("orders").select("sold_at, gross_cents")
+      .neq("status", "cancelled").gte("sold_at", since3).order("sold_at").range(from, to)),
+    fetchAll<{ date_encaissement: string; montant_cents: number }>((from, to) => supabase.from("v_livre_recettes")
+      .select("date_encaissement, montant_cents").gte("date_encaissement", since3).order("date_encaissement").range(from, to)),
     supabase.from("tax_rates").select("kind, rate_pct, valid_from").lte("valid_from", new Date(now).toISOString().slice(0, 10))
       .order("valid_from", { ascending: false }),
     // objectives (Objectifs) draw the pace line; absent until the database update that adds them
@@ -148,8 +156,10 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
   const ratePct = (latest.get("urssaf_bic_vente") ?? 0) + (latest.get("cfp") ?? 0)
     + (org.versement_liberatoire ? latest.get("versement_liberatoire") ?? 0 : 0);
 
+  // sales by their day in Paris (a sale at 23:30 on the 31st belongs to that month, whatever the UTC date says)
+  const soldRows = econ.filter((e) => e.is_sold && e.sold_at).map((e) => ({ e, day: parisDay(e.sold_at!) }));
   const period = (start: string): PeriodResult => {
-    const sold = econ.filter((e) => e.is_sold && e.sold_at && e.sold_at >= start);
+    const sold = soldRows.filter((r) => r.day >= start).map((r) => r.e);
     const revenue = sold.reduce((s, e) => s + Number(e.revenue_cents), 0);
     const costs = sold.reduce((s, e) => s + Number(e.cost_cents) + Number(e.variable_costs_cents) + Number(e.vat_cents), 0);
     const contributions = Math.round((revenue * ratePct) / 100);
@@ -163,9 +173,16 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
     return { month: key, cents: byMonth.get(key) ?? 0 };
   });
 
-  const ninetyDaysAgo = new Date(now - 90 * DAY).toISOString();
-  const recentDelays = econ.filter((e) => e.is_sold && e.sold_at && e.sold_at >= ninetyDaysAgo && e.days_to_sell != null && e.days_to_sell >= 0);
-  const baskets = (monthOrders ?? []).map((o) => Number(o.gross_cents));
+  const compare = compareAll({
+    today: parisDay(new Date(now)),
+    sold: soldRows.map(({ e, day }) => ({ day, revenue: Number(e.revenue_cents),
+      costs: Number(e.cost_cents) + Number(e.variable_costs_cents) + Number(e.vat_cents),
+      delay: e.days_to_sell == null ? null : Number(e.days_to_sell) })),
+    orders: recentOrders.map((o) => ({ day: parisDay(o.sold_at), gross: Number(o.gross_cents) })),
+    cash: cashRows.map((c) => ({ day: String(c.date_encaissement).slice(0, 10), cents: Number(c.montant_cents) })),
+    ratePct,
+    since: soldRows.reduce<string | null>((m, r) => (m == null || r.day < m ? r.day : m), null),
+  });
 
   data.finance = {
     monthCashedCents: months.at(-1)?.cents ?? 0,
@@ -174,14 +191,13 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
     month: period(p.monthStart),
     year: period(p.yearStart),
     stockCostCents: econ.filter((e) => STOCK_STATUSES.includes(e.status)).reduce((s, e) => s + Number(e.cost_cents), 0),
-    avgBasket: { cents: baskets.length ? Math.round(baskets.reduce((a, b) => a + b, 0) / baskets.length) : null, n: baskets.length },
-    avgDaysToSell: {
-      days: recentDelays.length ? recentDelays.reduce((s, e) => s + Number(e.days_to_sell), 0) / recentDelays.length : null,
-      n: recentDelays.length,
-    },
+    // the same figures as their comparisons (Paris days): orders of the month, sales of the last 90 days
+    avgBasket: { cents: compare.basket.cur == null ? null : Math.round(compare.basket.cur), n: compare.basket.n },
+    avgDaysToSell: { days: compare.delay.cur, n: compare.delay.n },
     contributionRatePct: ratePct,
     trend: buildTrend(econ.filter((e) => e.is_sold), new Date(now),
       ((goals ?? []) as { period: string; metric: string; target: number }[])),
+    compare,
   };
   return data;
 }

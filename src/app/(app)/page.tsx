@@ -20,6 +20,9 @@ import { TodosCard } from "@/components/todos/todos-card";
 import { PriceReminder } from "@/components/dashboard/price-reminder";
 import { FinanceCard, FinanceCardSkeleton } from "@/components/dashboard/finance-card";
 import { VintedAlert } from "@/components/dashboard/vinted-alert";
+import { DayBrief, DayBriefSkeleton } from "@/components/dashboard/day-brief";
+import { CompareLines, Sparkline, type Fmt } from "@/components/dashboard/compare";
+import type { Comparison } from "@/lib/compare";
 import { DashboardCustomize } from "@/components/dashboard/customize";
 import { resolveLayout } from "@/lib/dashboard-layout";
 import { getDashLayout } from "@/lib/prefs";
@@ -27,6 +30,9 @@ import type { ItemStatus } from "@/lib/types";
 
 const euro0 = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 const eur = (cents: number | null | undefined) => (cents == null ? "—" : euro0.format(Math.round(cents / 100)));
+const eurFmt: Fmt = (c) => eur(c);
+const countFmt: Fmt = (n) => (Number.isInteger(n) ? String(n) : n.toLocaleString("fr-FR", { maximumFractionDigits: 1 }));
+const daysFmt: Fmt = (n) => `${Math.round(n)} j`;
 
 export default async function Dashboard() {
   const ctx = await getContext();
@@ -79,12 +85,12 @@ export default async function Dashboard() {
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {f && (
             <>
-              <Kpi label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`}
+              <Kpi label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} cmp={f.compare.cashed} fmt={eurFmt}
                 help="Argent réellement reçu ce mois (ventes encaissées, remboursements déduits). C'est ce chiffre qui compte pour l'URSSAF et les seuils." />
               <Kpi label="Bénéfice estimé" value={eur(f.month.afterCents)} tone={f.month.afterCents < 0 ? "bad" : undefined}
-                hint="après coûts et cotisations" n={f.month.itemsSold}
+                hint="après coûts et cotisations" n={f.month.itemsSold} cmp={f.compare.profit} fmt={eurFmt}
                 help="Ventes du mois moins le coût d'achat des articles vendus, les frais (Vinted, envoi) et les cotisations URSSAF estimées." />
-              <Kpi label="Ventes" value={String(f.month.itemsSold)} hint={`${eur(f.month.revenueCents)} de ventes`} />
+              <Kpi label="Ventes" value={String(f.month.itemsSold)} hint={`${eur(f.month.revenueCents)} de ventes`} cmp={f.compare.sales} fmt={countFmt} />
             </>
           )}
           <Kpi label="Stock" value={String(d.stock.count)} hint={`dont ${d.stock.listedCount} en ligne`} />
@@ -95,10 +101,10 @@ export default async function Dashboard() {
             help="Somme des prix affichés des articles en stock. Les articles sans prix ne sont pas comptés." />
           {f && (
             <>
-              <Kpi label="Panier moyen" value={eur(f.avgBasket.cents)} hint="par commande ce mois" n={f.avgBasket.n}
+              <Kpi label="Panier moyen" value={eur(f.avgBasket.cents)} hint="par commande ce mois" n={f.avgBasket.n} cmp={f.compare.basket} fmt={eurFmt}
                 help="Montant moyen d'une commande (un lot de plusieurs articles compte pour une commande)." />
               <Kpi label="Délai moyen de vente" value={f.avgDaysToSell.days == null ? "—" : `${Math.round(f.avgDaysToSell.days)} j`}
-                hint="mise en ligne → vente, 90 j" n={f.avgDaysToSell.n}
+                hint="mise en ligne → vente, 90 j" n={f.avgDaysToSell.n} cmp={f.compare.delay} fmt={daysFmt} days
                 help="Nombre moyen de jours entre la mise en ligne et la vente, sur les ventes des 90 derniers jours. Plus c'est court, plus votre argent tourne vite." />
             </>
           )}
@@ -167,6 +173,11 @@ export default async function Dashboard() {
           }} />
         </div>
       </header>
+
+      {/* ── Ma journée: the page in one sentence */}
+      <Suspense fallback={<DayBriefSkeleton />}>
+        <DayBrief ship={d.shipping.orders} publish={q("listing_ready").count} manager={ctx.isManager} />
+      </Suspense>
 
       {/* ── Urgent: always first, never hidden */}
       {(lateShip || lateWork.length > 0 || ctx.isManager) && (
@@ -253,9 +264,12 @@ function SampleSize({ n }: { n: number }) {
   );
 }
 
-function Kpi({ label, value, hint, n, tone, help }: { label: string; value: string; hint?: string; n?: number; tone?: "bad"; help?: string }) {
+function Kpi({ label, value, hint, n, tone, help, cmp, fmt, days }: {
+  label: string; value: string; hint?: string; n?: number; tone?: "bad"; help?: string;
+  cmp?: Comparison; fmt?: Fmt; days?: boolean; // compared with last month and the months before, with its last 30 days
+}) {
   return (
-    <div className="rounded-2xl border border-line bg-panel/80 px-3.5 py-3">
+    <div className="flex flex-col rounded-2xl border border-line bg-panel/80 px-3.5 py-3" data-kpi={label}>
       <div className="flex items-center justify-between gap-2">
         <span className="eyebrow-tight flex items-start gap-1 text-muted">{label}{help && <Help text={help} />}</span>
         {n != null && <SampleSize n={n} />}
@@ -264,6 +278,12 @@ function Kpi({ label, value, hint, n, tone, help }: { label: string; value: stri
         {value}
       </div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
+      {cmp && fmt && (
+        <div className="mt-auto">
+          <CompareLines c={cmp} fmt={fmt} days={days} />
+          <Sparkline values={cmp.spark} fmt={fmt} label={label} />
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@
     "test:db": "scripts/db-test.sh",
     "test:finance": "npx --yes tsx scripts/finance-test.ts",
     "test:lots": "npx --yes tsx scripts/lot-rotation-test.ts",
+    "test:compare": "npx --yes tsx scripts/compare-test.ts",
     "typecheck": "tsc --noEmit",
     "build:extension": "rm -f public/lefort-os-vinted.zip && cd extension && zip -qr ../public/lefort-os-vinted.zip . -x \"*.DS_Store\""
   },
