@@ -1,7 +1,7 @@
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Download, RefreshCw, Search, Undo2, Upload } from "lucide-react";
+import { Download, Search, Upload } from "lucide-react";
 import { Card, Empty, PageHeader, SkuLink, btn, input } from "@/components/ui";
 import { dateTime, money } from "@/lib/format";
 import { NewSale } from "./new-sale";
@@ -70,8 +70,6 @@ export default async function Sales({ searchParams }: { searchParams: Promise<Pa
         subtitle="Saisissez chaque vente Vinted dès la notification : l'article est retiré du stock vendable."
         actions={ctx.isManager && (
           <>
-            <Link href="/ventes/vinted" className={btn.secondary}><RefreshCw size={16} /> Synchro Vinted</Link>
-            <Link href="/ventes/retours" className={btn.secondary}><Undo2 size={16} /> Retours</Link>
             <a href="/export/ventes" className={btn.secondary}><Download size={16} /> Exporter CSV</a>
             <Link href="/ventes/import" className={btn.secondary}><Upload size={16} /> Importer</Link>
           </>

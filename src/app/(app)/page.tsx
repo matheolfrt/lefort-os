@@ -17,7 +17,6 @@ import { SalesTrend } from "@/components/dashboard/sales-trend";
 import { Help } from "@/components/ui";
 import { GoalsCard, GoalsSkeleton } from "@/components/goals/goals-card";
 import { TodosCard } from "@/components/todos/todos-card";
-import { PriceReminder } from "@/components/dashboard/price-reminder";
 import { FinanceCard, FinanceCardSkeleton } from "@/components/dashboard/finance-card";
 import { VintedAlert } from "@/components/dashboard/vinted-alert";
 import { DayBrief, DayBriefSkeleton } from "@/components/dashboard/day-brief";
@@ -85,20 +84,29 @@ export default async function Dashboard() {
     ),
     // the heaviest figures, streamed in after the rest of the page
     advice: <Suspense fallback={<AdviceSkeleton />}><AdviceCard quarterly={ctx.org.declaration_frequency === "quarterly"} /></Suspense>,
+    // the four figures that say how the month goes, in large; the others one click away
     month: (
       <Section title={f ? "Ce mois-ci" : "Stock"}>
-        <div className={`grid grid-cols-2 gap-2 md:grid-cols-4 ${f ? "xl:grid-cols-5" : ""}`}>
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="key-figures">
           {f && (
             <>
-              <Kpi label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} cmp={f.compare.cashed} fmt={eurFmt}
+              <Kpi big label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} cmp={f.compare.cashed} fmt={eurFmt}
                 help="Argent réellement reçu ce mois (ventes encaissées, remboursements déduits). C'est ce chiffre qui compte pour l'URSSAF et les seuils." />
-              <Kpi label="Bénéfice estimé" value={eur(f.month.afterCents)} tone={f.month.afterCents < 0 ? "bad" : undefined}
+              <Kpi big label="Bénéfice estimé" value={eur(f.month.afterCents)} tone={f.month.afterCents < 0 ? "bad" : undefined}
                 hint="après coûts et cotisations" n={f.month.itemsSold} cmp={f.compare.profit} fmt={eurFmt}
                 help="Ventes du mois moins le coût d'achat des articles vendus, les frais (Vinted, envoi) et les cotisations URSSAF estimées." />
-              <Kpi label="Ventes" value={String(f.month.itemsSold)} hint={`${eur(f.month.revenueCents)} de ventes`} cmp={f.compare.sales} fmt={countFmt} />
+              <Kpi big label="Ventes" value={String(f.month.itemsSold)} hint={`${eur(f.month.revenueCents)} de ventes`} cmp={f.compare.sales} fmt={countFmt} />
             </>
           )}
-          <Kpi label="Stock" value={String(d.stock.count)} hint={`dont ${d.stock.listedCount} en ligne`} />
+          <Kpi label="Stock" value={String(d.stock.count)} hint={`dont ${d.stock.listedCount} en ligne`} big />
+        </div>
+        <details className="group mt-2" data-testid="more-figures">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-xl px-2 text-sm font-medium text-muted transition hover:text-fg [&::-webkit-details-marker]:hidden">
+            <ChevronRight size={16} className="transition-transform group-open:rotate-90" />
+            <span className="whitespace-nowrap group-open:hidden">Plus de chiffres</span><span className="hidden whitespace-nowrap group-open:inline">Moins de chiffres</span>
+            <span className="hidden text-xs text-muted/70 sm:inline">{f ? "valeur du stock, panier, délai de vente, écoulement, retours" : "valeur du stock"}</span>
+          </summary>
+          <div className={`mt-1 grid grid-cols-2 gap-2 md:grid-cols-3 ${f ? "xl:grid-cols-6" : ""}`}>
           {f && <Kpi label="Valeur d'achat du stock" value={eur(f.stockCostCents)} hint="coût de revient"
             help="Ce que vous avez payé pour les articles encore en stock (part du lot + frais). C'est l'argent immobilisé à faire tourner." />}
           {realisedRatio != null ? (
@@ -129,7 +137,8 @@ export default async function Dashboard() {
               )}
             </>
           )}
-        </div>
+          </div>
+        </details>
       </Section>
     ),
     trend: f ? <SalesTrend trend={f.trend} /> : null,
@@ -220,7 +229,6 @@ export default async function Dashboard() {
               <ChevronRight size={18} className="text-muted" />
             </Link>
           ))}
-          {ctx.isManager && <Suspense fallback={null}><PriceReminder /></Suspense>}
           {ctx.isManager && <Suspense fallback={null}><VintedAlert /></Suspense>}
         </div>
       )}
@@ -285,18 +293,19 @@ function SampleSize({ n }: { n: number }) {
   );
 }
 
-function Kpi({ label, value, hint, n, tone, help, cmp, fmt, unit, href }: {
+function Kpi({ label, value, hint, n, tone, help, cmp, fmt, unit, href, big }: {
   label: string; value: string; hint?: string; n?: number; tone?: "bad"; help?: string;
+  big?: boolean; // one of the four key figures: larger, label in plain words
   cmp?: Comparison; fmt?: Fmt; unit?: GapUnit; // compared with last month and the months before, with its last 30 days
   href?: string; // the page with the detail
 }) {
   return (
-    <div className="relative flex flex-col rounded-2xl border border-line bg-panel/80 px-3.5 py-3 transition has-[a.kpi-link:hover]:border-fg/30" data-kpi={label}>
+    <div className={`relative flex flex-col rounded-2xl border border-line bg-panel/80 transition has-[a.kpi-link:hover]:border-fg/30 ${big ? "px-4 py-3.5 sm:px-5 sm:py-4" : "px-3.5 py-3"}`} data-kpi={label}>
       <div className="flex items-center justify-between gap-2">
-        <span className="eyebrow-tight flex items-start gap-1 text-muted">{label}{help && <Help text={help} />}</span>
+        <span className={`flex items-start gap-1 text-muted ${big ? "text-sm font-medium" : "eyebrow-tight"}`}>{label}{help && <Help text={help} />}</span>
         {n != null && <SampleSize n={n} />}
       </div>
-      <div className={`mt-1 text-[26px] font-mono font-semibold leading-tight tabular-nums tracking-tight ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
+      <div className={`mt-1 font-mono font-semibold leading-tight tabular-nums tracking-tight ${big ? "text-[30px] sm:text-[36px]" : "text-[26px]"} ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
         {href ? <Link href={href} className="kpi-link inline-flex min-h-11 items-center after:absolute after:inset-0 after:rounded-2xl">{value}<ChevronRight size={18} aria-hidden className="ml-1 inline align-middle text-muted" /><span className="sr-only"> : voir le détail</span></Link> : value}
       </div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}

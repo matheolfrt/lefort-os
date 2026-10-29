@@ -1,13 +1,8 @@
 import { requireManager } from "@/lib/session";
-import { PilotageTabs } from "./tabs";
 
-/** Pilotage: one menu entry, several screens (Conseils, Objectifs, Écoulement, Niches, Statistiques, Scénarios) */
-export default async function PilotageLayout({ children }: { children: React.ReactNode }) {
+/** Pages for managers only: Conseils, Objectifs, Statistiques, Scénarios (tabs of « Mon argent ») and Écoulement, Prix,
+ * Niches (tabs of « Rotation »). Their tab bar comes from the app shell. */
+export default async function ManagerPagesLayout({ children }: { children: React.ReactNode }) {
   await requireManager();
-  return (
-    <div className="space-y-4">
-      <PilotageTabs />
-      {children}
-    </div>
-  );
+  return <div className="space-y-4">{children}</div>;
 }

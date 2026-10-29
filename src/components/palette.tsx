@@ -46,8 +46,11 @@ export function Palette({ isManager, onCode, onCamera, onClose }: {
   }, [onClose]);
 
   const pages = useMemo<Result[]>(() => {
-    // the Pilotage menu entry is a door to its tabs: the tabs themselves are what people search for
-    const all = [...NAV.filter((n) => !n.match), ...SHORTCUTS].filter((p) => isManager || !p.manager);
+    // a hub's menu entry (Rotation, Mon argent) is a door to its tabs: the tabs themselves are what people search for
+    // a hub's menu entry and its first tab share a page: list it once
+    const visible = NAV.filter((n) => !n.match && (isManager || !n.manager));
+    const pages = visible.filter((n, i) => visible.findIndex((m) => m.href === n.href) === i);
+    const all = [...pages, ...SHORTCUTS].filter((p) => isManager || !p.manager);
     const words = fold(q).split(/\s+/).filter(Boolean);
     const list = words.length
       ? all.filter((p) => words.every((w) => fold(`${p.label} ${"keywords" in p ? p.keywords ?? "" : ""}`).includes(w)))

@@ -4,14 +4,14 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, ScanLine, Search, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { NAV, type NavGroup } from "@/lib/nav";
+import { NAV, NAV_GROUPS, menuItems } from "@/lib/nav";
+import { HubTabs } from "./hub-tabs";
 import { useScanApi } from "./scan-provider";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { ThemeSwitch } from "./theme-switch";
 import type { Theme } from "@/lib/prefs";
 
 const MOBILE = ["/", "/postes", "/stock", "/ventes"];
-const GROUPS: NavGroup[] = ["Pilotage", "Opérations", "Gestion"];
 
 /** A small pulse on the link being opened, until the page is there */
 function Pending() {
@@ -24,7 +24,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
 }) {
   const path = usePathname();
   const { openCamera, openQuick } = useScanApi();
-  const items = NAV.filter((n) => (isManager || !n.manager) && !n.tab);
+  const items = menuItems(isManager);
   const under = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
   const active = (href: string, match?: string[]) => (match ? match.some(under) : under(href));
   const [menu, setMenu] = useState(false);
@@ -50,12 +50,15 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 pb-3">
-          {GROUPS.map((group) => {
+          {NAV_GROUPS.map(({ group, hint }) => {
             const links = items.filter((i) => i.group === group);
             if (!links.length) return null;
             return (
-              <div key={group} className="mt-3 first:mt-0">
-                {isManager && <div className="eyebrow-tight px-3 pb-1.5 text-[10px] text-muted/70">{group}</div>}
+              <div key={group} className="mt-4 first:mt-0" data-nav-group={group}>
+                <div className="flex items-baseline gap-1.5 px-3 pb-1.5">
+                  <span className="eyebrow-tight text-[10px] text-muted/80">{group}</span>
+                  {hint && <span className="text-[11px] text-muted/50">· {hint}</span>}
+                </div>
                 <div className="space-y-0.5">
                   {links.map(({ href, label, icon: Icon, match }) => (
                     <Link
@@ -111,15 +114,24 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
               <span className="eyebrow text-muted">{orgName}</span>
               <button onClick={() => setMenu(false)} aria-label="Fermer" className="flex size-11 items-center justify-center rounded-xl"><X size={20} /></button>
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {items.map(({ href, label, icon: Icon, match }) => (
-                <Link key={label} href={href} onClick={() => setMenu(false)}
-                  className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium ${
-                    active(href, match) ? "bg-accent/12 text-accent ring-1 ring-inset ring-accent/25" : "bg-bg/60 text-fg/85"}`}>
-                  <Icon size={18} /> {label}
-                </Link>
-              ))}
-            </div>
+            {NAV_GROUPS.map(({ group, hint }) => {
+              const links = items.filter((i) => i.group === group);
+              if (!links.length) return null;
+              return (
+                <div key={group} className="mt-3 first:mt-0" data-nav-group={group}>
+                  <div className="px-2 pb-1.5 text-xs font-semibold text-muted">{group}{hint && <span className="font-normal text-muted/60"> · {hint}</span>}</div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {links.map(({ href, label, icon: Icon, match }) => (
+                      <Link key={label} href={href} onClick={() => setMenu(false)}
+                        className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium ${
+                          active(href, match) ? "bg-accent/12 text-accent ring-1 ring-inset ring-accent/25" : "bg-bg/60 text-fg/85"}`}>
+                        <Icon size={18} /> {label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-line px-2 pt-3 text-sm text-muted">
               <span>Thème</span>
               <ThemeSwitch initial={theme} />
@@ -132,7 +144,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
         </div>
       )}
 
-      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div key={path} className="page-in mx-auto max-w-7xl">{children}</div></main>
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div key={path} className="page-in mx-auto max-w-7xl"><HubTabs isManager={isManager} />{children}</div></main>
 
       <KeyboardShortcuts isManager={isManager} />
 

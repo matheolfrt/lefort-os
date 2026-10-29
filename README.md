@@ -156,7 +156,7 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
 
 ## Objectifs et tâches
 
-- **Objectifs** (Pilotage → Objectifs) : chiffre d'affaires, articles vendus et articles mis en ligne, par jour, semaine,
+- **Objectifs** (Mon argent → Objectifs) : chiffre d'affaires, articles vendus et articles mis en ligne, par jour, semaine,
   mois ou année. Une case vide est déduite des autres au même rythme (6 000 € par mois → 194 € par jour en octobre).
   Progression en direct (calendrier de Paris) sur le tableau de bord, avec le reste à faire par jour et la projection.
   L'équipe voit les objectifs en nombre d'articles, pas le chiffre d'affaires.
@@ -179,7 +179,7 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
 
 ## Prix à baisser
 
-- **Suggestions, jamais automatiques** (Pilotage → Prix, `/prix`) : selon le temps en ligne, par défaut −10 % après
+- **Suggestions, jamais automatiques** (Rotation → Prix à baisser, `/prix`) : selon le temps en ligne, par défaut −10 % après
   14 jours, −20 % après 30, −30 % après 45, calculés sur le prix de mise en ligne. Jamais sous le prix minimum de
   l'article ni sous coût + frais Vinted + envoi moyen + 1 € ; pas de nouvelle baisse moins de 7 jours après la
   précédente (une baisse annulée ne compte pas). Règles modifiables sur la page.
@@ -189,10 +189,13 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
 - Rappel sur le tableau de bord. Migration `supabase/migrations/20261106000018_price_suggestions.sql`,
   tests `supabase/tests/pricing_test.sql`.
 
-## Pilotage et confort d'utilisation
+## Navigation et confort d'utilisation
 
-- **Pilotage** : une seule entrée de menu pour Conseils, Écoulement, Niches, Statistiques et Scénarios (onglets,
-  groupe de routes `src/app/(app)/(pilotage)`, URLs inchangées, réservé aux gérants).
+- **Menu en trois parties** (`src/lib/nav.ts`) : **Aujourd'hui** (ce que je fais : tableau de bord, tâches, postes,
+  ventes), **Stock et lots** (ce que j'ai : stock, lots, rotation, fournisseurs, emplacements), **Argent** (ce que je
+  gagne : mon argent, compta). Les pages liées sont des onglets en haut de page (`src/components/hub-tabs.tsx`) :
+  Ventes → Retours, Synchro Vinted ; Rotation → Écoulement, Prix à baisser, Niches ; Mon argent → Vue d'ensemble,
+  Conseils, Objectifs, Statistiques, Scénarios. Les adresses des pages n'ont pas changé.
 - **Stock modifiable sur place** : cliquer sur le prix, l'emplacement ou le statut d'une ligne pour le changer ;
   chaque changement (aussi les actions groupées) propose « Annuler » au lieu d'une confirmation
   (`src/lib/item-edits.ts`, partagé avec la fiche article et ⌘K). Les annulations passent par les mêmes règles
@@ -205,8 +208,9 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
 - **Aide** : écrans vides avec l'action suivante, bulles « ? » sur les chiffres clés.
 - **Thème** : sombre par défaut, clair ou « Auto » (suit l'appareil), au bas du menu ; gardé sur l'appareil (cookie
   `lf_theme`, `src/lib/prefs.ts`).
-- **Tableau de bord** : urgences toujours en haut (expéditions et travail en retard, prix à baisser), puis objectifs,
-  argent et le reste ; « Personnaliser » masque et réordonne les cartes (cookie `lf_dash`, `src/lib/dashboard-layout.ts`).
+- **Tableau de bord** : « Ma journée » et les urgences (expéditions et travail en retard) toujours en haut, puis
+  « Ce mois-ci » en 4 grands chiffres (CA encaissé, bénéfice, ventes, stock ; les autres derrière « Plus de chiffres »),
+  le travail à faire, les objectifs et le reste ; « Personnaliser » masque et réordonne les cartes (cookie `lf_dash`, `src/lib/dashboard-layout.ts`).
 - **Ma journée** : tout en haut, une phrase écrite à partir des chiffres : hier (ventes, CA) contre votre journée
   habituelle (les jours depuis la première vente, jamais des zéros d'avant l'ouverture), puis aujourd'hui : commandes à
   expédier, articles prêts à publier, prix à baisser, et ce qu'il faut par jour pour tenir l'objectif du mois. Pour

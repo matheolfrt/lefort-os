@@ -1,16 +1,16 @@
-// The cards of the dashboard, in their default reading order: what matters today (objectives), the money, then the
-// rest. Urgent alerts are not cards: they always come first and cannot be hidden.
+// The cards of the dashboard, in their default reading order: the month in four figures, the work waiting, the
+// objectives, then the rest. « Ma journée » and the urgent alerts are not cards: they always come first.
 
 export interface DashCard { id: string; label: string; hint: string; manager?: boolean }
 
 export const DASH_CARDS: DashCard[] = [
-  { id: "goals", label: "Objectifs", hint: "CA et ventes du jour et du mois" },
-  { id: "money", label: "Où est mon argent ?", hint: "trésorerie, capital, budget d'achat", manager: true },
+  { id: "month", label: "Ce mois-ci", hint: "CA, bénéfice, ventes, stock (et plus de chiffres)" },
   { id: "todo", label: "À faire maintenant", hint: "articles à trier, photographier, publier…" },
+  { id: "goals", label: "Objectifs", hint: "CA et ventes du jour et du mois" },
   { id: "tasks", label: "Mes tâches du jour", hint: "votre liste de choses à faire" },
   { id: "advice", label: "Conseils", hint: "les priorités calculées", manager: true },
-  { id: "month", label: "Ce mois-ci", hint: "CA, bénéfice, ventes, stock" },
   { id: "trend", label: "Évolution des ventes", hint: "le mois et la semaine, jour par jour", manager: true },
+  { id: "money", label: "Où est mon argent ?", hint: "trésorerie, capital, budget d'achat", manager: true },
   { id: "pipeline", label: "Chaîne de production", hint: "articles à chaque étape" },
   { id: "health", label: "Santé de l'activité", hint: "CA sur 12 mois, âge du stock, seuils micro" },
 ];
