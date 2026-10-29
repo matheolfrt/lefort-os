@@ -9,7 +9,10 @@ export type Fmt = (v: number) => string;
  * the words « au-dessus / en dessous » (never the colour alone); green or red only when the direction is good or bad
  * news, grey when it is the same level or the sample is too small to say.
  */
-export function CompareLines({ c, fmt, days = false }: { c: Comparison; fmt: Fmt; days?: boolean }) {
+/** How a gap is written: relative (« 18 % »), in days (« 3 j »), or in points for a rate (« 5 pts ») */
+export type GapUnit = "pct" | "days" | "points";
+
+export function CompareLines({ c, fmt, unit = "pct" }: { c: Comparison; fmt: Fmt; unit?: GapUnit }) {
   const refs = [c.prev, c.avg].filter((r): r is Ref => r != null);
   if (c.cur == null || !refs.length) return null;
   return (
@@ -18,7 +21,7 @@ export function CompareLines({ c, fmt, days = false }: { c: Comparison; fmt: Fmt
         const reliable = !c.sample || (c.n >= LOW_SAMPLE && r.n >= LOW_SAMPLE);
         const g = gap(c.cur, r, c.better, reliable)!;
         // « +400 % » reads badly: from three times as much, say « ×5 »
-        const amount = days ? `${Math.abs(Math.round(g.diff))} j` : g.pct == null ? ""
+        const amount = unit === "days" ? `${Math.abs(Math.round(g.diff))} j` : unit === "points" ? `${Math.abs(Math.round(g.diff))} pts` : g.pct == null ? ""
           : g.pct >= 2 ? `×${(1 + g.pct).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}` : `${Math.round(Math.abs(g.pct) * 100)} %`;
         const [arrow, word] = g.verdict === "same" ? ["=", "au même niveau"] : g.verdict === "above" ? ["↑", "au-dessus"] : ["↓", "en dessous"];
         const tone = g.good == null ? "text-muted" : g.good ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400";

@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { LOW_SAMPLE, loadDashboard, type PeriodResult } from "@/lib/dashboard";
+import { LOW_SAMPLE, loadDashboard, returnsLoss, type PeriodResult } from "@/lib/dashboard";
 import { buildAdvice, eur as eur0, type Advice, type Facts } from "@/lib/advisor";
 import { sellThroughAdvice, type SellThroughStats } from "@/lib/sellthrough";
 import { PIPELINE, STATUS_LABEL, STATUS_DOT } from "@/i18n/fr";
@@ -21,7 +21,7 @@ import { PriceReminder } from "@/components/dashboard/price-reminder";
 import { FinanceCard, FinanceCardSkeleton } from "@/components/dashboard/finance-card";
 import { VintedAlert } from "@/components/dashboard/vinted-alert";
 import { DayBrief, DayBriefSkeleton } from "@/components/dashboard/day-brief";
-import { CompareLines, Sparkline, type Fmt } from "@/components/dashboard/compare";
+import { CompareLines, Sparkline, type Fmt, type GapUnit } from "@/components/dashboard/compare";
 import type { Comparison } from "@/lib/compare";
 import { DashboardCustomize } from "@/components/dashboard/customize";
 import { resolveLayout } from "@/lib/dashboard-layout";
@@ -33,6 +33,8 @@ const eur = (cents: number | null | undefined) => (cents == null ? "—" : euro0
 const eurFmt: Fmt = (c) => eur(c);
 const countFmt: Fmt = (n) => (Number.isInteger(n) ? String(n) : n.toLocaleString("fr-FR", { maximumFractionDigits: 1 }));
 const daysFmt: Fmt = (n) => `${Math.round(n)} j`;
+const pctFmt: Fmt = (n) => `${Math.round(n)} %`;
+const rate = (v: number) => `${v.toLocaleString("fr-FR", { maximumFractionDigits: v < 10 ? 1 : 0 })} %`;
 
 export default async function Dashboard() {
   const ctx = await getContext();
@@ -62,6 +64,9 @@ export default async function Dashboard() {
   // late work other than shipping (which has its own line): the oldest item waits longer than it should
   const lateWork = todo.filter((t) => t.href !== "/postes/expedition" && t.count > 0 && t.lateAfter != null && (t.oldestDays ?? 0) >= t.lateAfter);
   const { order, hidden } = resolveLayout(await getDashLayout(), ctx.isManager);
+  // the shown prices corrected by what buyers really pay (managers, with enough recent sales)
+  const realisedRatio = f?.realised && f.realised.ratio != null && f.realised.n >= LOW_SAMPLE ? Number(f.realised.ratio) : null;
+  const ret = f?.returns && f.returns.sold > 0 ? f.returns : null;
 
   const cards: Record<string, ReactNode> = {
     todo: (
@@ -82,7 +87,7 @@ export default async function Dashboard() {
     advice: <Suspense fallback={<AdviceSkeleton />}><AdviceCard quarterly={ctx.org.declaration_frequency === "quarterly"} /></Suspense>,
     month: (
       <Section title={f ? "Ce mois-ci" : "Stock"}>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-2 md:grid-cols-4 ${f ? "xl:grid-cols-5" : ""}`}>
           {f && (
             <>
               <Kpi label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} cmp={f.compare.cashed} fmt={eurFmt}
@@ -96,16 +101,32 @@ export default async function Dashboard() {
           <Kpi label="Stock" value={String(d.stock.count)} hint={`dont ${d.stock.listedCount} en ligne`} />
           {f && <Kpi label="Valeur d'achat du stock" value={eur(f.stockCostCents)} hint="coût de revient"
             help="Ce que vous avez payé pour les articles encore en stock (part du lot + frais). C'est l'argent immobilisé à faire tourner." />}
-          <Kpi label="Valeur de vente potentielle" value={eur(d.stock.potentialCents)}
-            hint={`${d.stock.pricedCount} article${d.stock.pricedCount > 1 ? "s" : ""} avec un prix`}
-            help="Somme des prix affichés des articles en stock. Les articles sans prix ne sont pas comptés." />
+          {realisedRatio != null ? (
+            <Kpi label="Valeur de vente probable" value={eur(d.stock.potentialCents * realisedRatio)}
+              hint={`prix affichés ${eur(d.stock.potentialCents)} · vendus en moyenne ${Math.round(realisedRatio * 100)} % du prix`}
+              n={f!.realised!.n}
+              help={`Ce que le stock devrait vraiment rapporter : la somme des prix affichés (${d.stock.pricedCount} articles avec un prix), corrigée par ce que les acheteurs ont réellement payé sur vos ventes des ${f!.realised!.days} derniers jours (offres et rabais compris).`} />
+          ) : (
+            <Kpi label="Valeur de vente potentielle" value={eur(d.stock.potentialCents)}
+              hint={`${d.stock.pricedCount} article${d.stock.pricedCount > 1 ? "s" : ""} avec un prix${f?.realised ? " · prix affichés, pas encore assez de ventes pour corriger" : ""}`}
+              help="Somme des prix affichés des articles en stock. Les articles sans prix ne sont pas comptés." />
+          )}
           {f && (
             <>
               <Kpi label="Panier moyen" value={eur(f.avgBasket.cents)} hint="par commande ce mois" n={f.avgBasket.n} cmp={f.compare.basket} fmt={eurFmt}
                 help="Montant moyen d'une commande (un lot de plusieurs articles compte pour une commande)." />
-              <Kpi label="Délai moyen de vente" value={f.avgDaysToSell.days == null ? "—" : `${Math.round(f.avgDaysToSell.days)} j`}
-                hint="mise en ligne → vente, 90 j" n={f.avgDaysToSell.n} cmp={f.compare.delay} fmt={daysFmt} days
-                help="Nombre moyen de jours entre la mise en ligne et la vente, sur les ventes des 90 derniers jours. Plus c'est court, plus votre argent tourne vite." />
+              <Kpi label="Délai de vente" value={f.avgDaysToSell.days == null ? "—" : `${Math.round(f.avgDaysToSell.days)} j`}
+                hint={`médiane, ventes des 90 j${f.avgDaysToSellMean != null ? ` · moyenne ${Math.round(f.avgDaysToSellMean)} j` : ""}`}
+                n={f.avgDaysToSell.n} cmp={f.compare.delay} fmt={daysFmt} unit="days"
+                help="Jours entre la mise en ligne et la vente, sur les ventes des 90 derniers jours. La médiane : la moitié des articles se vendent plus vite, l'autre moitié plus lentement ; quelques ventes très longues ne la faussent pas, contrairement à la moyenne. Elle ne voit que les articles vendus : regardez « Vendus en 30 jours » pour les invendus." />
+              <Kpi label="Vendus en 30 jours" value={f.compare.sold30.cur == null ? "—" : pctFmt(f.compare.sold30.cur)}
+                hint="des articles mis en ligne il y a 1 à 4 mois" n={f.compare.sold30.n} cmp={f.compare.sold30} fmt={pctFmt} unit="points"
+                help="Part des articles mis en ligne il y a 1 à 4 mois qui se sont vendus dans leurs 30 premiers jours. Tous comptent, invendus compris : c'est la vraie vitesse d'écoulement, que le délai de vente seul embellit." />
+              {ret && (
+                <Kpi label="Retours" value={rate((ret.returned * 100) / ret.sold)} href="/ventes/retours"
+                  hint={`${ret.returned} sur ${ret.sold} ventes, 12 mois · ${eur(returnsLoss(ret))} perdus`} n={ret.sold}
+                  help="Part des ventes des 12 derniers mois revenues en retour. Perdu : les frais et le port payés pour rien, la revente moins chère des articles revenus, et les remboursements sans retour (gestes commerciaux). Le détail par marque, taille et motif est sur la page Retours." />
+              )}
             </>
           )}
         </div>
@@ -264,23 +285,24 @@ function SampleSize({ n }: { n: number }) {
   );
 }
 
-function Kpi({ label, value, hint, n, tone, help, cmp, fmt, days }: {
+function Kpi({ label, value, hint, n, tone, help, cmp, fmt, unit, href }: {
   label: string; value: string; hint?: string; n?: number; tone?: "bad"; help?: string;
-  cmp?: Comparison; fmt?: Fmt; days?: boolean; // compared with last month and the months before, with its last 30 days
+  cmp?: Comparison; fmt?: Fmt; unit?: GapUnit; // compared with last month and the months before, with its last 30 days
+  href?: string; // the page with the detail
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-line bg-panel/80 px-3.5 py-3" data-kpi={label}>
+    <div className="relative flex flex-col rounded-2xl border border-line bg-panel/80 px-3.5 py-3 transition has-[a.kpi-link:hover]:border-fg/30" data-kpi={label}>
       <div className="flex items-center justify-between gap-2">
         <span className="eyebrow-tight flex items-start gap-1 text-muted">{label}{help && <Help text={help} />}</span>
         {n != null && <SampleSize n={n} />}
       </div>
       <div className={`mt-1 text-[26px] font-mono font-semibold leading-tight tabular-nums tracking-tight ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
-        {value}
+        {href ? <Link href={href} className="kpi-link after:absolute after:inset-0 after:rounded-2xl">{value}<ChevronRight size={18} aria-hidden className="ml-1 inline align-middle text-muted" /><span className="sr-only"> : voir le détail</span></Link> : value}
       </div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
       {cmp && fmt && (
         <div className="mt-auto">
-          <CompareLines c={cmp} fmt={fmt} days={days} />
+          <CompareLines c={cmp} fmt={fmt} unit={unit} />
           <Sparkline values={cmp.spark} fmt={fmt} label={label} />
         </div>
       )}

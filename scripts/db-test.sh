@@ -66,4 +66,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_lots -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_lots -f supabase/tests/lot_rotation_test.sql >/dev/null
+# Lot payback, returns, realised price on their own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_kpi" -c "create database ${DB}_kpi"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_kpi -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_kpi -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_kpi -f supabase/tests/kpi_precision_test.sql >/dev/null
 echo "DB tests passed"

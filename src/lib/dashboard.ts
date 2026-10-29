@@ -47,7 +47,24 @@ export interface FinanceData {
   trend: { month: TrendPeriod; week: TrendPeriod };
   /** each figure of the month against the same days of last month and the months before */
   compare: Record<MetricId, Comparison>;
+  /** mean time to sell over the same 90 days, shown next to the median */
+  avgDaysToSellMean: number | null;
+  /** what buyers paid against the price shown (last 90 days); absent before the database update */
+  realised: Realised | null;
+  /** returns over the last 12 months; absent before the database update */
+  returns: ReturnStats | null;
 }
+
+export interface Realised { days: number; n: number; paid_cents: number; shown_cents: number; ratio: number | null }
+export interface ReturnStats {
+  from: string; to: string; sold: number; returned: number; refunded_cents: number;
+  lost_fees_cents: number; resold: number; resale_loss_cents: number; goodwill_cents: number; goodwill_n: number;
+  by_brand: { label: string; sold: number; returned: number }[];
+  by_size: { label: string; sold: number; returned: number }[];
+  by_reason: { label: string; n: number }[];
+}
+/** What returns cost: fees paid for nothing, cheaper resales, goodwill refunds */
+export const returnsLoss = (r: ReturnStats) => Number(r.lost_fees_cents) + Number(r.resale_loss_cents) + Number(r.goodwill_cents);
 
 const DAY = 86_400_000;
 const ageDays = (iso: string, now: number) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / DAY));
@@ -132,11 +149,11 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
   const since12 = new Date(Date.UTC(p.year, p.monthIdx - 11, 1)).toISOString().slice(0, 10);
   // comparisons go back three months (same days); a day of margin for the Paris calendar
   const since3 = new Date(Date.UTC(p.year, p.monthIdx - 3, 1) - DAY).toISOString().slice(0, 10);
-  const [econ, { data: turnover }, recentOrders, cashRows, { data: rates }, { data: goals }] = await Promise.all([
-    fetchAll<{ status: ItemStatus; sold_at: string | null; cost_cents: number; revenue_cents: number; variable_costs_cents: number;
+  const [econ, { data: turnover }, recentOrders, cashRows, { data: rates }, { data: goals }, realised, returns] = await Promise.all([
+    fetchAll<{ status: ItemStatus; listed_at: string | null; sold_at: string | null; cost_cents: number; revenue_cents: number; variable_costs_cents: number;
       vat_cents: number; gross_profit_cents: number; is_sold: boolean; days_to_sell: number | null }>(
       (from, to) => supabase.from("v_item_economics")
-        .select("status, sold_at, cost_cents, revenue_cents, variable_costs_cents, vat_cents, gross_profit_cents, is_sold, days_to_sell")
+        .select("status, listed_at, sold_at, cost_cents, revenue_cents, variable_costs_cents, vat_cents, gross_profit_cents, is_sold, days_to_sell")
         .range(from, to),
     ),
     supabase.from("v_monthly_turnover").select("month, turnover_cents").gte("month", since12).order("month"),
@@ -148,6 +165,9 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
       .order("valid_from", { ascending: false }),
     // objectives (Objectifs) draw the pace line; absent until the database update that adds them
     supabase.from("goals").select("period, metric, target").then((r) => (r.error ? { data: [] } : r)),
+    // migration 0022: absent before that database update, then the figures simply are not shown
+    supabase.rpc("realised_price", { p_days: 90 }).then((r) => (r.error ? null : (r.data as Realised))),
+    supabase.rpc("return_stats").then((r) => (r.error ? null : (r.data as ReturnStats))),
   ]);
 
   // current contribution rate: latest rate of each kind
@@ -181,8 +201,13 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
     orders: recentOrders.map((o) => ({ day: parisDay(o.sold_at), gross: Number(o.gross_cents) })),
     cash: cashRows.map((c) => ({ day: String(c.date_encaissement).slice(0, 10), cents: Number(c.montant_cents) })),
     ratePct,
+    // every item that went on sale, sold or not (written-off ones never had their chance to sell)
+    listed: econ.filter((e) => e.listed_at && e.status !== "rejected").map((e) => ({
+      listed: parisDay(e.listed_at!), sold: e.is_sold && e.sold_at ? parisDay(e.sold_at) : null })),
     since: soldRows.reduce<string | null>((m, r) => (m == null || r.day < m ? r.day : m), null),
   });
+  const ninety = parisDay(new Date(now - 89 * DAY));
+  const delays = soldRows.filter((r) => r.day >= ninety && r.e.days_to_sell != null && Number(r.e.days_to_sell) >= 0).map((r) => Number(r.e.days_to_sell));
 
   data.finance = {
     monthCashedCents: months.at(-1)?.cents ?? 0,
@@ -198,6 +223,9 @@ export async function loadDashboard(supabase: SupabaseClient, org: Organization,
     trend: buildTrend(econ.filter((e) => e.is_sold), new Date(now),
       ((goals ?? []) as { period: string; metric: string; target: number }[])),
     compare,
+    avgDaysToSellMean: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null,
+    realised,
+    returns,
   };
   return data;
 }

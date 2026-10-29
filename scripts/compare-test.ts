@@ -1,7 +1,8 @@
 // Unit tests of the comparisons (src/lib/compare.ts) and of « Ma journée » (src/lib/day-brief.ts).
 // Run: npm run test:compare
 import assert from "node:assert/strict";
-import { compareAll, gap, monthsBack, type SoldRow } from "../src/lib/compare";
+import { compareAll, gap, median, monthsBack, type SoldRow } from "../src/lib/compare";
+import { payback, type PaybackRow } from "../src/lib/payback";
 import { dayBrief, joinFr } from "../src/lib/day-brief";
 import type { GoalProgress } from "../src/lib/goals";
 
@@ -102,6 +103,73 @@ test("écart : au-dessus, en dessous, au même niveau, et rien de bon ni de mauv
   assert.equal(zero.pct, null);
   assert.equal(zero.verdict, "above");
   assert.equal(gap(null, ref, "up"), null);
+});
+
+test("délai de vente : la médiane, quelques ventes très longues ne la tirent pas", () => {
+  assert.equal(median([3, 1, 2]), 2);
+  assert.equal(median([1, 2, 3, 100]), 2.5);
+  assert.equal(median([]), null);
+  const sold = [5, 6, 7, 8, 200].map((d, i) => sale(`2026-10-${10 + i}`, 1, 0, d));
+  const c = compareAll({ today: "2026-10-29", sold, orders: [], cash: [], ratePct: 0 });
+  assert.equal(c.delay.cur, 7, "la moyenne dirait 45 jours");
+});
+
+test("vendus en 30 jours : tous les articles mis en ligne comptent, invendus compris", () => {
+  // as of 29 Oct the cohort is the items listed from 1 July to 29 Sept (they all had their 30 days)
+  const listed = [
+    { listed: "2026-09-01", sold: "2026-09-10" },  // 9 days: yes
+    { listed: "2026-09-01", sold: "2026-10-01" },  // 30 days: yes
+    { listed: "2026-08-01", sold: "2026-09-15" },  // 45 days: no
+    { listed: "2026-08-15", sold: null },          // never: no — an average time to sell would not see it
+    { listed: "2026-10-15", sold: "2026-10-16" },  // listed 2 weeks ago: not yet in the cohort
+    { listed: "2026-06-15", sold: "2026-06-16" },  // too old for this cohort
+  ];
+  const c = compareAll({ today: "2026-10-29", sold: [], orders: [], cash: [], listed, ratePct: 0 });
+  assert.equal(c.sold30.cur, 50);
+  assert.equal(c.sold30.n, 4);
+  assert.equal(c.sold30.better, "up");
+  // a month earlier (29 Sept): listed 2 June – 30 Aug → 45 days, never sold, 16 June (1 day)
+  assert.equal(c.sold30.prev!.value, (1 * 100) / 3);
+});
+
+// ── Remboursement des lots
+const lotRow = (p: Partial<PaybackRow> = {}): PaybackRow => ({
+  batch_id: "b", code: "LOT", purchased_at: "2026-09-01", listing_started_at: "2026-09-05", cost_cents: 10000,
+  recovered_cents: 0, pending_cents: 0, cashed_sales: 0, first_cash_at: null, last_cash_at: null, payback_at: null, ...p,
+});
+const at = (d: string) => new Date(`${d}T12:00:00Z`).getTime();
+
+test("lot remboursé : la date et le nombre de jours depuis l'achat et la mise en ligne", () => {
+  const p = payback(lotRow({ recovered_cents: 11500, cashed_sales: 3, first_cash_at: "2026-09-10T10:00:00Z", payback_at: "2026-10-06T10:00:00Z" }), at("2026-10-29"));
+  assert.equal(p.status, "rembourse");
+  assert.equal(p.daysFromPurchase, 35);
+  assert.equal(p.daysFromStart, 31);
+  assert.equal(Math.round(p.pct), 115);
+  assert.equal(p.remaining, 0);
+});
+
+test("lot en cours : pourcentage, reste, argent en route, estimation seulement avec assez de ventes", () => {
+  const base = { recovered_cents: 6000, pending_cents: 2500, first_cash_at: "2026-09-10T10:00:00Z" };
+  const early = payback(lotRow({ ...base, cashed_sales: 4 }), at("2026-10-05"));
+  assert.equal(early.status, "en_cours");
+  assert.equal(early.pct, 60);
+  assert.equal(early.remaining, 4000);
+  assert.equal(early.pending, 2500);
+  assert.equal(early.projection, null, "4 ventes : pas d'estimation");
+  // 6 sales, 60 € in 30 days since the start of the listing (5 Sept → 5 Oct): 2 €/day, 40 € left → 20 days
+  const p = payback(lotRow({ ...base, cashed_sales: 6, listing_started_at: "2026-09-05T12:00:00Z" }), at("2026-10-05"));
+  assert.equal(Math.round(p.projection!.days), 20);
+  assert.equal(p.projection!.at.slice(0, 10), "2026-10-25");
+});
+
+test("lot sans coût, rien encaissé, tout vendu sans être remboursé", () => {
+  assert.equal(payback(lotRow({ cost_cents: 0 })).status, "sans_cout");
+  assert.equal(payback(lotRow()).status, "pas_commence");
+  const loss = payback(lotRow({ recovered_cents: 8000, cashed_sales: 9, first_cash_at: "2026-09-10T10:00:00Z" }), at("2026-10-29"), 0);
+  assert.equal(loss.status, "perte");
+  assert.equal(loss.remaining, 2000);
+  assert.equal(payback(lotRow({ recovered_cents: 8000, pending_cents: 3000, cashed_sales: 9, first_cash_at: "2026-09-10T10:00:00Z" }), at("2026-10-29"), 0).status,
+    "en_cours", "de l'argent est encore en route");
 });
 
 // ── « Ma journée »

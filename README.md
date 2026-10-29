@@ -249,6 +249,25 @@ vue `v_lot_rotation` de `supabase/migrations/20261109000021_lot_rotation.sql`) :
 - Tests : `npm run test:lots` et `supabase/tests/lot_rotation_test.sql` (300 blazers : 29 j de mise en ligne, 20 j de
   vente moyenne, 59 j de liquidation depuis le premier listing).
 
+## Indicateurs précis (remboursement, retours, écoulement, valeur probable)
+
+Mise à jour de la base `20261110000022_kpi_precision` (gérants seulement : ce sont des chiffres d'argent).
+
+- **Remboursement des lots** (fiche lot, colonne « Remboursé » de la liste) : l'argent réellement encaissé pour les
+  articles du lot (ventes payées, frais Vinted, port, emballage et TVA déduits, remboursements retirés) comparé à son
+  coût. Le lot est remboursé le jour où cet argent atteint le coût et y reste : un retour qui le fait repasser dessous
+  annule la date jusqu'au prochain passage. Les ventes pas encore payées sont montrées à part (« en route »).
+  Estimation de la date seulement avec 5 ventes payées et 14 jours de ventes. Lot entièrement vendu sous son coût :
+  « Non remboursé ». (`v_lot_payback`, `src/lib/payback.ts`)
+- **Retours** (`/ventes/retours`, tuile « Retours » du tableau de bord) : taux de retour sur les ventes de la période,
+  et ce qu'ils ont coûté : frais et port payés pour rien, revente moins chère des articles revenus, remboursements sans
+  retour. Détail par taille, marque (« à surveiller » au-dessus de 1,5 × le taux moyen avec au moins 2 retours) et
+  motif. Le port du retour payé par le vendeur n'est pas enregistré : il n'est pas compté. (`return_stats`)
+- **Délai de vente** : la **médiane** (la moyenne est affichée à côté) ; **Vendus en 30 jours** : part des articles
+  mis en ligne il y a 1 à 4 mois vendus dans leurs 30 premiers jours, invendus compris.
+- **Valeur de vente probable** : prix affichés du stock × ce que les acheteurs paient vraiment (ventes des 90 derniers
+  jours, à partir de 10 ventes ; sinon la valeur affichée reste, avec la mention). (`realised_price`)
+
 ## Où est mon argent ? (Financial Command Center)
 
 `/finance` (responsables, menu « Finance », raccourci `g f`, carte sur le tableau de bord). Huit sections : capital

@@ -1,15 +1,18 @@
 // « Est-ce bien ou pas ? » — every figure of the month against the same days of last month and against the average of
 // the three months before (same days too: the 1st to the 29th against the 1st to the 29th, never a whole month).
-// The average time to sell is a rolling 90 days: it is compared with itself one, two, three months earlier.
+// The time to sell (median, a few very long sales do not drag it) is a rolling 90 days, and the share sold within 30 days
+// follows the items listed 1 to 4 months before: both are compared with themselves one, two, three months earlier.
 // Pure functions on Paris days (YYYY-MM-DD), shared by the dashboard and its tests.
 
 import { addDays } from "@/lib/trend";
 
-export type MetricId = "cashed" | "profit" | "sales" | "basket" | "delay";
+export type MetricId = "cashed" | "profit" | "sales" | "basket" | "delay" | "sold30";
 
 export interface SoldRow { day: string; revenue: number; costs: number; delay: number | null }
 export interface OrderRow { day: string; gross: number }
 export interface CashRow { day: string; cents: number }
+/** An item that went on sale (first listing day) and the day it sold, if it did */
+export interface ListedRow { listed: string; sold: string | null }
 
 export interface Ref { value: number; n: number; label: string; detail: string }
 export interface Comparison {
@@ -52,21 +55,39 @@ function rollingWindow(today: string, k: number): Window {
   return { from: addDays(to, -89), to, month: m - 1,
     label: k === 1 ? "mois dernier" : `il y a ${k} mois`, detail: `les 90 jours au ${first(d)} ${MONTHS[m - 1]}` };
 }
+/**
+ * The items that had their full 30 days, as seen `k` months back: listed 30 to 119 days before that day. Every one of
+ * them counts, sold or not — the unsold ones are what an average time to sell leaves out.
+ */
+function cohortWindow(today: string, k: number): Window {
+  const ref = monthsBack(today, k);
+  const [, m, d] = ref.split("-").map(Number);
+  return { from: addDays(ref, -119), to: addDays(ref, -30), month: m - 1,
+    label: k === 1 ? "mois dernier" : `il y a ${k} mois`, detail: `les articles mis en ligne 1 à 4 mois avant le ${first(d)} ${MONTHS[m - 1]}` };
+}
+export const SOLD_WITHIN = 30;
 
 const inW = (day: string, w: { from: string; to: string }) => day >= w.from && day <= w.to;
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+export function median(xs: number[]): number | null {
+  if (!xs.length) return null;
+  const v = [...xs].sort((a, b) => a - b), h = v.length >> 1;
+  return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2;
+}
 
 export interface CompareInput {
   today: string;
   sold: SoldRow[];
   orders: OrderRow[];
   cash: CashRow[];
+  listed?: ListedRow[];
   ratePct: number;   // contributions on the revenue, to get the profit after them
   since?: string | null; // first day of activity: months before it are not « zero », they did not exist
 }
 
 export function compareAll(input: CompareInput): Record<MetricId, Comparison> {
   const { today, sold, orders, cash, ratePct } = input;
+  const listed = input.listed ?? [];
   const since = input.since ?? null;
   const profit = (rows: SoldRow[]) => {
     const revenue = rows.reduce((s, r) => s + r.revenue, 0);
@@ -80,7 +101,13 @@ export function compareAll(input: CompareInput): Record<MetricId, Comparison> {
     basket: (w) => { const g = orders.filter((o) => inW(o.day, w)).map((o) => o.gross); return { value: mean(g), n: g.length }; },
     delay: (w) => {
       const d = sold.filter((s) => inW(s.day, w) && s.delay != null && s.delay >= 0).map((s) => s.delay!);
-      return { value: mean(d), n: d.length };
+      return { value: median(d), n: d.length };
+    },
+    // share (0–100) of the items listed in the window that sold within 30 days of their listing
+    sold30: (w) => {
+      const c = listed.filter((l) => inW(l.listed, w));
+      const ok = c.filter((l) => l.sold != null && l.sold <= addDays(l.listed, SOLD_WITHIN)).length;
+      return { value: c.length ? (ok * 100) / c.length : null, n: c.length };
     },
   };
 
@@ -92,15 +119,16 @@ export function compareAll(input: CompareInput): Record<MetricId, Comparison> {
     sales: last30.map((d) => measure.sales({ from: d, to: d }).value),
     basket: last30.map((d) => measure.basket({ from: addDays(d, -6), to: d }).value),
     delay: last30.map((d) => measure.delay({ from: addDays(d, -29), to: d }).value),
+    sold30: last30.map((d) => measure.sold30({ from: addDays(d, -119), to: addDays(d, -30) }).value),
   };
 
   const out = {} as Record<MetricId, Comparison>;
   for (const id of Object.keys(measure) as MetricId[]) {
-    const rolling = id === "delay";
-    const win = (k: number) => (rolling ? rollingWindow(today, k) : monthWindow(today, k));
-    const averaged = id === "basket" || id === "delay";
+    const rolling = id === "delay" || id === "sold30";
+    const win = (k: number) => (id === "sold30" ? cohortWindow(today, k) : rolling ? rollingWindow(today, k) : monthWindow(today, k));
+    const averaged = id === "basket" || id === "delay" || id === "sold30";
     // a window that ended before the activity started is not a « zero » month
-    const exists = (w: Window) => !since || w.to >= since;
+    const exists = (w: Window) => !since || w.to >= since || id === "sold30";
     const cur = measure[id](win(0));
 
     const w1 = win(1);
@@ -111,15 +139,20 @@ export function compareAll(input: CompareInput): Record<MetricId, Comparison> {
     let avg: Ref | null = null;
     if (olds.length >= 2) {
       const vals = olds.map((w) => measure[id](w));
-      const n = vals.reduce((s, v) => s + v.n, 0);
-      // averages are pooled (every sale weighs the same), totals are averaged month by month
-      const value = averaged
-        ? (n ? olds.reduce((s, w) => s + sumOf(id, w), 0) / n : null)
+      const known = vals.filter((v) => v.value != null);
+      // overlapping windows share their sales: the smallest one says how much data there is
+      const n = rolling ? Math.min(...known.map((v) => v.n), Infinity) : vals.reduce((s, v) => s + v.n, 0);
+      const months = rolling ? known.length : olds.length;
+      // the basket is pooled (every order weighs the same); totals are averaged month by month; the rolling figures
+      // overlap from one month to the next, so each month's value counts once
+      const value = id === "basket" ? (n ? olds.reduce((s, w) => s + basketSum(w), 0) / n : null)
+        : rolling ? (known.length >= 2 ? known.reduce((s, v) => s + v.value!, 0) / known.length : null)
         : vals.reduce((s, v) => s + (v.value ?? 0), 0) / vals.length;
       const lo = olds.at(-1)!, hi = olds[0];
       if (value != null) {
-        avg = { value, n, label: `moy. ${olds.length} mois`,
-          detail: rolling ? `la moyenne des ${olds.length} mois précédents, sur 90 jours glissants`
+        avg = { value, n, label: `moy. ${months} mois`,
+          detail: id === "sold30" ? `la moyenne des ${months} mois précédents`
+            : rolling ? `la moyenne des ${months} mois précédents, sur 90 jours glissants`
             : `la moyenne de ${MONTHS[lo.month]} à ${MONTHS[hi.month]}, ${monthWindow(today, 0).detail.replace(/ \S+$/, "")} de chaque mois` };
       }
     }
@@ -127,9 +160,8 @@ export function compareAll(input: CompareInput): Record<MetricId, Comparison> {
   }
   return out;
 
-  function sumOf(id: MetricId, w: { from: string; to: string }) {
-    if (id === "basket") return orders.filter((o) => inW(o.day, w)).reduce((s, o) => s + o.gross, 0);
-    return sold.filter((s) => inW(s.day, w) && s.delay != null && s.delay >= 0).reduce((s, r) => s + r.delay!, 0);
+  function basketSum(w: { from: string; to: string }) {
+    return orders.filter((o) => inW(o.day, w)).reduce((s, o) => s + o.gross, 0);
   }
 }
 

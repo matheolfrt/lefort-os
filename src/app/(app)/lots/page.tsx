@@ -6,6 +6,8 @@ import { Card, Empty, PageHeader, btn } from "@/components/ui";
 import { date, money, pct } from "@/lib/format";
 import { LotStatusChip } from "@/components/lots/lot-performance";
 import { days, rotation, type LotRow } from "@/lib/lot-rotation";
+import { payback, type PaybackRow } from "@/lib/payback";
+import { PaybackChip } from "@/components/lots/lot-payback";
 
 export default async function Batches({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const ctx = await getContext();
@@ -15,13 +17,17 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
     const { data } = await supabase.from("batches").select("id").eq("code", code).maybeSingle();
     if (data) redirect(`/lots/${data.id}`);
   }
-  const [{ data: progress }, { data: econ }, { data: rot }] = await Promise.all([
+  const [{ data: progress }, { data: econ }, { data: rot }, { data: pay }] = await Promise.all([
     supabase.from("v_batch_progress").select("*").order("purchased_at", { ascending: false }),
     ctx.isManager ? supabase.from("v_batch_profitability").select("*") : Promise.resolve({ data: [] }),
     supabase.from("v_lot_rotation").select("*"),
+    // money in against cost (migration 0022, managers): absent before that database update
+    ctx.isManager ? supabase.from("v_lot_payback").select("*") : Promise.resolve({ data: [] }),
   ]);
   const econById = new Map((econ ?? []).map((e) => [e.batch_id, e]));
   const rotById = new Map((rot ?? []).map((x) => [x.batch_id as string, rotation(x as LotRow)]));
+  const payById = new Map((pay ?? []).map((x) => [x.batch_id as string, payback(x as PaybackRow, Date.now(), rotById.get(x.batch_id)?.remaining ?? null)]));
+  const showPay = payById.size > 0;
 
   return (
     <>
@@ -48,10 +54,11 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted">{b.supplier_name}{rotById.get(b.batch_id) && <LotStatusChip status={rotById.get(b.batch_id)!.status} />}</div>
                     <Funnel b={b} />
                     {ctx.isManager && e && (
-                      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-2 text-sm">
+                      <div className="mt-3 grid grid-cols-4 gap-2 border-t border-line pt-2 text-sm">
                         <div><div className="text-[10px] font-semibold uppercase text-muted">Coût</div><div className="tabular-nums">{money(e.total_cost_cents)}</div></div>
                         <div><div className="text-[10px] font-semibold uppercase text-muted">CA</div><div className="tabular-nums">{money(e.revenue_cents)}</div></div>
                         <div><div className="text-[10px] font-semibold uppercase text-muted">ROI</div><div className={`font-semibold tabular-nums ${Number(e.roi_pct) < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{pct(e.roi_pct)}</div></div>
+                        {payById.get(b.batch_id) && <div><div className="text-[10px] font-semibold uppercase text-muted">Remboursé</div><PaybackChip p={payById.get(b.batch_id)!} /></div>}
                       </div>
                     )}
                   </Link>
@@ -65,7 +72,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
                 <thead>
                   <tr>
                     <th>Lot</th><th>Fournisseur</th><th>Achat</th><th>Statut</th><th>Avancement</th><th className="num" title="Délai moyen de vente d'un article, depuis sa propre mise en ligne">Vente moy.</th>
-                    {ctx.isManager && (<><th className="num">Coût</th><th className="num">CA</th><th className="num">Profit</th><th className="num">ROI</th></>)}
+                    {ctx.isManager && (<><th className="num">Coût</th><th className="num">CA</th><th className="num">Profit</th><th className="num">ROI</th>{showPay && <th title="Argent encaissé pour le lot (frais déduits) par rapport à son coût : ✓ et le nombre de jours après l'achat une fois remboursé">Remboursé</th>}</>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -88,6 +95,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
                             <td className="num">{money(e?.revenue_cents)}</td>
                             <td className={`num font-semibold ${Number(e?.profit_cents) < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{money(e?.profit_cents)}</td>
                             <td className="num">{pct(e?.roi_pct)}</td>
+                            {showPay && <td>{payById.get(b.batch_id) ? <PaybackChip p={payById.get(b.batch_id)!} /> : "—"}</td>}
                           </>
                         )}
                       </tr>

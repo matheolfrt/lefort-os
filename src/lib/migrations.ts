@@ -30,6 +30,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "20261107000019_finance", marker: "finance_overview", args: {} },
   { file: "20261108000020_vinted_reconcile", marker: "vinted_sync_status", args: {} },
   { file: "20261109000021_lot_rotation", marker: "set_listing_started", args: { p_batch_id: "00000000-0000-0000-0000-000000000000" } },
+  { file: "20261110000022_kpi_precision", marker: "realised_price", args: {} },
 ];
 
 const notFound = (code?: string) => code === "PGRST202" || code === "PGRST205" || code === "42883" || code === "42P01";

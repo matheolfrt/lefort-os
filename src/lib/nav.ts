@@ -50,6 +50,7 @@ export const SHORTCUTS: { href: string; label: string; manager: boolean }[] = [
   { href: "/lots/nouveau", label: "Nouveau lot", manager: false },
   { href: "/stock?deleted=1", label: "Corbeille du stock", manager: true },
   { href: "/ventes/vinted", label: "Synchro Vinted (ventes à vérifier, rapprochement)", manager: true },
+  { href: "/ventes/retours", label: "Retours (taux, coût, par taille et marque)", manager: true },
   { href: "/ventes/import", label: "Importer des ventes (CSV)", manager: true },
   { href: "/stock/import", label: "Importer le stock (CSV)", manager: true },
   { href: "/parametres/mises-a-jour", label: "Mises à jour de la base", manager: true },
