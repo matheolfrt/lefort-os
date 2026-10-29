@@ -279,6 +279,16 @@ CSV sans colonne « emballage », synchro Vinted) compte **0,15 € par envoi** 
 de plusieurs articles). Modifiable dans Paramètres (« Emballage par envoi »). Un montant saisi, 0 compris, est gardé.
 Les ventes déjà enregistrées ne changent pas.
 
+## Réinvestir
+
+`/reinvestir` (Mon argent → Réinvestir) : « si je réinvestis tant, combien de CA par mois dans 3 mois, 6 mois, un an ».
+Une somme maintenant, une somme chaque mois et/ou une part du bénéfice du mois précédent (jamais d'une perte). Calculé
+sur vos chiffres réels (stock, coût et prix moyens, écoulement mensuel des 90 derniers jours, frais, cotisations,
+charges), modifiables : chaque mois la même part du stock se vend, ce qui se vend est racheté, l'argent réinvesti achète
+du stock en plus, en vente le mois suivant. Comparé mois par mois au même commerce sans réinvestir, avec une vue
+prudente (25 % de ventes en moins, prix −5 %). Alertes : capacité de préparation, plafond micro, activité déficitaire.
+(`src/lib/reinvest.ts`, `npm run test:reinvest`)
+
 ## Où est mon argent ? (Financial Command Center)
 
 `/finance` (responsables, menu « Finance », raccourci `g f`, carte sur le tableau de bord). Huit sections : capital
