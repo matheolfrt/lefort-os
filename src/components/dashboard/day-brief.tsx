@@ -31,7 +31,7 @@ function Parts({ parts, join }: { parts: BriefPart[]; join: "," | "et" }) {
   return parts.map((p, i) => {
     const sep = i === 0 ? "" : join === "et" && i === parts.length - 1 ? " et " : ", ";
     const body = p.href
-      ? <Link href={p.href} className="font-medium underline decoration-fg/30 underline-offset-4 hover:decoration-fg">{p.text}</Link>
+      ? <Link href={p.href} className="py-3.5 font-medium underline decoration-fg/30 underline-offset-4 [box-decoration-break:clone] hover:decoration-fg">{p.text}</Link>
       : <>{p.text && <span className={p.tone ? TONE[p.tone] : undefined}>{p.text}</span>}{p.note && <span className="text-muted">{p.text ? " " : ""}{p.note}</span>}</>;
     return <span key={i} data-part={p.href ?? p.tone ?? "text"}>{sep}{body}</span>;
   });
