@@ -13,6 +13,7 @@ const GO: { key: string; href: string; label: string; manager?: boolean }[] = [
   { key: "p", href: "/conseils", label: "Conseils", manager: true },
   { key: "f", href: "/finance", label: "Mon argent", manager: true },
   { key: "t", href: "/taches", label: "Tâches" },
+  { key: "b", href: "/notes", label: "Notes (bloc-notes)" },
   { key: "r", href: "/postes/production", label: "Production" },
   { key: "o", href: "/postes", label: "Postes" },
   { key: "s", href: "/stock", label: "Stock" },

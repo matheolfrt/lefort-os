@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, type LucideIcon,
+  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, NotebookPen, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, type LucideIcon,
 } from "lucide-react";
 
 export type NavGroup = "Aujourd'hui" | "Stock et lots" | "Argent" | "Réglages";
@@ -25,6 +25,7 @@ export const NAV: NavItem[] = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard, manager: false, keywords: "accueil dashboard ma journée", group: "Aujourd'hui" },
   { href: "/taches", label: "Tâches", icon: ListTodo, manager: false, keywords: "à faire todo liste rappel", group: "Aujourd'hui" },
   { href: "/postes", label: "Postes", icon: Factory, manager: false, keywords: "travail production kanban", group: "Aujourd'hui" },
+  { href: "/notes", label: "Notes", icon: NotebookPen, manager: false, keywords: "note bloc-notes idée mémo écrire carnet", group: "Aujourd'hui" },
   { href: "/ventes", label: "Ventes", icon: ShoppingBag, manager: false, keywords: "commandes nouvelle vente", group: "Aujourd'hui" },
   { href: "/ventes", label: "Ventes", icon: ShoppingBag, manager: true, group: "Aujourd'hui", hub: "/ventes", keywords: "commandes nouvelle vente" },
   { href: "/ventes/retours", label: "Retours", icon: Undo2, manager: true, group: "Aujourd'hui", hub: "/ventes", keywords: "retour remboursement taux taille marque motif" },

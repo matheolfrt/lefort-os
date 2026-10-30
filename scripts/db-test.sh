@@ -87,4 +87,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_sprod -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_sprod -f supabase/tests/supplier_products_test.sql >/dev/null
+# Notes on their own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_notes" -c "create database ${DB}_notes"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_notes -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_notes -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_notes -f supabase/tests/notes_test.sql >/dev/null
 echo "DB tests passed"

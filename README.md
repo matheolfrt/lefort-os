@@ -177,6 +177,13 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   achats et ventes sur 12 mois, coordonnées et notes modifiables, « Nouveau lot chez lui », archivage.
 - Migration `supabase/migrations/20261105000017_suppliers.sql`, tests `supabase/tests/suppliers_test.sql`.
 
+## Notes
+
+Mise à jour `20261113000025_notes`. `/notes` (menu Aujourd'hui, raccourci `g` puis `b`) : un bloc-notes. Une note est
+privée par défaut ; « Partagée avec l'équipe », toute la boutique la lit, seul son auteur la modifie ou la supprime.
+Enregistrée pendant la frappe (et en quittant la page), épinglable, recherche dans les titres et les textes, lien direct
+vers une note (`/notes?note=…`), suppression avec « Annuler ». Sur téléphone, la liste puis la note en plein écran.
+
 ## Produits repérés chez les fournisseurs
 
 Mise à jour `20261112000024_supplier_products`. Sur la fiche d'un fournisseur (en haut, et dès sa création), « Produits
@@ -211,7 +218,7 @@ web est refusé. Réservé aux gérants, supprimés avec le fournisseur.
   de statut : un retour refusé est signalé, jamais forcé.
 - **⌘K exécute des actions** (`src/lib/commands.ts`) : « M-12 29 », « baisser M-12 à 29,90 », « ranger M-12 en
   A-01-02 », « en ligne M-12 », « vendre M-12 », « étiquette M-12 ».
-- **Raccourcis clavier** (`src/components/keyboard-shortcuts.tsx`) : `g` puis `d` `p` `f` `t` `r` `o` `s` `l` `v` `e`,
+- **Raccourcis clavier** (`src/components/keyboard-shortcuts.tsx`) : `g` puis `d` `p` `f` `t` `b` `r` `o` `s` `l` `v` `e`,
   `n` nouvelle vente, `?` aide. Ignorés pendant la saisie et pendant un scan (touches trop rapprochées).
 - **Fiche article** : photos en grand, carte « En bref » modifiable, historique unique (statuts + emplacements).
 - **Aide** : écrans vides avec l'action suivante, bulles « ? » sur les chiffres clés.
