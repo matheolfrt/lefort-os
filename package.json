@@ -12,6 +12,7 @@
     "test:lots": "npx --yes tsx scripts/lot-rotation-test.ts",
     "test:compare": "npx --yes tsx scripts/compare-test.ts",
     "test:reinvest": "npx --yes tsx scripts/reinvest-test.ts",
+    "test:warehouse": "npx --yes tsx scripts/warehouse-test.ts",
     "typecheck": "tsc --noEmit",
     "build:extension": "rm -f public/lefort-os-vinted.zip && cd extension && zip -qr ../public/lefort-os-vinted.zip . -x \"*.DS_Store\""
   },
@@ -26,7 +27,8 @@
     "pdf-lib": "^1.17.1",
     "react": "^19.1.10",
     "react-dom": "^19.1.10",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -34,6 +36,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.180.0",
     "eslint": "^9",
     "eslint-config-next": "^15.5.28",
     "tailwindcss": "^4",

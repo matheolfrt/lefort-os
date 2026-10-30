@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, NotebookPen, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, type LucideIcon,
+  BarChart3, Boxes, Calculator, Compass, Factory, Gauge, FlaskConical, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, NotebookPen, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, Warehouse, type LucideIcon,
 } from "lucide-react";
 
 export type NavGroup = "Aujourd'hui" | "Stock et lots" | "Argent" | "Réglages";
@@ -41,6 +41,7 @@ export const NAV: NavItem[] = [
   { href: "/niches", label: "Niches", icon: Compass, manager: true, keywords: "tester nouvelles niches marques idées essai lot de test", group: "Stock et lots", hub: "/ecoulement" },
   { href: "/fournisseurs", label: "Fournisseurs", icon: Truck, manager: true, group: "Stock et lots" },
   { href: "/emplacements", label: "Emplacements", icon: MapPin, manager: false, keywords: "rangement étagères", group: "Stock et lots" },
+  { href: "/local", label: "Mon futur local", icon: Warehouse, manager: false, keywords: "local 3d plan entrepôt étagères rayonnage 200 m2 aménagement", group: "Stock et lots" },
 
   // ── Argent: ce que je gagne
   { href: "/finance", label: "Mon argent", icon: Landmark, manager: true, group: "Argent",

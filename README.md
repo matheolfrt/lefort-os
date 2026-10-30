@@ -177,6 +177,16 @@ alimentent Conseils et le tableau de bord (`src/lib/sellthrough.ts`). Fonction `
   achats et ventes sur 12 mois, coordonnées et notes modifiables, « Nouveau lot chez lui », archivage.
 - Migration `supabase/migrations/20261105000017_suppliers.sql`, tests `supabase/tests/suppliers_test.sql`.
 
+## Mon futur local (3D)
+
+Mise à jour `20261114000026_floor_plans`. `/local` (menu Stock et lots) : un local de 200 m² (20 × 10 m par défaut,
+dimensions et hauteur modifiables) en 3D (three.js), où l'on place des étagères 5 niveaux 60 × 120 × 200 cm : une à une
+ou par rangées (simples ou dos à dos, avec une allée d'1 m), déplacées à la souris ou au doigt (grille de 5 cm),
+pivotées, dupliquées, retirées (avec « Annuler »). Vue 3D, vue de dessus et vue à hauteur d'homme ; une silhouette de
+1,75 m donne l'échelle. Le plan compte étagères, niveaux, mètres de tablettes et sol occupé, et signale les allées de
+moins de 90 cm et les étagères hors du local. Enregistré pendant qu'on le modifie (responsables), visible par l'équipe.
+(`src/lib/warehouse.ts`, `npm run test:warehouse`)
+
 ## Notes
 
 Mise à jour `20261113000025_notes`. `/notes` (menu Aujourd'hui, raccourci `g` puis `b`) : un bloc-notes. Une note est
