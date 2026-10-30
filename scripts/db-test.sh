@@ -101,4 +101,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_plan -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_plan -f supabase/tests/floor_plans_test.sql >/dev/null
+# Entrepôt 3D on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_w3d" -c "create database ${DB}_w3d"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_w3d -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_w3d -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_w3d -f supabase/tests/warehouse_3d_test.sql >/dev/null
 echo "DB tests passed"

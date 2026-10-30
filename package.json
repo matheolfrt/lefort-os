@@ -13,6 +13,7 @@
     "test:compare": "npx --yes tsx scripts/compare-test.ts",
     "test:reinvest": "npx --yes tsx scripts/reinvest-test.ts",
     "test:warehouse": "npx --yes tsx scripts/warehouse-test.ts",
+    "test:warehouse3d": "npx --yes tsx scripts/warehouse3d-test.ts",
     "typecheck": "tsc --noEmit",
     "build:extension": "rm -f public/lefort-os-vinted.zip && cd extension && zip -qr ../public/lefort-os-vinted.zip . -x \"*.DS_Store\""
   },

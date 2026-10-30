@@ -187,6 +187,33 @@ pivotées, dupliquées, retirées (avec « Annuler »). Vue 3D, vue de dessus et
 moins de 90 cm et les étagères hors du local. Enregistré pendant qu'on le modifie (responsables), visible par l'équipe.
 (`src/lib/warehouse.ts`, `npm run test:warehouse`)
 
+## Entrepôt 3D
+
+Mise à jour `20261115000027_warehouse_3d`. `/entrepot` (menu Stock et lots) : le stock réel tel qu'il est rangé, en 3D.
+Aucune deuxième base : un niveau d'étagère **est** un emplacement (`locations`, code `EMP-B-07-L3`, les anciens
+`EMP-A-01-03` sont repris sans changer de code), la place d'un article est son emplacement actuel plus un numéro de
+place sur le niveau (`items.location_position`, attribué automatiquement), et chaque déplacement est une ligne de
+`item_location_moves` (historique de la fiche).
+
+- **Configuration** (`warehouses.config`, rien en dur) : local, nombre de racks, étagères par rack, dimensions
+  d'étagère, niveaux, articles par niveau, largeur d'allée, zones (Réception / Tri, Photo studio avec fond, table,
+  éclairage, mannequin et mesures, Préparation / Expédition) et couleurs des statuts. Par défaut : 200 m², 5 racks
+  de 7 étagères 120 × 60 × 200 cm, 5 niveaux de 24 blazers = 4 200 places. « Enregistrer » crée les niveaux manquants
+  (`warehouse_sync`), reprend les existants et ne retire jamais un niveau qui contient des articles.
+- **Stock** : en-tête (stock total, valeur au prix d'achat, disponibles, à expédier, dormant, rotation médiane),
+  recherche SKU (la caméra va à l'article et le met en évidence), clic sur un rack, une étagère, un niveau ou une zone
+  pour voir son contenu, fiche article (photo, prix, marge, plateforme, dates, vues et favoris, emplacement complet
+  Rack → Étagère → Niveau · place, historique), étape suivante du flux (les règles des postes s'appliquent),
+  rangement par un clic sur un niveau, déplacement vers une zone, chemin depuis la table de préparation.
+  Couleurs de statut toujours doublées d'une lettre et d'un mot ; la légende sert de filtre.
+- **Performance** : étagères colorées sur une seule teinte selon la valeur du stock, le CA, la marge (12 mois), la
+  rotation ou le stock dormant (`warehouse_heat`) ; les montants restent réservés aux responsables.
+- **Picking** : les commandes à expédier, « Démarrer le picking », l'ordre de passage optimisé dans les allées
+  (plus proche d'abord puis 2-opt, chemins sur une grille de 20 cm), le trajet affiché étape par étape ; chaque
+  article validé passe sur `EMP-PREPARATION` (`pick_item`, événement `picked`).
+- Rendu à la demande (rien ne tourne quand rien ne bouge), stock dessiné en 4 maillages instanciés, scène chargée
+  après la page. (`src/lib/warehouse3d/*`, `npm run test:warehouse3d`, `supabase/tests/warehouse_3d_test.sql`)
+
 ## Notes
 
 Mise à jour `20261113000025_notes`. `/notes` (menu Aujourd'hui, raccourci `g` puis `b`) : un bloc-notes. Une note est
