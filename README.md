@@ -211,7 +211,8 @@ web est refusé. Réservé aux gérants, supprimés avec le fournisseur.
   ventes), **Stock et lots** (ce que j'ai : stock, lots, rotation, fournisseurs, emplacements), **Argent** (ce que je
   gagne : mon argent, compta). Les pages liées sont des onglets en haut de page (`src/components/hub-tabs.tsx`) :
   Ventes → Retours, Synchro Vinted ; Rotation → Écoulement, Prix à baisser, Niches ; Mon argent → Vue d'ensemble,
-  Conseils, Objectifs, Statistiques, Scénarios. Les adresses des pages n'ont pas changé.
+  Conseils, Objectifs, CA & statistiques (3 mois, 6 mois, 1 an, 2 ans), Réinvestir, Scénarios. Les adresses des pages
+  n'ont pas changé. Le CA sur ces périodes s'ouvre aussi depuis la tuile « CA encaissé » du tableau de bord.
 - **Stock modifiable sur place** : cliquer sur le prix, l'emplacement ou le statut d'une ligne pour le changer ;
   chaque changement (aussi les actions groupées) propose « Annuler » au lieu d'une confirmation
   (`src/lib/item-edits.ts`, partagé avec la fiche article et ⌘K). Les annulations passent par les mêmes règles

@@ -86,11 +86,15 @@ export default async function Dashboard() {
     advice: <Suspense fallback={<AdviceSkeleton />}><AdviceCard quarterly={ctx.org.declaration_frequency === "quarterly"} /></Suspense>,
     // the four figures that say how the month goes, in large; the others one click away
     month: (
-      <Section title={f ? "Ce mois-ci" : "Stock"}>
+      <Section title={f ? "Ce mois-ci" : "Stock"} aside={f && (
+        <Link href="/statistiques" className="-my-2 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-series-1 hover:underline" data-testid="ca-history">
+          CA sur 3 mois, 1 an, 2 ans <ChevronRight size={16} />
+        </Link>
+      )}>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" data-testid="key-figures">
           {f && (
             <>
-              <Kpi big label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} cmp={f.compare.cashed} fmt={eurFmt}
+              <Kpi big label="CA encaissé" value={eur(f.monthCashedCents)} hint={`${eur(f.yearCashedCents)} depuis janvier`} cmp={f.compare.cashed} fmt={eurFmt} href="/statistiques"
                 help="Argent réellement reçu ce mois (ventes encaissées, remboursements déduits). C'est ce chiffre qui compte pour l'URSSAF et les seuils." />
               <Kpi big label="Bénéfice estimé" value={eur(f.month.afterCents)} tone={f.month.afterCents < 0 ? "bad" : undefined}
                 hint="après coûts et cotisations" n={f.month.itemsSold} cmp={f.compare.profit} fmt={eurFmt}
@@ -302,7 +306,8 @@ function Kpi({ label, value, hint, n, tone, help, cmp, fmt, unit, href, big }: {
   return (
     <div className={`relative flex flex-col rounded-2xl border border-line bg-panel/80 transition has-[a.kpi-link:hover]:border-fg/30 ${big ? "px-4 py-3.5 sm:px-5 sm:py-4" : "px-3.5 py-3"}`} data-kpi={label}>
       <div className="flex items-center justify-between gap-2">
-        <span className={`flex items-start gap-1 text-muted ${big ? "text-sm font-medium" : "eyebrow-tight"}`}>{label}{help && <Help text={help} />}</span>
+        {/* above the link that covers the tile, so the « ? » still opens its explanation */}
+        <span className={`relative z-10 flex items-start gap-1 text-muted ${big ? "text-sm font-medium" : "eyebrow-tight"}`}>{label}{help && <Help text={help} />}</span>
         {n != null && <SampleSize n={n} />}
       </div>
       <div className={`mt-1 font-mono font-semibold leading-tight tabular-nums tracking-tight ${big ? "text-[30px] sm:text-[36px]" : "text-[26px]"} ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
