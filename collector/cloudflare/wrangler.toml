@@ -1,0 +1,6 @@
+name = "lefort-niches-vinted"
+main = "worker.ts"
+compatibility_date = "2025-06-01"
+
+[triggers]
+crons = ["*/20 * * * *"]

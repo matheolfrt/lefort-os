@@ -1,0 +1,34 @@
+# Lefort OS « Niches Vinted »: reads the followed searches on Vinted every hour and sends what it saw to Lefort OS.
+# Secrets to add (GitHub → Settings → Secrets and variables → Actions): LEFORT_SUPABASE_URL, LEFORT_SUPABASE_ANON_KEY,
+# LEFORT_MARKET_KEY (made in Lefort OS → Niches Vinted → Collecteurs). Without them, the job does nothing.
+name: Niches Vinted
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch: {}
+concurrency:
+  group: vinted-niches
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/market-collect.ts
+            src/lib/market
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collecte
+        run: npx --yes tsx@4.19.2 scripts/market-collect.ts
+        env:
+          LEFORT_SUPABASE_URL: ${{ secrets.LEFORT_SUPABASE_URL }}
+          LEFORT_SUPABASE_ANON_KEY: ${{ secrets.LEFORT_SUPABASE_ANON_KEY }}
+          LEFORT_MARKET_KEY: ${{ secrets.LEFORT_MARKET_KEY }}
+          MARKET_COLLECTOR: github

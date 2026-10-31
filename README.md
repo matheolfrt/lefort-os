@@ -187,6 +187,26 @@ pivotées, dupliquées, retirées (avec « Annuler »). Vue 3D, vue de dessus et
 moins de 90 cm et les étagères hors du local. Enregistré pendant qu'on le modifie (responsables), visible par l'équipe.
 (`src/lib/warehouse.ts`, `npm run test:warehouse`)
 
+## Niches Vinted
+
+Mise à jour `20261116000028_market`. `/niches-vinted` (menu Stock et lots) : des recherches Vinted suivies (des mots,
+ou l'adresse d'une recherche Vinted avec ses filtres), et pour chacune ce qui a **réellement** été collecté : nouvelles
+annonces, ventes détectées, % de vente, temps de vente, prix moyen, ventes par jour, CA vu, un score expliqué, et les
+onglets Ventes / Niches (par marque) / Statistiques / Vendeurs / Annonces. Rien n'est estimé : sans collecte, rien ne
+s'affiche.
+
+- **Comment** : un collecteur lit les annonces les plus récentes de chaque recherche dans le catalogue public de Vinted
+  (session anonyme, sans compte), puis revoit les annonces déjà connues. Vendue = Vinted la marque vendue ; « disparue »
+  (supprimée ou vendue) est comptée à part. La date de vente est celle du passage qui l'a vue vendue.
+- **Collecteurs gratuits** (le même code, `src/lib/market/collect.ts`) : GitHub Actions toutes les heures
+  (`.github/workflows/vinted-niches.yml`, secrets `LEFORT_SUPABASE_URL`, `LEFORT_SUPABASE_ANON_KEY`, `LEFORT_MARKET_KEY`),
+  le serveur Vercel une fois par jour (`/api/market/collect`, variables `MARKET_COLLECTOR_KEY` et `CRON_SECRET`), un
+  Worker Cloudflare toutes les 20 minutes (`collector/cloudflare`). Les clés se créent dans la page (seule leur empreinte
+  est gardée). Chaque passage est visible dans « Collecteurs », avec la réponse de Vinted : un collecteur bloqué se voit.
+- **Limites** : Vinted peut refuser les serveurs de GitHub, Vercel ou Cloudflare ; aucun contournement n'est fait. Les
+  conditions de Vinted interdisent la collecte automatisée : requêtes espacées, annonces publiques seulement.
+  (`npm run test:market`, `supabase/tests/market_test.sql`)
+
 ## Guide de style
 
 `/design` (⌘K « Guide de style ») montre les éléments communs, à réutiliser plutôt que de réécrire des classes :

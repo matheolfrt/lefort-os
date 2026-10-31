@@ -3,5 +3,13 @@
   "framework": "nextjs",
   "installCommand": "npm ci",
   "buildCommand": "next build",
-  "regions": ["cdg1"]
+  "regions": [
+    "cdg1"
+  ],
+  "crons": [
+    {
+      "path": "/api/market/collect",
+      "schedule": "41 5 * * *"
+    }
+  ]
 }
