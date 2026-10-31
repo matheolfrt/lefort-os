@@ -6,7 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { errorMessage } from "@/lib/errors";
 import { fold } from "@/lib/nav";
-import { input } from "@/components/ui";
+import { btn, input } from "@/components/ui";
 
 export interface Note { id: string; title: string; body: string; pinned: boolean; shared: boolean; author_id: string; updated_at: string }
 type Patch = Partial<Pick<Note, "title" | "body" | "pinned" | "shared">>;
@@ -132,7 +132,7 @@ export function NotesApp({ initial, me, names, open }: { initial: Note[]; me: st
       <aside className={`space-y-3 ${note ? "hidden lg:block" : ""}`}>
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-bold tracking-[-0.03em]">Notes</h1>
-          <button onClick={create} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-fg" data-testid="new-note">
+          <button onClick={create} className={btn.primary} data-testid="new-note">
             <Plus size={18} /> Nouvelle note
           </button>
         </div>

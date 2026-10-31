@@ -33,7 +33,8 @@ export function PageHeader({ title, subtitle, actions, back }: {
           {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
         </div>
       </div>
-      {actions && <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">{actions}</div>}
+      {/* one primary action: last (on the right) on a computer, first and full width on a phone; the others share a row */}
+      {actions && <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none [&>.act-primary]:max-sm:order-first [&>.act-primary]:max-sm:basis-full sm:[&>.act-primary]:order-last">{actions}</div>}
     </header>
   );
 }
@@ -51,7 +52,7 @@ export function Stat({ label, value, hint, help }: { label: string; value: React
   return (
     <div className="rounded-2xl border border-line bg-panel/80 px-4 py-3">
       <div className="eyebrow-tight flex items-start gap-1 leading-tight text-muted">{label}{help && <Help text={help} />}</div>
-      <div className="mt-1.5 font-mono text-[26px] font-medium leading-tight tracking-tight tabular-nums">{value}</div>
+      <div className="mt-1.5 figure text-[26px] font-medium leading-tight tracking-tight tabular-nums">{value}</div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
     </div>
   );
@@ -92,14 +93,33 @@ export function Help({ text }: { text: string }) {
 }
 
 export const btn = {
+  // act-primary: the page header puts it last on a computer, first and full width on a phone
   primary:
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 font-semibold text-accent-fg shadow-[0_0_24px_-6px_var(--accent)] transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:shadow-none",
+    "act-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 font-semibold text-accent-fg shadow-[0_0_24px_-6px_var(--accent)] transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:shadow-none",
   secondary:
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-panel-2 px-4 font-medium transition hover:border-fg/25 hover:bg-panel-2/70 active:scale-[0.98] disabled:opacity-50",
   danger:
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 font-semibold text-white transition hover:bg-red-500 active:scale-[0.98] disabled:opacity-50",
+  /** Primary action inside a card or a list (smaller than a page action) */
+  sm: "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-accent-fg transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50",
+  /** Secondary action inside a card or a list: outlined, never filled */
+  ghost: "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium ring-1 ring-inset ring-line transition hover:bg-fg/5 hover:ring-fg/30 active:scale-[0.98] disabled:opacity-50",
+  /** A square button with only an icon (give it an aria-label) */
+  icon: "inline-flex size-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ring-line transition hover:bg-fg/5 hover:ring-fg/30 active:scale-[0.98] disabled:opacity-50",
   huge: "inline-flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-6 text-lg font-bold text-accent-fg shadow-[0_0_32px_-8px_var(--accent)] transition hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:shadow-none",
 };
+
+/**
+ * A choice between a few views (tabs) or values (radio): the chosen one is filled with the text colour, the others
+ * are muted. Same look everywhere: `<div role="tablist" className={seg.wrap}><button className={seg.item(on)}>…`
+ */
+export const seg = {
+  wrap: "inline-flex max-w-full overflow-x-auto rounded-xl border border-line bg-panel/80 p-1",
+  item: (on: boolean) => `inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium transition ${on ? "bg-fg text-bg shadow-sm" : "text-muted hover:bg-fg/5 hover:text-fg"}`,
+};
+
+/** A small pill (a state, a verdict): add its tone, e.g. `${chip} bg-sky-400/10 text-sky-300 ring-sky-400/25` */
+export const chip = "inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset";
 
 export const input =
   "min-h-11 w-full rounded-xl border border-line bg-bg/70 px-3 text-base outline-none transition placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/25";

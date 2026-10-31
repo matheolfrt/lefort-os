@@ -87,7 +87,7 @@ export default async function Batches({ searchParams }: { searchParams: Promise<
                         <td>{b.supplier_name}</td>
                         <td>{date(b.purchased_at)}</td>
                         <td>{rotById.get(b.batch_id) ? <LotStatusChip status={rotById.get(b.batch_id)!.status} /> : "—"}</td>
-                        <td className="min-w-48"><Funnel b={b} /></td>
+                        <td className="min-w-40"><Funnel b={b} /></td>
                         <td className="num">{days(rotById.get(b.batch_id)?.avgDaysToSell ?? null, 1)}</td>
                         {ctx.isManager && (
                           <>
@@ -116,9 +116,9 @@ function Funnel({ b }: { b: { items: number; listed: number; sold: number; expec
   return (
     <div>
       <div className="flex h-2 gap-[2px] overflow-hidden rounded-full bg-line">
-        <div className="bg-orange-500" style={{ width: `${(b.sold / total) * 100}%` }} />
+        <div className="bg-blue-500" style={{ width: `${(b.sold / total) * 100}%` }} />
         <div className="bg-emerald-500" style={{ width: `${((b.listed - b.sold) / total) * 100}%` }} />
-        <div className="bg-slate-400" style={{ width: `${((b.items - b.listed) / total) * 100}%` }} />
+        <div className="bg-violet-400" style={{ width: `${((b.items - b.listed) / total) * 100}%` }} />
       </div>
       <div className="mt-1 text-xs text-muted">
         {b.items}{b.expected_qty ? `/${b.expected_qty}` : ""} reçus · {b.listed} publiés · {b.sold} vendus

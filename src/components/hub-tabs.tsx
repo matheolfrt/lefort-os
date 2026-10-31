@@ -12,11 +12,11 @@ export function HubTabs({ isManager }: { isManager: boolean }) {
   const on = currentTab(tabs, path);
   return (
     <nav aria-label="Pages de la section" data-hub-tabs className="-mx-4 mb-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-      <div className="inline-flex min-w-max gap-1 rounded-2xl border border-line bg-panel/70 p-1">
+      <div className="inline-flex min-w-max gap-1 rounded-2xl border border-line bg-panel/80 p-1">
         {tabs.map(({ href, label, tabLabel, icon: Icon }) => (
           <Link key={href} href={href} aria-current={on === href ? "page" : undefined}
             className={`flex min-h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-medium transition-colors ${
-              on === href ? "bg-accent/15 text-accent ring-1 ring-inset ring-accent/30" : "text-muted hover:bg-fg/5 hover:text-fg"}`}>
+              on === href ? "bg-fg text-bg shadow-sm" : "text-muted hover:bg-fg/5 hover:text-fg"}`}>
             <Icon size={16} /> {tabLabel ?? label}
           </Link>
         ))}

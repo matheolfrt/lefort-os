@@ -46,7 +46,7 @@ export function StartWork({ counts }: { counts: StartCounts }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 sm:w-auto text-base font-bold text-accent-fg shadow-[0_0_28px_-6px_var(--accent)] transition hover:brightness-110 active:scale-[0.98]"
+        className="act-primary inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 sm:w-auto text-base font-bold text-accent-fg shadow-[0_0_28px_-6px_var(--accent)] transition hover:brightness-110 active:scale-[0.98]"
       >
         <Play size={18} fill="currentColor" /> Commencer le travail
       </button>
@@ -78,7 +78,7 @@ export function StartWork({ counts }: { counts: StartCounts }) {
                     <div className="flex items-start justify-between">
                       <Icon size={22} className="text-fg/70 group-hover:text-accent" />
                       {n != null && (
-                        <span className={`text-2xl font-mono font-semibold tabular-nums leading-none ${n ? "" : "text-muted/50"}`}>{n}</span>
+                        <span className={`text-2xl figure font-semibold tabular-nums leading-none ${n ? "" : "text-muted/50"}`}>{n}</span>
                       )}
                     </div>
                     <div>

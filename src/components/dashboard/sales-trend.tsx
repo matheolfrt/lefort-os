@@ -1,5 +1,6 @@
 "use client";
 
+import { seg } from "@/components/ui";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cumulative, toDate, type DayPoint, type TrendPeriod } from "@/lib/trend";
@@ -69,10 +70,10 @@ export function SalesTrend({ trend }: { trend: { month: TrendPeriod; week: Trend
     <section data-testid="sales-trend" aria-labelledby="trend-title">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 id="trend-title" className="section-title">Évolution des ventes</h2>
-        <div role="radiogroup" aria-label="Période" className="inline-flex rounded-xl border border-line bg-panel/70 p-1 text-sm">
+        <div role="radiogroup" aria-label="Période" className={seg.wrap}>
           {(["month", "week"] as Kind[]).map((k) => (
             <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => choose(k)}
-              className={`min-h-10 rounded-lg px-3.5 font-medium transition-colors max-sm:min-h-11 ${kind === k ? "bg-accent/15 text-accent" : "text-muted hover:text-fg"}`}>
+              className={`${seg.item(kind === k)} max-sm:min-h-11`}>
               {k === "month" ? "Ce mois" : "Cette semaine"}
             </button>
           ))}
@@ -145,7 +146,7 @@ function Figure({ label, value, delta }: { label: string; value: string; delta: 
   return (
     <div className="min-w-0">
       <div className="eyebrow-tight truncate text-muted">{label}</div>
-      <div className="mt-0.5 font-mono text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
+      <div className="mt-0.5 figure text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
       <div className="min-h-4">{delta}</div>
     </div>
   );
@@ -197,7 +198,7 @@ function Tip({ x, width, title, rows }: { x: number; width: number; title: strin
           {r.tone && (r.tone === "goal"
             ? <span aria-hidden className="w-3 border-t-2 border-dashed border-fg/50" />
             : <span aria-hidden className={`h-0.5 w-3 rounded-full ${TONE[r.tone].key}`} />)}
-          <span className="font-mono font-semibold tabular-nums text-fg">{r.value}</span>
+          <span className="figure font-semibold tabular-nums text-fg">{r.value}</span>
           <span className="truncate text-muted">{r.label}</span>
         </div>
       ))}
@@ -248,7 +249,7 @@ function CumulativeChart({ p, kind }: { p: TrendPeriod; kind: Kind }) {
           {/* today: a dot ringed with the surface, and its value as the one direct label */}
           <circle cx={x(p.todayIndex)} cy={y(last)} r={4.5} fill={TONE.cur.stroke} stroke="var(--panel)" strokeWidth={2} />
           <text x={Math.min(x(p.todayIndex) + 8, W - PAD.r - 2)} y={y(last) - 8} textAnchor={x(p.todayIndex) > W - 80 ? "end" : "start"}
-            className="fill-fg font-mono text-[11px] font-semibold">{eur(last)}</text>
+            className="fill-fg figure text-[11px] font-semibold">{eur(last)}</text>
           {hover != null && (
             <g pointerEvents="none">
               <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={H - PAD.b} stroke="var(--fg)" strokeOpacity={0.35} strokeWidth={1} />
@@ -331,7 +332,7 @@ function DailyBars({ p, kind, measure }: { p: TrendPeriod; kind: Kind; measure: 
           {/* the best day is the one value written on the chart */}
           {(vals[best] ?? 0) > 0 && hover == null && (
             <text x={Math.min(Math.max(PAD.l + best * slot + slot / 2, PAD.l + 16), W - PAD.r - 16)} y={y(vals[best]!) - 5} textAnchor="middle"
-              className="fill-fg font-mono text-[10px] font-semibold">{axis(vals[best]!)}</text>
+              className="fill-fg figure text-[10px] font-semibold">{axis(vals[best]!)}</text>
           )}
         </svg>
       )}

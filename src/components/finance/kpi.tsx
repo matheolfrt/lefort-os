@@ -16,11 +16,11 @@ export function Kpi({ label, value, sub, delta, href, lines, note, badge, big, i
         {badge}
       </div>
       {href ? (
-        <Link href={href} prefetch={false} className={`group mt-1 inline-flex w-fit items-baseline gap-1 font-mono font-semibold tabular-nums tracking-tight hover:text-accent ${big ? "text-[34px] leading-tight sm:text-[40px]" : "text-[26px] leading-tight"}`}>
+        <Link href={href} prefetch={false} className={`group mt-1 inline-flex w-fit items-baseline gap-1 figure font-semibold tabular-nums tracking-tight hover:text-accent ${big ? "text-[34px] leading-tight sm:text-[40px]" : "text-[26px] leading-tight"}`}>
           {value}<ChevronRight size={16} className="self-center text-muted transition group-hover:translate-x-0.5 group-hover:text-accent" aria-hidden />
         </Link>
       ) : (
-        <div className={`mt-1 font-mono font-semibold tabular-nums tracking-tight ${big ? "text-[34px] leading-tight sm:text-[40px]" : "text-[26px] leading-tight"}`}>{value}</div>
+        <div className={`mt-1 figure font-semibold tabular-nums tracking-tight ${big ? "text-[34px] leading-tight sm:text-[40px]" : "text-[26px] leading-tight"}`}>{value}</div>
       )}
       {delta && <Trend {...delta} />}
       {sub && <div className="mt-0.5 text-xs leading-snug text-muted">{sub}</div>}

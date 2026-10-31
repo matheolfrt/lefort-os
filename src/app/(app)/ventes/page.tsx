@@ -188,8 +188,8 @@ function summarise(o: OrderRow) {
 }
 
 const ORDER_TONE: Record<string, string> = {
-  pending: "bg-orange-400/15 text-orange-200 ring-1 ring-inset ring-orange-400/30",
-  shipped: "bg-lime-400/15 text-lime-200 ring-1 ring-inset ring-lime-400/30",
+  pending: "bg-blue-400/15 text-blue-200 ring-1 ring-inset ring-blue-400/30",
+  shipped: "bg-sky-400/15 text-sky-200 ring-1 ring-inset ring-sky-400/30",
   completed: "bg-zinc-400/15 text-zinc-300 ring-1 ring-inset ring-zinc-400/30",
   cancelled: "bg-fg/5 text-muted ring-1 ring-inset ring-line",
 };

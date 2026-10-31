@@ -61,7 +61,7 @@ export function GoalsForm({ progress, action }: { progress: GoalProgress; action
                         <input name={key(p, m)} inputMode={m === "revenue" ? "decimal" : "numeric"} aria-label={`${METRIC_LABEL[m]} par ${PERIOD_NAME[p]}`}
                           value={values[key(p, m)] ?? ""} onChange={(e) => setValues((v) => ({ ...v, [key(p, m)]: e.target.value }))}
                           placeholder={derived != null ? `≈ ${toInput(m, derived)}` : "—"}
-                          className={`h-11 w-full rounded-xl border border-line bg-bg/70 px-3 font-mono tabular-nums outline-none placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/25 ${m === "revenue" ? "pr-7" : ""}`} />
+                          className={`h-11 w-full rounded-xl border border-line bg-bg/70 px-3 figure tabular-nums outline-none placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/25 ${m === "revenue" ? "pr-7" : ""}`} />
                         {m === "revenue" && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">€</span>}
                       </span>
                     </label>

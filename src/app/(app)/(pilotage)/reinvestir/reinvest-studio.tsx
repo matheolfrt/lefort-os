@@ -93,16 +93,16 @@ export function ReinvestStudio({ baseline }: { baseline: Baseline }) {
           return (
             <div key={h} className="rounded-2xl border border-line bg-panel/80 p-4" data-horizon={h}>
               <div className="text-sm font-medium text-muted">{horizon(h)} <span className="text-muted/70">· {monthName(m.month)}</span></div>
-              <div className="mt-1 font-mono text-[30px] font-semibold leading-tight tabular-nums tracking-tight">{eur(m.revenue)}<span className="text-base font-medium text-muted"> / mois</span></div>
+              <div className="mt-1 figure text-[30px] font-semibold leading-tight tabular-nums tracking-tight">{eur(m.revenue)}<span className="text-base font-medium text-muted"> / mois</span></div>
               <div className="text-xs text-muted">de CA · prudent : {eur(l.revenue)}</div>
               <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-line pt-2 text-sm">
-                <dt className="text-muted">Sans réinvestir</dt><dd className="text-right font-mono tabular-nums">{eur(b.revenue)}</dd>
+                <dt className="text-muted">Sans réinvestir</dt><dd className="text-right figure tabular-nums">{eur(b.revenue)}</dd>
                 <dt className="text-muted">Différence</dt>
-                <dd className={`text-right font-mono tabular-nums ${m.revenue > b.revenue + 0.5 ? "text-emerald-700 dark:text-emerald-400" : ""}`}>
+                <dd className={`text-right figure tabular-nums ${m.revenue > b.revenue + 0.5 ? "text-emerald-700 dark:text-emerald-400" : ""}`}>
                   {m.revenue > b.revenue + 0.5 ? "↑ +" : ""}{eur(m.revenue - b.revenue)}{gain != null && gain > 0.005 ? ` (+${Math.round(gain * 100)} %)` : ""}
                 </dd>
-                <dt className="text-muted">Bénéfice du mois</dt><dd className={`text-right font-mono tabular-nums ${m.net < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{eur(m.net)}</dd>
-                <dt className="text-muted">Stock en vente</dt><dd className="text-right font-mono tabular-nums">{num(m.stock)} art.</dd>
+                <dt className="text-muted">Bénéfice du mois</dt><dd className={`text-right figure tabular-nums ${m.net < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{eur(m.net)}</dd>
+                <dt className="text-muted">Stock en vente</dt><dd className="text-right figure tabular-nums">{num(m.stock)} art.</dd>
               </dl>
             </div>
           );
@@ -157,7 +157,7 @@ export function ReinvestStudio({ baseline }: { baseline: Baseline }) {
             return (
               <label key={k} className="block text-sm">
                 <span className="mb-1 block text-muted">{f.label} <span className="text-muted/60">({f.unit})</span></span>
-                <input className={`${input} text-right font-mono tabular-nums`} type="number" inputMode="decimal" step={f.step ?? 1} min={0}
+                <input className={`${input} text-right figure tabular-nums`} type="number" inputMode="decimal" step={f.step ?? 1} min={0}
                   value={inputs[k]} onChange={(e) => setI(k, e.target.value)} name={`h-${k}`} />
               </label>
             );
@@ -176,7 +176,7 @@ function Amount({ label, unit, value, onChange, quick, help, name }: {
       <label className="block">
         <span className="mb-1 flex items-center gap-1 text-sm font-medium">{label}{help && <Help text={help} />}</span>
         <span className="relative block">
-          <input className={`${input} pr-28 text-right font-mono text-lg tabular-nums`} inputMode="decimal" name={name}
+          <input className={`${input} pr-28 text-right figure text-lg tabular-nums`} inputMode="decimal" name={name}
             value={value ? String(value).replace(".", ",") : ""} placeholder="0" onChange={(e) => onChange(e.target.value)} />
           <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted">{unit}</span>
         </span>

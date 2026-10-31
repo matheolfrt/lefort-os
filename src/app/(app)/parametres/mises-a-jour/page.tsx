@@ -94,7 +94,7 @@ export default async function Updates({ searchParams }: { searchParams: Promise<
           </ol>
 
           {!auto && ctx.role === "admin" && (
-            <details className="rounded-2xl border border-line bg-panel/60 p-4 text-sm text-muted">
+            <details className="rounded-2xl border border-line bg-panel/80 p-4 text-sm text-muted">
               <summary className="cursor-pointer font-medium text-fg">Faire les mises à jour automatiquement à l&apos;avenir</summary>
               <ol className="mt-2 list-decimal space-y-1 pl-5">
                 <li>Sur supabase.com : Account → Access Tokens → « Generate new token ». Ce jeton donne accès à vos projets : gardez-le pour vous.</li>

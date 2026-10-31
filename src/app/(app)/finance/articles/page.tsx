@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { Empty, PageHeader } from "@/components/ui";
+import { Empty, PageHeader, seg } from "@/components/ui";
 import { euro } from "@/lib/finance";
 
 export const metadata = { title: "Articles · Où est mon argent ?" };
@@ -60,10 +60,10 @@ export default async function FinanceItems({ searchParams }: {
       <PageHeader title={title} back="/finance"
         subtitle="Les articles derrière le chiffre. L'âge compte depuis la mise en ligne (ou la réception), selon vos paramètres financiers." />
 
-      <div className="flex flex-wrap gap-1" role="tablist" aria-label="Vue">
+      <div className={seg.wrap} role="tablist" aria-label="Vue">
         {(["stock", "active", "dormant", "unpriced"] as const).map((v) => (
           <Link key={v} prefetch={false} href={href({ vue: v, min: null, max: null })} role="tab" aria-selected={vue === v}
-            className={`inline-flex min-h-10 items-center rounded-lg px-3 text-sm ${vue === v ? "bg-accent/15 font-medium text-accent" : "text-muted hover:text-fg"}`}>{VIEWS[v]}</Link>
+            className={seg.item(vue === v)}>{VIEWS[v]}</Link>
         ))}
       </div>
 
@@ -98,7 +98,7 @@ export default async function FinanceItems({ searchParams }: {
                     <td className="num">{euro(x.cost_cents)}</td>
                     <td className={`num ${x.age > r.dead_stock_days ? "text-amber-300" : ""}`}>{x.age} j</td>
                     <td className="num">{x.price_cents == null ? <span className="text-muted">sans prix</span> : euro(x.price_cents)}</td>
-                    <td className="whitespace-nowrap font-mono text-xs tabular-nums">
+                    <td className="whitespace-nowrap figure text-xs tabular-nums">
                       {x.views == null && x.favourites == null ? <span className="font-sans text-muted">non relevé</span>
                         : `${x.views ?? "—"} · ${x.favourites ?? "—"} · ${x.offers ?? "—"}`}
                     </td>
@@ -145,7 +145,7 @@ function Total({ k, v }: { k: string; v: string }) {
   return (
     <div className="rounded-2xl border border-line bg-panel/80 p-3">
       <div className="eyebrow-tight text-muted">{k}</div>
-      <div className="font-mono text-lg font-semibold tabular-nums">{v}</div>
+      <div className="figure text-lg font-semibold tabular-nums">{v}</div>
     </div>
   );
 }

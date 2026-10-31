@@ -28,6 +28,8 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
   const under = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
   const active = (href: string, match?: string[]) => (match ? match.some(under) : under(href));
   const [menu, setMenu] = useState(false);
+  // a station on a phone: the whole screen for the work (the station has its own scan button and a way back)
+  const station = /^\/postes\/(reception|photo|rangement|publication|expedition)(\/|$)/.test(path);
   useEffect(() => setMenu(false), [path]);
 
   return (
@@ -56,7 +58,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
             return (
               <div key={group} className="mt-4 first:mt-0" data-nav-group={group}>
                 <div className="flex items-baseline gap-1.5 px-3 pb-1.5">
-                  <span className="eyebrow-tight text-[10px] text-muted/80">{group}</span>
+                  <span className="eyebrow text-[10px] text-muted/80">{group}</span>
                   {hint && <span className="text-[11px] text-muted/50">· {hint}</span>}
                 </div>
                 <div className="space-y-0.5">
@@ -66,7 +68,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
                       href={href}
                       aria-current={active(href, match) ? "page" : undefined}
                       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-                        active(href, match) ? "bg-accent/12 text-accent" : "text-fg/70 hover:bg-fg/5 hover:text-fg"
+                        active(href, match) ? "bg-fg/[0.07] text-fg" : "text-fg/70 hover:bg-fg/5 hover:text-fg"
                       }`}
                     >
                       {active(href, match) && <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" />}
@@ -124,7 +126,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
                     {links.map(({ href, label, icon: Icon, match }) => (
                       <Link key={label} href={href} onClick={() => setMenu(false)}
                         className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium ${
-                          active(href, match) ? "bg-accent/12 text-accent ring-1 ring-inset ring-accent/25" : "bg-bg/60 text-fg/85"}`}>
+                          active(href, match) ? "bg-fg/[0.08] text-fg ring-1 ring-inset ring-fg/15" : "bg-bg/60 text-fg/85"}`}>
                         <Icon size={18} /> {label}
                       </Link>
                     ))}
@@ -144,12 +146,12 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
         </div>
       )}
 
-      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6"><div key={path} className="page-in mx-auto max-w-7xl"><HubTabs isManager={isManager} />{children}</div></main>
+      <main className={`min-w-0 flex-1 px-4 pt-4 md:px-8 md:pb-10 md:pt-6 ${station ? "pb-[max(1.5rem,env(safe-area-inset-bottom))]" : "pb-28"}`}><div key={path} className="page-in mx-auto max-w-7xl"><HubTabs isManager={isManager} />{children}</div></main>
 
       <KeyboardShortcuts isManager={isManager} />
 
       {/* Phone: bottom bar with a central scan button */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-ink/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+      <nav className={`fixed inset-x-0 bottom-0 z-40 grid-cols-5 ${station ? "hidden" : "grid"} border-t border-line bg-ink/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden`} data-bottom-nav>
         {MOBILE.slice(0, 2).map((href) => <MobileLink key={href} href={href} active={active(href)} />)}
         <button onClick={openCamera} className="-mt-5 flex flex-col items-center" aria-label="Scanner">
           <span className="rounded-full bg-accent p-4 text-accent-fg shadow-[0_0_28px_-4px_var(--accent)] ring-4 ring-bg"><ScanLine size={28} /></span>
@@ -164,7 +166,7 @@ function MobileLink({ href, active }: { href: string; active: boolean }) {
   const item = NAV.find((n) => n.href === href)!;
   const Icon = item.icon;
   return (
-    <Link href={href} className={`relative flex flex-col items-center gap-0.5 py-2 text-[11px] transition-colors ${active ? "text-accent" : "text-muted"}`}>
+    <Link href={href} className={`relative flex flex-col items-center gap-0.5 py-2 text-[11px] transition-colors ${active ? "font-semibold text-fg" : "text-muted"}`}>
       <span className="absolute right-[30%] top-1.5"><Pending /></span>
       <Icon size={22} />
       {item.label.split(" ")[0]}

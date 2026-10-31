@@ -6,7 +6,7 @@ import { ImagePlus, Camera, RotateCw, Trash2 } from "lucide-react";
 import { useScan } from "@/components/scan-provider";
 import { StationHeader } from "@/components/station-header";
 import { useToast } from "@/components/toast";
-import { StatusChip, btn, input } from "@/components/ui";
+import { StatusChip, btn, input, seg } from "@/components/ui";
 import { CONDITION_LABEL, HOLD_LABEL, STATION_LABEL } from "@/i18n/fr";
 import { asItem, loadMeasurements, loadPhotos, rpc } from "@/lib/client-data";
 import { compressImage } from "@/lib/image";
@@ -195,7 +195,7 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <StationHeader title={STATION_LABEL[mode]} done={count}>
-        <div role="radiogroup" aria-label="Mode du poste" className="grid w-full grid-cols-3 rounded-lg border border-line bg-panel p-1 sm:w-auto">
+        <div role="radiogroup" aria-label="Mode du poste" className="grid w-full grid-cols-3 rounded-xl border border-line bg-panel/80 p-1 sm:w-auto">
           {(["photo_measure", "photo", "measure"] as Mode[]).map((m) => (
             <button
               key={m}
@@ -205,7 +205,7 @@ export function PhotoStation({ catalog, orgId, minPhotos, initialSku }: {
                 setMode(m);
                 try { localStorage.setItem("photoMode", m); } catch {}
               }}
-              className={`min-h-10 whitespace-nowrap rounded-md px-3 text-sm font-semibold transition ${mode === m ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}
+              className={`${seg.item(mode === m)} whitespace-nowrap`}
             >
               {m === "photo_measure" ? "Les deux" : m === "photo" ? "Photo" : "Mesures"}
             </button>

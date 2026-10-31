@@ -43,8 +43,8 @@ export function LotPayback({ p }: { p: Payback }) {
         <>
           <div>
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-sm">
-              <span><b className="font-mono tabular-nums">{money(p.recovered)}</b> encaissés sur <b className="font-mono tabular-nums">{money(p.cost)}</b></span>
-              <span className="font-mono tabular-nums text-muted">{Math.floor(p.pct)} %</span>
+              <span><b className="figure tabular-nums">{money(p.recovered)}</b> encaissés sur <b className="figure tabular-nums">{money(p.cost)}</b></span>
+              <span className="figure tabular-nums text-muted">{Math.floor(p.pct)} %</span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={Math.floor(bar)} aria-valuemin={0} aria-valuemax={100} aria-label="Part du coût du lot déjà encaissée">
               <div className={`h-full rounded-full ${p.status === "perte" ? "bg-red-500" : "bg-accent"}`} style={{ width: `${bar}%` }} />

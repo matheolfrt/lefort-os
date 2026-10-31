@@ -85,7 +85,7 @@ export function ForecastChart({ points, reserve, known }: { points: ForecastPoin
           )}
           <path d={line("base")} fill="none" stroke="var(--series-1)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
           <circle cx={x(n - 1)} cy={y(last.base)} r={4} fill="var(--series-1)" stroke="var(--panel)" strokeWidth={2} />
-          <text x={x(n - 1) - 8} y={y(last.base) - 8} textAnchor="end" className="fill-fg font-mono text-[11px] font-semibold">{eur(last.base)}</text>
+          <text x={x(n - 1) - 8} y={y(last.base) - 8} textAnchor="end" className="fill-fg figure text-[11px] font-semibold">{eur(last.base)}</text>
           {hover != null && h && (
             <g pointerEvents="none">
               <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={H - PAD.b} stroke="var(--fg)" strokeOpacity={0.35} />
@@ -108,10 +108,10 @@ export function ForecastChart({ points, reserve, known }: { points: ForecastPoin
         <div role="status" className="pointer-events-none absolute top-0 z-10 w-[210px] rounded-xl border border-line bg-panel-2/95 p-2.5 text-xs shadow-xl backdrop-blur"
           style={{ left: Math.min(Math.max(x(hover) - 105, 0), Math.max(0, W - 210)) }}>
           <div className="mb-1 capitalize text-muted">{hover === 0 ? "Aujourd'hui" : `${longDay(h.day)} · J+${hover}`}</div>
-          <div className="flex items-baseline justify-between gap-2"><span className="text-muted">Prévu</span><span className="font-mono font-semibold tabular-nums">{eur(h.base)}</span></div>
-          <div className="flex items-baseline justify-between gap-2"><span className="text-muted">Fourchette</span><span className="font-mono tabular-nums">{eurShort(h.low)} – {eurShort(h.high)}</span></div>
+          <div className="flex items-baseline justify-between gap-2"><span className="text-muted">Prévu</span><span className="figure font-semibold tabular-nums">{eur(h.base)}</span></div>
+          <div className="flex items-baseline justify-between gap-2"><span className="text-muted">Fourchette</span><span className="figure tabular-nums">{eurShort(h.low)} – {eurShort(h.high)}</span></div>
           {hover > 0 && <div className="mt-1 flex items-baseline justify-between gap-2 border-t border-line pt-1 text-muted">
-            <span>Ce jour</span><span className="font-mono tabular-nums">+{eurShort(h.inflow)} / −{eurShort(h.outflow)}</span>
+            <span>Ce jour</span><span className="figure tabular-nums">+{eurShort(h.inflow)} / −{eurShort(h.outflow)}</span>
           </div>}
         </div>
       )}

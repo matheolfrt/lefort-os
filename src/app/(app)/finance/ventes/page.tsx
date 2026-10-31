@@ -89,7 +89,7 @@ function Total({ k, v, sub }: { k: string; v: string; sub?: string }) {
   return (
     <div className="rounded-2xl border border-line bg-panel/80 p-3">
       <div className="eyebrow-tight truncate text-muted">{k}</div>
-      <div className="font-mono text-lg font-semibold tabular-nums">{v}</div>
+      <div className="figure text-lg font-semibold tabular-nums">{v}</div>
       {sub && <div className="text-xs text-muted">{sub}</div>}
     </div>
   );

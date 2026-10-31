@@ -37,12 +37,12 @@ export default async function Receivables() {
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-2xl border border-line bg-panel/80 p-3">
           <div className="eyebrow-tight text-muted">Total net attendu</div>
-          <div className="font-mono text-lg font-semibold tabular-nums" data-testid="receivable-total">{euro(total)}</div>
+          <div className="figure text-lg font-semibold tabular-nums" data-testid="receivable-total">{euro(total)}</div>
           <div className="text-xs text-muted">prix − frais − remboursements</div>
         </div>
         <div className="rounded-2xl border border-line bg-panel/80 p-3">
           <div className="eyebrow-tight text-muted">Ventes</div>
-          <div className="font-mono text-lg font-semibold tabular-nums">{rows.length}</div>
+          <div className="figure text-lg font-semibold tabular-nums">{rows.length}</div>
           <div className="text-xs text-muted">{rows.filter((r) => daysSince(r.sold_at) > 21).length} de plus de 21 jours</div>
         </div>
       </div>

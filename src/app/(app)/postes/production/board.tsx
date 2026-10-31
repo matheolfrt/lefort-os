@@ -248,7 +248,7 @@ function Column({ state, sorts, isManager, fresh, onSort, onLoadMore, onComplete
           </label>
         </div>
         <div className="mt-1 flex items-baseline gap-1.5">
-          <span className="font-mono text-2xl font-semibold tabular-nums leading-none" data-testid={`count-${def.status}`}>{totals.count}</span>
+          <span className="figure text-2xl font-semibold tabular-nums leading-none" data-testid={`count-${def.status}`}>{totals.count}</span>
           <span className="text-xs text-muted">article{totals.count > 1 ? "s" : ""}</span>
           {sort !== "priority" && <span className="ml-auto text-[11px] text-muted">{SORTS.find((s) => s.value === sort)?.label}</span>}
         </div>

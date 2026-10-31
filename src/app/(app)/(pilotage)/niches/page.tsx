@@ -165,7 +165,7 @@ function IdeaCard({ idea, library }: { idea: Idea; library?: boolean }) {
     idea.price_max_cents ? `jusqu'à ${eur(idea.price_max_cents)}` : "",
   ].filter(Boolean).join(" · ");
   return (
-    <form action={createFromIdea} className="flex items-start gap-3 rounded-2xl border border-line bg-panel/60 p-4" data-idea={idea.name}>
+    <form action={createFromIdea} className="flex items-start gap-3 rounded-2xl border border-line bg-panel/80 p-4" data-idea={idea.name}>
       <input type="hidden" name="idea" value={library ? idea.key : JSON.stringify(idea)} />
       <div className="min-w-0 flex-1">
         <div className="font-semibold">{idea.name}</div>

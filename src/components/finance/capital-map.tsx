@@ -39,7 +39,7 @@ export function CapitalMap({ parts, total, cashKnown }: {
             onPointerEnter={() => setHover(a.key)} onPointerLeave={() => setHover(null)} onClick={() => router.push(a.href)} />
         ))}
         <text x="90" y="84" textAnchor="middle" className="fill-muted text-[10px]">{focus ? focus.label : "Capital"}</text>
-        <text x="90" y="102" textAnchor="middle" className="fill-fg font-mono text-[15px] font-semibold">{eur(focus ? focus.cents : total)}</text>
+        <text x="90" y="102" textAnchor="middle" className="fill-fg figure text-[15px] font-semibold">{eur(focus ? focus.cents : total)}</text>
         {focus && <text x="90" y="117" textAnchor="middle" className="fill-muted text-[10px]">{Math.round(focus.share)} %</text>}
       </svg>
       <ul className="w-full min-w-0 flex-1 space-y-1">
@@ -50,8 +50,8 @@ export function CapitalMap({ parts, total, cashKnown }: {
               className={`group grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 rounded-xl px-2 transition ${hover === p.key ? "bg-fg/5" : ""}`}>
               <span aria-hidden className="size-3 rounded-sm" style={{ background: COLOR[p.key] }} />
               <span className="truncate text-sm">{p.label}{p.key === "cash" && !cashKnown && <span className="ml-1 text-xs text-amber-300">non déclarée</span>}</span>
-              <span className="text-right font-mono text-sm font-semibold tabular-nums">{eur(p.cents)}</span>
-              <span className="flex w-16 items-center justify-end gap-1 text-right font-mono text-xs tabular-nums text-muted">
+              <span className="text-right figure text-sm font-semibold tabular-nums">{eur(p.cents)}</span>
+              <span className="flex w-16 items-center justify-end gap-1 text-right figure text-xs tabular-nums text-muted">
                 {Math.round(p.share)} %<ChevronRight size={14} className="opacity-50 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
               </span>
             </Link>

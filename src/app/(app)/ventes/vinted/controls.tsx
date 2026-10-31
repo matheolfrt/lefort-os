@@ -63,7 +63,7 @@ export function DecisionCard({ row }: { row: IssueRow }) {
         <div className="min-w-0">
           <p className="font-semibold">{row.title || `Vente Vinted ${row.transaction_id}`}</p>
           <p className="text-sm text-muted">
-            {day(row.sold_at)} · <span className="font-mono">{eur(row.price_cents)}</span>{row.buyer && ` · ${row.buyer}`} · {STATE_LABEL[row.state] ?? row.state}
+            {day(row.sold_at)} · <span className="figure">{eur(row.price_cents)}</span>{row.buyer && ` · ${row.buyer}`} · {STATE_LABEL[row.state] ?? row.state}
             <span className="ml-1 font-mono text-xs">n° {row.transaction_id}</span>
           </p>
         </div>
@@ -249,7 +249,7 @@ export function LinkItem({ itemId, suggestions }: { itemId: string; suggestions:
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {s.photo && <img src={s.photo} alt="" className="size-8 rounded object-cover" />}
           <span className="max-w-[12rem] truncate">{s.title ?? s.external_id}</span>
-          <span className="font-mono">{eur(s.price_cents)}</span>
+          <span className="figure">{eur(s.price_cents)}</span>
           <Link2 size={13} className="text-accent" />
         </button>
       ))}

@@ -94,6 +94,7 @@ export const SHORTCUTS: { href: string; label: string; manager: boolean }[] = [
   { href: "/ventes/import", label: "Importer des ventes (CSV)", manager: true },
   { href: "/stock/import", label: "Importer le stock (CSV)", manager: true },
   { href: "/parametres/mises-a-jour", label: "Mises à jour de la base", manager: true },
+  { href: "/design", label: "Guide de style (boutons, couleurs, composants)", manager: false },
 ];
 
 export const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

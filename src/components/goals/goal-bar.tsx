@@ -15,7 +15,7 @@ export function GoalBar({ s, compact }: { s: Standing; compact?: boolean }) {
     <div data-goal={`${s.period}:${s.metric}`} data-pace={s.pace}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <span className="text-sm font-medium text-fg/85">{METRIC_LABEL[s.metric]}</span>
-        <span className="font-mono text-sm tabular-nums">
+        <span className="figure text-sm tabular-nums">
           <strong className="text-base text-fg">{formatValue(s.metric, s.actual, true)}</strong>
           <span className="text-muted"> / {formatValue(s.metric, s.target.value, true)}{s.target.own ? "" : "*"}</span>
         </span>

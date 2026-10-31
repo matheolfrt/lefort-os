@@ -131,7 +131,7 @@ export default async function Conseils() {
         )}
       </section>
 
-      <details className="rounded-2xl border border-line bg-panel/60 p-4 text-sm text-muted">
+      <details className="rounded-2xl border border-line bg-panel/80 p-4 text-sm text-muted">
         <summary className="cursor-pointer font-medium text-fg">Comment ces conseils sont calculés</summary>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>Marge d&apos;un article vendu = prix payé − frais Vinted, port et emballage payés par vous − coût d&apos;achat (part du lot).</li>
@@ -179,7 +179,7 @@ function AdviceCard({ a, n, compact }: { a: Advice; n?: number; compact?: boolea
         <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
           {a.impactCents != null && a.impactCents > 0 && (
             <div className="text-right">
-              <div className="font-mono text-lg font-semibold">{eur(a.impactCents)}</div>
+              <div className="figure text-lg font-semibold">{eur(a.impactCents)}</div>
               {a.impactLabel && <div className="text-[11px] text-muted">{a.impactLabel}</div>}
             </div>
           )}

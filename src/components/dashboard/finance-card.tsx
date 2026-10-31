@@ -26,7 +26,7 @@ export async function FinanceCard() {
         {figures.map((x) => (
           <div key={x.k} className="min-w-0">
             <dt className="eyebrow-tight truncate text-muted">{x.k}</dt>
-            <dd className="font-mono text-lg font-semibold tabular-nums">{x.v}</dd>
+            <dd className="figure text-lg font-semibold tabular-nums">{x.v}</dd>
           </div>
         ))}
       </dl>

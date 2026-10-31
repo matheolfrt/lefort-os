@@ -102,7 +102,7 @@ export default async function VintedSync() {
                 <li key={s.external_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <Link prefetch={false} href={`/stock/${s.sku}`} className="font-mono font-semibold hover:text-accent">{s.sku}</Link>
                   <span className="min-w-0 flex-1 truncate text-muted">{s.title}</span>
-                  <span className="font-mono">{eur(s.price_cents)}</span>
+                  <span className="figure">{eur(s.price_cents)}</span>
                   {s.url && <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-series-1 hover:underline">Vinted <ExternalLink size={12} /></a>}
                 </li>
               ))}
@@ -140,7 +140,7 @@ export default async function VintedSync() {
                 <li key={x.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className="text-muted">{day(x.sold_at)}</span>
                   <span className="min-w-0 flex-1 truncate">{x.title || `Vente ${x.transaction_id}`}</span>
-                  <span className="font-mono">{eur(x.price_cents)}</span>
+                  <span className="figure">{eur(x.price_cents)}</span>
                   {x.in_stock?.length ? <span className="text-xs text-amber-300">en stock : {x.in_stock.join(", ")}</span> : null}
                   <BeforeStartActions id={x.id} allKnown={x.items.length > 0 && x.items.every((i) => i.item_id)} orders={x.orders ?? []} />
                 </li>
@@ -158,7 +158,7 @@ export default async function VintedSync() {
                   <span className="text-muted">{day(m.sold_at)}</span>
                   <Link prefetch={false} href={`/ventes?q=${m.number}`} className="font-mono font-semibold hover:text-accent">V-{m.number}</Link>
                   <span className="min-w-0 flex-1 truncate text-muted">{m.title}</span>
-                  <span className="font-mono">{eur(m.price_cents)}</span>
+                  <span className="figure">{eur(m.price_cents)}</span>
                   <span className="text-xs text-muted">Vinted : {STATE_LABEL[m.state]}</span>
                 </li>
               ))}
@@ -219,7 +219,7 @@ export default async function VintedSync() {
               <li key={x.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                 <span className="text-muted">{day(x.sold_at)}</span>
                 <span className="min-w-0 flex-1 truncate">{x.title || `Vente ${x.transaction_id}`}{x.note && <span className="text-muted"> · {x.note}</span>}</span>
-                <span className="font-mono">{eur(x.price_cents)}</span>
+                <span className="figure">{eur(x.price_cents)}</span>
                 <UnignoreButton id={x.id} />
               </li>
             ))}
@@ -249,7 +249,7 @@ export default async function VintedSync() {
 function Count({ n, label, tone }: { n: number | null; label: string; tone: "good" | "warn" }) {
   return (
     <div className={`rounded-2xl border p-3 ${tone === "warn" ? "border-amber-400/35 bg-amber-400/[0.05]" : "border-line bg-panel/80"}`}>
-      <div className="font-mono text-2xl font-semibold tabular-nums">{n ?? "—"}</div>
+      <div className="figure text-2xl font-semibold tabular-nums">{n ?? "—"}</div>
       <div className="text-xs text-muted">{label}</div>
     </div>
   );

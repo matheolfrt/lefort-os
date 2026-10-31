@@ -73,7 +73,7 @@ export default async function Accounting({ searchParams }: { searchParams: Promi
               <thead><tr><th>Date</th><th>Réf.</th><th>Client</th><th>Nature</th><th className="num">Montant</th><th>Règlement</th></tr></thead>
               <tbody>
                 {(receipts ?? []).map((r, i) => (
-                  <tr key={i}><td>{date(r.date_encaissement)}</td><td className="font-mono">{r.reference}</td><td>{r.client}</td><td className="text-xs">{r.nature}</td><td className="num">{money(r.montant_cents)}</td><td className="text-xs">{r.mode_reglement}</td></tr>
+                  <tr key={i}><td>{date(r.date_encaissement)}</td><td className="figure">{r.reference}</td><td>{r.client}</td><td className="text-xs">{r.nature}</td><td className="num">{money(r.montant_cents)}</td><td className="text-xs">{r.mode_reglement}</td></tr>
                 ))}
               </tbody>
             </table>

@@ -9,7 +9,7 @@ import { errorMessage } from "@/lib/errors";
 import { rpc } from "@/lib/client-data";
 import { useToast } from "@/components/toast";
 import { InlineEdit } from "@/components/inline-edit";
-import { input as inputCls, btn } from "@/components/ui";
+import { input as inputCls, btn, seg } from "@/components/ui";
 import {
   BUCKETS, BUCKET_LABEL, REPEAT_LABEL, TODO_COLUMNS, addDays, bucket, dueLabel, nextDue, parseQuick, sortTodos,
   type Repeat, type Todo,
@@ -104,10 +104,10 @@ export function TodoList({ initial, done = NONE, members, me, isManager, today, 
       <AddTodo variant={variant} today={today} me={me} members={members} isManager={isManager} onAdd={add} />
 
       {variant === "page" && (
-        <div role="radiogroup" aria-label="Afficher" className="inline-flex rounded-xl border border-line bg-panel/70 p-1 text-sm">
+        <div role="radiogroup" aria-label="Afficher" className={seg.wrap}>
           {(["mine", "all"] as Scope[]).map((s) => (
             <button key={s} type="button" role="radio" aria-checked={scope === s} onClick={() => setScope(s)}
-              className={`min-h-9 rounded-lg px-3 font-medium ${scope === s ? "bg-accent/15 text-accent" : "text-muted hover:text-fg"}`}>
+              className={seg.item(scope === s)}>
               {s === "mine" ? "Les miennes" : "Toute l'équipe"}
             </button>
           ))}

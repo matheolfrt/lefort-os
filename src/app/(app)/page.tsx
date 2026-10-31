@@ -278,7 +278,7 @@ function TodoTile({ label, icon: Icon, href, count, oldestDays, lateAfter, note 
         <ChevronRight size={16} className="opacity-0 transition group-hover:opacity-100" />
       </div>
       <div>
-        <div className={`text-[28px] font-mono font-semibold leading-none tabular-nums ${count ? "" : "text-muted/40"}`}>{count}</div>
+        <div className={`text-[28px] figure font-semibold leading-none tabular-nums ${count ? "" : "text-muted/40"}`}>{count}</div>
         <div className="mt-1 text-sm font-semibold leading-tight">{label}</div>
         <div className={`text-xs ${late ? "font-semibold text-red-600 dark:text-red-400" : "text-muted"}`}>
           {note ?? (count && oldestDays != null ? (late ? `en retard · ${oldestDays} j` : `plus ancien ${oldestDays} j`) : count ? "\u00a0" : "Rien en attente")}
@@ -310,7 +310,7 @@ function Kpi({ label, value, hint, n, tone, help, cmp, fmt, unit, href, big }: {
         <span className={`relative z-10 flex items-start gap-1 text-muted ${big ? "text-sm font-medium" : "eyebrow-tight"}`}>{label}{help && <Help text={help} />}</span>
         {n != null && <SampleSize n={n} />}
       </div>
-      <div className={`mt-1 font-mono font-semibold leading-tight tabular-nums tracking-tight ${big ? "text-[30px] sm:text-[36px]" : "text-[26px]"} ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
+      <div className={`mt-1 figure font-semibold leading-tight tabular-nums tracking-tight ${big ? "text-[30px] sm:text-[36px]" : "text-[26px]"} ${tone === "bad" ? "text-red-600 dark:text-red-400" : ""}`}>
         {href ? <Link href={href} className="kpi-link inline-flex min-h-11 items-center after:absolute after:inset-0 after:rounded-2xl">{value}<ChevronRight size={18} aria-hidden className="ml-1 inline align-middle text-muted" /><span className="sr-only"> : voir le détail</span></Link> : value}
       </div>
       {hint && <div className="text-xs leading-snug text-muted">{hint}</div>}
@@ -348,7 +348,7 @@ function Pipeline({ counts }: { counts: { status: ItemStatus; count: number; old
                   <span className={`size-2 shrink-0 rounded-full ${dot(c.status)}`} />
                   {STATUS_LABEL[c.status]}
                 </span>
-                <span className={`text-2xl font-mono font-semibold leading-none tabular-nums ${c.count ? "" : "text-muted/40"}`}>{c.count}</span>
+                <span className={`text-2xl figure font-semibold leading-none tabular-nums ${c.count ? "" : "text-muted/40"}`}>{c.count}</span>
                 <span className="text-[10px] text-muted">{bottleneck ? "goulot" : " "}</span>
               </Link>
               {i < counts.length - 1 && <ChevronRight size={14} className="shrink-0 text-muted/50 md:hidden" />}
@@ -418,7 +418,7 @@ function StockAge({ buckets, total }: { buckets: { label: string; count: number;
             <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-muted">
               <span className={`size-2 rounded-full ${AGE_TONE[b.tone]}`} />{b.label}
             </dt>
-            <dd className={`text-xl font-mono font-semibold tabular-nums ${b.tone === "alert" && b.count ? "text-red-600 dark:text-red-400" : b.tone === "warn" && b.count ? "text-amber-600 dark:text-amber-400" : ""}`}>
+            <dd className={`text-xl figure font-semibold tabular-nums ${b.tone === "alert" && b.count ? "text-red-600 dark:text-red-400" : b.tone === "warn" && b.count ? "text-amber-600 dark:text-amber-400" : ""}`}>
               {b.count}
             </dd>
           </div>
@@ -476,7 +476,7 @@ async function AdviceCard({ quarterly }: { quarterly: boolean }) {
                 <span className="block truncate font-medium">{a.title}</span>
                 <span className="block truncate text-xs text-muted">{a.detail}</span>
               </span>
-              {a.impactCents != null && a.impactCents > 0 && <span className="hidden font-mono text-sm sm:block">{eur0(a.impactCents)}</span>}
+              {a.impactCents != null && a.impactCents > 0 && <span className="hidden figure text-sm sm:block">{eur0(a.impactCents)}</span>}
               <ChevronRight size={18} className="shrink-0 text-muted/60" />
             </Link>
           </li>

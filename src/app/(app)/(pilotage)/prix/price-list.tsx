@@ -81,7 +81,7 @@ export function PriceList({ items }: { items: Suggestion[] }) {
   const all = list.length > 0 && list.every((s) => selected.has(s.id));
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panel/70 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panel/80 px-3 py-2">
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
           <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={all}
             onChange={() => setSelected(all ? new Set() : new Set(list.map((s) => s.id)))} />
@@ -108,7 +108,7 @@ export function PriceList({ items }: { items: Suggestion[] }) {
                   <Link prefetch={false} href={`/stock/${encodeURIComponent(s.sku)}`} className="font-mono font-semibold hover:text-accent">{s.sku}</Link>
                   <span className="ml-2 text-sm text-fg/85">{s.title ?? [s.category, s.brand].filter(Boolean).join(" · ")}{s.size ? ` · T${s.size}` : ""}</span>
                 </div>
-                <div className="font-mono tabular-nums">
+                <div className="figure tabular-nums">
                   <span className="text-muted line-through">{eur(s.price)}</span>
                   <span className="mx-1.5 text-muted">→</span>
                   <strong className="text-lg text-fg">{eur(s.suggested)}</strong>
@@ -117,7 +117,7 @@ export function PriceList({ items }: { items: Suggestion[] }) {
               </div>
               <p className="mt-1 text-xs text-muted">{reason(s)}</p>
               <p className={`text-xs ${s.margin < 0 ? "text-red-300" : "text-muted"}`}>
-                Marge si vendu à ce prix : <span className="font-mono font-semibold text-fg/90">{eur(s.margin)}</span> (coût {eur(s.cost)}, frais et envoi déduits)
+                Marge si vendu à ce prix : <span className="figure font-semibold text-fg/90">{eur(s.margin)}</span> (coût {eur(s.cost)}, frais et envoi déduits)
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button type="button" className={`${btn.primary} min-h-10 px-3 text-sm`} disabled={busy} onClick={() => apply([s])}>Appliquer</button>

@@ -11,7 +11,7 @@ const ago = (day: string | null) => {
 };
 
 export function VerdictChip({ v }: { v: Judged["verdict"] }) {
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${VERDICT[v].tone}`}>{VERDICT[v].label}</span>;
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${VERDICT[v].tone}`}>{VERDICT[v].label}</span>;
 }
 
 /** How much of what was paid has come back, and what is still in stock to sell */
@@ -23,7 +23,7 @@ export function Payback({ s }: { s: Judged }) {
     <div>
       <div className="flex items-baseline justify-between gap-2 text-xs">
         <span className="text-muted">Remboursé</span>
-        <span className="font-mono font-semibold tabular-nums">{pct(s.paybackPct)}</span>
+        <span className="figure font-semibold tabular-nums">{pct(s.paybackPct)}</span>
       </div>
       <div className="mt-1 h-2 overflow-hidden rounded-full bg-fg/10" role="progressbar" aria-label={`${pct(s.paybackPct)} de ce qui a été payé est revenu`}
         aria-valuenow={Math.round(back)} aria-valuemin={0} aria-valuemax={100}>
@@ -68,7 +68,7 @@ function Fig({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
     <div className="min-w-0">
       <dt className="eyebrow-tight truncate text-muted">{k}</dt>
-      <dd className="truncate font-mono font-semibold tabular-nums">{v}</dd>
+      <dd className="truncate figure font-semibold tabular-nums">{v}</dd>
       {hint && <dd className="truncate text-xs text-muted">{hint}</dd>}
     </div>
   );

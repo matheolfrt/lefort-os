@@ -67,13 +67,13 @@ export default async function Returns({ searchParams }: { searchParams: Promise<
           <Card title="Ce que les retours ont coûté">
             <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[1fr_auto]" data-testid="returns-loss">
               <dt>Frais Vinted, port et emballage des ventes revenues <span className="text-muted">(payés pour rien)</span></dt>
-              <dd className="text-right font-mono tabular-nums">{money(r.lost_fees_cents)}</dd>
+              <dd className="text-right figure tabular-nums">{money(r.lost_fees_cents)}</dd>
               <dt>Revente moins chère <span className="text-muted">({r.resold} article{r.resold > 1 ? "s" : ""} revendu{r.resold > 1 ? "s" : ""})</span></dt>
-              <dd className="text-right font-mono tabular-nums">{money(r.resale_loss_cents)}</dd>
+              <dd className="text-right figure tabular-nums">{money(r.resale_loss_cents)}</dd>
               <dt>Remboursements sans retour <span className="text-muted">(gestes commerciaux : {r.goodwill_n})</span></dt>
-              <dd className="text-right font-mono tabular-nums">{money(r.goodwill_cents)}</dd>
+              <dd className="text-right figure tabular-nums">{money(r.goodwill_cents)}</dd>
               <dt className="border-t border-line pt-2 font-semibold">Total perdu</dt>
-              <dd className="border-t border-line pt-2 text-right font-mono font-semibold tabular-nums">{money(loss)}</dd>
+              <dd className="border-t border-line pt-2 text-right figure font-semibold tabular-nums">{money(loss)}</dd>
             </dl>
             <p className="mt-3 text-xs text-muted">Le port du retour, quand c&apos;est vous qui le payez, n&apos;est pas enregistré : il n&apos;est pas compté.</p>
           </Card>
@@ -85,7 +85,7 @@ export default async function Returns({ searchParams }: { searchParams: Promise<
               <Card title="Par motif">
                 <ul className="divide-y divide-line text-sm" data-testid="by-reason">
                   {r.by_reason.map((x) => (
-                    <li key={x.label} className="flex justify-between gap-3 py-2"><span>{x.label}</span><span className="font-mono tabular-nums">{x.n}</span></li>
+                    <li key={x.label} className="flex justify-between gap-3 py-2"><span>{x.label}</span><span className="figure tabular-nums">{x.n}</span></li>
                   ))}
                 </ul>
               </Card>

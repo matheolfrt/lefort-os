@@ -30,7 +30,7 @@ export const rackCode = (i: number) => {
 };
 
 export const DEFAULT_COLORS: StatusColors = {
-  available: "#22a06b", reserved: "#e2b203", sold: "#3b82f6", problem: "#e5484d", progress: "#8e8cf5", empty: "#9aa1ab",
+  available: "#10b981", reserved: "#fbbf24", sold: "#3b82f6", problem: "#ef4444", progress: "#a78bfa", empty: "#a1a1aa",
 };
 
 /** 200 m², 35 shelves of 120 × 60 × 200 cm with 5 levels of 24 blazers: 4 200 places */

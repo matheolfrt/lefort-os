@@ -146,7 +146,7 @@ function Fig({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
     <div className="min-w-0">
       <dt className="eyebrow-tight text-muted">{k}</dt>
-      <dd className="font-mono text-xl font-semibold tabular-nums">{v}</dd>
+      <dd className="figure text-xl font-semibold tabular-nums">{v}</dd>
       {hint && <dd className="text-xs text-muted">{hint}</dd>}
     </div>
   );
@@ -164,11 +164,11 @@ function Breakdown({ title, rows }: { title: string; rows: Group[] }) {
         {rows.slice(0, 12).map((g) => (
           <li key={g.name} className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3">
             <span className="truncate">{g.name}</span>
-            <span className="text-right font-mono tabular-nums">
+            <span className="text-right figure tabular-nums">
               {g.sold} <span className="text-muted">/ {g.stock}</span>
               {g.sold === 0 && g.stock >= 2 && <span className="ml-1 text-amber-300" title="En stock, aucune vente">●</span>}
             </span>
-            <span className={`w-16 text-right font-mono tabular-nums ${g.sold && g.profit_cents < 0 ? "text-red-300" : ""}`}>{g.sold ? eur(g.profit_cents / g.sold) : "—"}</span>
+            <span className={`w-16 text-right figure tabular-nums ${g.sold && g.profit_cents < 0 ? "text-red-300" : ""}`}>{g.sold ? eur(g.profit_cents / g.sold) : "—"}</span>
           </li>
         ))}
       </ul>

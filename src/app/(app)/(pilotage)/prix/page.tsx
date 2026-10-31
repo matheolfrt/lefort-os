@@ -69,7 +69,7 @@ export default async function Prices({ searchParams }: { searchParams: Promise<{
               <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                 <Link prefetch={false} href={`/stock/${encodeURIComponent(r.sku)}`} className="font-mono font-semibold hover:text-accent">{r.sku}</Link>
                 <span className="min-w-0 flex-1 truncate text-muted">{r.title}</span>
-                <span className="font-mono tabular-nums"><span className="text-muted line-through">{eur(r.old)}</span> → {eur(r.new)}</span>
+                <span className="figure tabular-nums"><span className="text-muted line-through">{eur(r.old)}</span> → {eur(r.new)}</span>
                 <span className="text-xs text-muted">{day(r.at)}</span>
                 {r.url && <a href={r.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 text-series-1 hover:underline">Vinted <ExternalLink size={14} /></a>}
               </li>
@@ -91,7 +91,7 @@ export default async function Prices({ searchParams }: { searchParams: Promise<{
                     <li key={e.band}>
                       <div className="flex items-baseline justify-between gap-2 text-sm">
                         <span>Après une {BAND_LABEL[e.band]}</span>
-                        <span className="font-mono font-semibold tabular-nums">{pct} %</span>
+                        <span className="figure font-semibold tabular-nums">{pct} %</span>
                       </div>
                       <div className="mt-1 h-2 overflow-hidden rounded-full bg-fg/10"><div className="h-full rounded-full bg-series-1" style={{ width: `${pct}%` }} /></div>
                       <div className="mt-0.5 text-xs text-muted">{e.sold} vendus dans les 14 jours sur {e.n} baisse{e.n > 1 ? "s" : ""}</div>
@@ -141,7 +141,7 @@ function Tile({ k, v, hint }: { k: string; v: string; hint: string }) {
   return (
     <div className="rounded-2xl border border-line bg-panel/80 px-4 py-3">
       <div className="eyebrow-tight text-muted">{k}</div>
-      <div className="mt-1 font-mono text-[26px] font-medium leading-tight tabular-nums">{v}</div>
+      <div className="mt-1 figure text-[26px] font-medium leading-tight tabular-nums">{v}</div>
       <div className="text-xs leading-snug text-muted">{hint}</div>
     </div>
   );

@@ -8,7 +8,7 @@ const rate = (v: number | null) => (v == null ? "—" : `${v.toLocaleString("fr-
 
 export function LotStatusChip({ status }: { status: LotStatus }) {
   const s = STATUS[status];
-  return <span title={s.help} data-lot-status={status} className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${s.tone}`}>{s.label}</span>;
+  return <span title={s.help} data-lot-status={status} className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${s.tone}`}>{s.label}</span>;
 }
 
 /**
@@ -39,7 +39,7 @@ export function LotPerformance({ row, isManager, now = Date.now() }: { row: LotR
         <Fig k="Stock initial" v={String(row.total)} sub={row.rejected ? `dont ${row.rejected} écarté${row.rejected > 1 ? "s" : ""}` : undefined} />
         <div className="col-span-2 sm:col-span-1">
           <dt className="eyebrow-tight text-muted">Mis en ligne</dt>
-          <dd className="font-mono text-xl font-semibold tabular-nums">{listedCount} / {r.sellable}</dd>
+          <dd className="figure text-xl font-semibold tabular-nums">{listedCount} / {r.sellable}</dd>
           <div className="mt-1 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={Math.round(r.pctListed)} aria-valuemin={0} aria-valuemax={100} aria-label="Progression de la mise en ligne">
             <div className="h-full rounded-full bg-series-1 transition-[width]" style={{ width: `${r.pctListed}%` }} />
           </div>
@@ -92,7 +92,7 @@ export function LotPerformance({ row, isManager, now = Date.now() }: { row: LotR
                 {i < step.length - 1 && <span aria-hidden className="hidden h-px flex-1 bg-line sm:block" />}
               </span>
               <span>
-                <span className="block font-mono text-sm tabular-nums">{s.at ? dayMonth(s.at) : "—"}</span>
+                <span className="block figure text-sm tabular-nums">{s.at ? dayMonth(s.at) : "—"}</span>
                 <span className="block text-xs text-muted"> {s.label}{s.key === "fin_listing" && !s.at && r.started ? " (en cours)" : ""}</span>
               </span>
             </li>
@@ -110,7 +110,7 @@ function Fig({ k, v, sub }: { k: string; v: string; sub?: string }) {
   return (
     <div>
       <dt className="eyebrow-tight text-muted">{k}</dt>
-      <dd className="font-mono text-xl font-semibold tabular-nums">{v}</dd>
+      <dd className="figure text-xl font-semibold tabular-nums">{v}</dd>
       {sub && <span className="text-xs text-muted">{sub}</span>}
     </div>
   );
@@ -125,7 +125,7 @@ function Kpi({ id, icon, title, help, value, sub, children }: {
         <span className="text-sm font-semibold"><span aria-hidden className="mr-1">{icon}</span>{title}</span>
         <Help text={help} />
       </div>
-      <div className="mt-1 font-mono text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 figure text-2xl font-semibold tabular-nums">{value}</div>
       <p className="text-xs text-muted">{sub}</p>
       {children}
     </div>

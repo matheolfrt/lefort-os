@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, FlaskConical, Settings2 } from "lucide-react";
 import { requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { Empty, PageHeader, btn } from "@/components/ui";
+import { Empty, PageHeader, btn, seg as tabs } from "@/components/ui";
 import { loadFinance } from "@/lib/finance/server";
 import { MIN_SEGMENT_SALES, evolution, euro, frDate, frShort, insights, liquidationValue, pct, type Segment } from "@/lib/finance";
 import { Kpi, LevelBadge, Section, Trend } from "@/components/finance/kpi";
@@ -171,7 +171,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
                       <span className="h-2.5 overflow-hidden rounded-full bg-line/60">
                         <span className="block h-full rounded-full" style={{ width: `${Math.max(share, b.cost_cents ? 1 : 0)}%`, background: AGE_COLOR[i] }} />
                       </span>
-                      <span className="text-right font-mono text-sm tabular-nums">
+                      <span className="text-right figure text-sm tabular-nums">
                         {euro(b.cost_cents)} <span className="text-xs text-muted">· {b.count} · {Math.round(share)} %</span>
                       </span>
                     </Link>
@@ -205,8 +205,8 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
                   <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 py-2">
                     <Link prefetch={false} href={`/stock/${encodeURIComponent(d.sku)}`} className="font-mono font-semibold hover:text-accent">{d.sku}</Link>
                     <span className="min-w-0 flex-1 truncate text-muted">{[d.brand, d.category].filter(Boolean).join(" · ") || d.title}</span>
-                    <span className="font-mono text-xs tabular-nums text-muted">{d.age} j</span>
-                    <span className="font-mono tabular-nums">{euro(d.cost_cents)}</span>
+                    <span className="figure text-xs tabular-nums text-muted">{d.age} j</span>
+                    <span className="figure tabular-nums">{euro(d.cost_cents)}</span>
                     {d.suggest_todo && d.suggested_cents != null && d.price_cents != null && (
                       <Link prefetch={false} href="/prix" className="w-full text-xs text-amber-300 hover:underline sm:w-auto">
                         Prix suggéré {euro(d.suggested_cents)} au lieu de {euro(d.price_cents)}
@@ -284,8 +284,8 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
             {fc.marks.filter((m) => [7, 30, 60, 90].includes(m.days)).map((m) => (
               <div key={m.days} className="rounded-xl border border-line bg-bg/40 p-3">
                 <div className="eyebrow-tight text-muted">J+{m.days}</div>
-                <div className={`font-mono text-lg font-semibold tabular-nums ${cash.known && m.base < s.cash_reserve_cents ? "text-red-300" : ""}`}>{euro(m.base)}</div>
-                <div className="font-mono text-[11px] tabular-nums text-muted">{euro(m.low)} – {euro(m.high)}</div>
+                <div className={`figure text-lg font-semibold tabular-nums ${cash.known && m.base < s.cash_reserve_cents ? "text-red-300" : ""}`}>{euro(m.base)}</div>
+                <div className="figure text-[11px] tabular-nums text-muted">{euro(m.low)} – {euro(m.high)}</div>
               </div>
             ))}
           </div>
@@ -305,7 +305,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
               <h4 className="eyebrow-tight mb-1.5 text-muted">Sorties prévues sur {fc.points.length - 1} j</h4>
               {fc.outflows.length ? (
                 <ul className="divide-y divide-line text-sm">
-                  {fc.outflows.map((x) => <li key={x.label} className="flex justify-between py-1.5"><span>{x.label}</span><span className="font-mono tabular-nums">{euro(x.cents)}</span></li>)}
+                  {fc.outflows.map((x) => <li key={x.label} className="flex justify-between py-1.5"><span>{x.label}</span><span className="figure tabular-nums">{euro(x.cents)}</span></li>)}
                 </ul>
               ) : <p className="text-xs text-muted">Aucune charge récurrente ni achat prévu. <Link prefetch={false} href="/finance/parametres#charges" className="underline">Ajouter vos charges</Link> rend la prévision plus juste.</p>}
             </div>
@@ -326,20 +326,20 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
           <div className="rounded-2xl border border-line bg-panel/80 p-4 text-sm">
             <h3 className="mb-2 font-medium">Ce qui entre dans le calcul</h3>
             <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1.5">
-              <dt className="text-muted">Réserve de sécurité (jamais dépensable)</dt><dd className="text-right font-mono tabular-nums">{euro(s.cash_reserve_cents)}</dd>
-              <dt className="text-muted">Dépenses prévues sur 30 j</dt><dd className="text-right font-mono tabular-nums">{euro(budget.due30)}</dd>
-              <dt className="text-muted">Achats prévus</dt><dd className="text-right font-mono tabular-nums">{euro(budget.committed)}</dd>
-              <dt className="text-muted">Charges récurrentes</dt><dd className="text-right font-mono tabular-nums">{o.recurring.length}</dd>
-              <dt className="text-muted">Ventes prévues (coût vendu par jour)</dt><dd className="text-right font-mono tabular-nums">{fc.itemsPerDay.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} art./j</dd>
-              <dt className="text-muted">Stock visé</dt><dd className="text-right font-mono tabular-nums">30 + {s.forecast.stock_target_days} j</dd>
-              <dt className="text-muted">Stock actuel couvre</dt><dd className="text-right font-mono tabular-nums">{days(budget.coverDays)}</dd>
+              <dt className="text-muted">Réserve de sécurité (jamais dépensable)</dt><dd className="text-right figure tabular-nums">{euro(s.cash_reserve_cents)}</dd>
+              <dt className="text-muted">Dépenses prévues sur 30 j</dt><dd className="text-right figure tabular-nums">{euro(budget.due30)}</dd>
+              <dt className="text-muted">Achats prévus</dt><dd className="text-right figure tabular-nums">{euro(budget.committed)}</dd>
+              <dt className="text-muted">Charges récurrentes</dt><dd className="text-right figure tabular-nums">{o.recurring.length}</dd>
+              <dt className="text-muted">Ventes prévues (coût vendu par jour)</dt><dd className="text-right figure tabular-nums">{fc.itemsPerDay.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} art./j</dd>
+              <dt className="text-muted">Stock visé</dt><dd className="text-right figure tabular-nums">30 + {s.forecast.stock_target_days} j</dd>
+              <dt className="text-muted">Stock actuel couvre</dt><dd className="text-right figure tabular-nums">{days(budget.coverDays)}</dd>
             </dl>
             {o.planned.length > 0 && (
               <ul className="mt-3 divide-y divide-line border-t border-line">
                 {o.planned.map((p) => (
                   <li key={p.id} className="flex flex-wrap justify-between gap-x-3 py-1.5">
                     <span>{p.label}{p.supplier && <span className="text-muted"> · {p.supplier}</span>}</span>
-                    <span className="font-mono tabular-nums">{euro(p.amount_cents)} <span className="text-xs text-muted">le {frShort(p.due_on)}</span></span>
+                    <span className="figure tabular-nums">{euro(p.amount_cents)} <span className="text-xs text-muted">le {frShort(p.due_on)}</span></span>
                   </li>
                 ))}
               </ul>
@@ -373,16 +373,16 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
 
       <Section id="segments" n={8} title="Analyse détaillée">
         <div className="flex flex-wrap items-center gap-2">
-          <div role="tablist" aria-label="Axe" className="flex flex-wrap gap-1">
+          <div role="tablist" aria-label="Axe" className={tabs.wrap}>
             {DIMS.map((d) => (
               <Link key={d.key} prefetch={false} scroll={false} href={segHref({ axe: d.key })} role="tab" aria-selected={axe === d.key}
-                className={`inline-flex min-h-10 items-center rounded-lg px-3 text-sm transition ${axe === d.key ? "bg-accent/15 font-medium text-accent" : "text-muted hover:text-fg"}`}>{d.label}</Link>
+                className={tabs.item(axe === d.key)}>{d.label}</Link>
             ))}
           </div>
-          <div className="ml-auto flex gap-1 rounded-xl border border-line bg-panel/70 p-1 text-sm" aria-label="Période des ventes">
+          <div className={`ml-auto ${tabs.wrap}`} aria-label="Période des ventes">
             {PERIODS.map((p) => (
               <Link key={p.key} prefetch={false} scroll={false} href={segHref({ periode: p.key })} aria-current={periode === p.key}
-                className={`inline-flex min-h-9 items-center rounded-lg px-3 ${periode === p.key ? "bg-accent/15 text-accent" : "text-muted hover:text-fg"}`}>{p.label}</Link>
+                className={tabs.item(periode === p.key)}>{p.label}</Link>
             ))}
           </div>
         </div>
@@ -437,7 +437,7 @@ function Mini({ k, v }: { k: string; v: string }) {
   return (
     <div>
       <div className="eyebrow-tight text-muted">{k}</div>
-      <div className="font-mono text-lg font-semibold tabular-nums">{v}</div>
+      <div className="figure text-lg font-semibold tabular-nums">{v}</div>
     </div>
   );
 }

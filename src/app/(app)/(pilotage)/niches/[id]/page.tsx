@@ -136,7 +136,7 @@ export default async function NichePage({ params, searchParams }: { params: Prom
         )}
       </Card>
 
-      <details className="rounded-2xl border border-line bg-panel/60 p-4" open={!!error}>
+      <details className="rounded-2xl border border-line bg-panel/80 p-4" open={!!error}>
         <summary className="cursor-pointer font-medium">Modifier les critères et objectifs</summary>
         <div className="mt-4"><NicheForm niche={n} brands={brands ?? []} categories={categories ?? []} /></div>
       </details>

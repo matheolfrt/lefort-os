@@ -53,7 +53,7 @@ export function Welcome({ overview, firstName, myStats, onStart, collapsed, onTo
               {PRIORITIES.map((p, i) => (
                 <li key={p.value} className="flex items-center gap-2">
                   <span className={`size-2.5 rounded-full ${p.dot}`} />
-                  <span className="w-8 font-mono font-semibold tabular-nums">{counts[i]}</span>
+                  <span className="w-8 figure font-semibold tabular-nums">{counts[i]}</span>
                   <span className="text-muted">{["urgentes", "prioritaires", "normales", "basses"][i]}</span>
                 </li>
               ))}
@@ -66,7 +66,7 @@ export function Welcome({ overview, firstName, myStats, onStart, collapsed, onTo
                 <li key={c} className="flex items-center gap-2">
                   <span className="w-5 text-center">{COLUMN[c].taskEmoji}</span>
                   <span className="flex-1">{COLUMN[c].taskNoun}</span>
-                  <span className="font-mono font-semibold tabular-nums">{overview.by_column?.[c] ?? 0}</span>
+                  <span className="figure font-semibold tabular-nums">{overview.by_column?.[c] ?? 0}</span>
                 </li>
               ))}
             </ul>

@@ -44,7 +44,7 @@
   --color-amber-200: #92400e; --color-amber-300: #b45309;
   --color-sky-200: #075985; --color-sky-300: #0369a1;
   --color-emerald-200: #065f46; --color-yellow-200: #854d0e; --color-orange-200: #9a3412;
-  --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46;
+  --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46; --color-blue-200: #1e40af;
 }
 @media (prefers-color-scheme: light) {
   :root[data-theme=auto] {
@@ -65,7 +65,7 @@
     --color-amber-200: #92400e; --color-amber-300: #b45309;
     --color-sky-200: #075985; --color-sky-300: #0369a1;
     --color-emerald-200: #065f46; --color-yellow-200: #854d0e; --color-orange-200: #9a3412;
-    --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46;
+    --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46; --color-blue-200: #1e40af;
   }
 }
 
@@ -107,8 +107,8 @@ body {
 .eyebrow { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; }
 /* Title of a section of a page: readable at a glance, few of them per page */
 .section-title { font-size: 1rem; line-height: 1.4; font-weight: 600; letter-spacing: -0.01em; color: var(--fg); }
-/* Tighter variant for labels inside tiles and forms */
-.eyebrow-tight { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+/* Labels inside tiles and forms: plain words, read at a glance (the capitals are kept for section titles) */
+.eyebrow-tight { font-family: var(--font-sans); font-size: 0.8125rem; font-weight: 500; letter-spacing: 0; line-height: 1.3; }
 
 table.data { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 table.data th { text-align: left; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -189,3 +189,10 @@ table.data tbody tr { transition: background-color 0.12s; }
 
 /* Numbers line up in every table and figure */
 .num, .font-mono { font-variant-numeric: tabular-nums; }
+
+/* Figures (amounts, counts, percentages): the text font with digits of equal width, so columns line up.
+   The monospace font stays for codes that are read character by character (SKU, lots, locations) */
+.figure { font-family: var(--font-sans); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* A hint inside a field stays in plain letters even when the field types in capitals (SKU, codes) */
+input::placeholder, textarea::placeholder { text-transform: none; letter-spacing: normal; font-family: var(--font-sans); }

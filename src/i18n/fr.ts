@@ -22,37 +22,40 @@ export const PIPELINE: ItemStatus[] = [
 ];
 
 // Pills on the dark surface: tinted fill, light text, thin ring
+// One family of colours per kind of state, the same as in the 3D warehouse (src/lib/warehouse3d/config.ts):
+// violet = in the workshop, green = available, yellow = reserved, blue = sold, grey = done, red = needs action.
+// The words always say which step it is; the shade only follows the order of the steps.
 export const STATUS_TONE: Record<ItemStatus, string> = {
-  received: "bg-slate-400/15 text-slate-200 ring-1 ring-inset ring-slate-400/30",
-  sorted: "bg-sky-400/15 text-sky-200 ring-1 ring-inset ring-sky-400/30",
-  photographed: "bg-indigo-400/15 text-indigo-200 ring-1 ring-inset ring-indigo-400/30",
+  received: "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/30",
+  sorted: "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/30",
+  photographed: "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/30",
   measured: "bg-violet-400/15 text-violet-200 ring-1 ring-inset ring-violet-400/30",
-  listing_ready: "bg-amber-400/15 text-amber-200 ring-1 ring-inset ring-amber-400/30",
+  listing_ready: "bg-emerald-400/15 text-emerald-200 ring-1 ring-inset ring-emerald-400/30",
   listed: "bg-emerald-400/15 text-emerald-200 ring-1 ring-inset ring-emerald-400/30",
-  reserved: "bg-teal-400/15 text-teal-200 ring-1 ring-inset ring-teal-400/30",
-  sold: "bg-orange-400/15 text-orange-200 ring-1 ring-inset ring-orange-400/30",
-  shipped: "bg-lime-400/15 text-lime-200 ring-1 ring-inset ring-lime-400/30",
+  reserved: "bg-amber-400/15 text-amber-200 ring-1 ring-inset ring-amber-400/30",
+  sold: "bg-blue-400/15 text-blue-200 ring-1 ring-inset ring-blue-400/30",
+  shipped: "bg-blue-400/15 text-blue-200 ring-1 ring-inset ring-blue-400/30",
   completed: "bg-zinc-400/15 text-zinc-300 ring-1 ring-inset ring-zinc-400/30",
-  on_hold: "bg-yellow-400/15 text-yellow-200 ring-1 ring-inset ring-yellow-400/30",
+  on_hold: "bg-red-400/15 text-red-200 ring-1 ring-inset ring-red-400/30",
   rejected: "bg-red-400/15 text-red-200 ring-1 ring-inset ring-red-400/30",
-  returned: "bg-rose-400/15 text-rose-200 ring-1 ring-inset ring-rose-400/30",
+  returned: "bg-red-400/15 text-red-200 ring-1 ring-inset ring-red-400/30",
 };
 
-/** Solid colour of each status, for dots */
+/** Solid colour of each status, for dots (lighter at the start of a family, darker at its end) */
 export const STATUS_DOT: Record<ItemStatus, string> = {
-  received: "bg-slate-400",
-  sorted: "bg-sky-400",
-  photographed: "bg-indigo-400",
-  measured: "bg-violet-400",
-  listing_ready: "bg-amber-400",
-  listed: "bg-emerald-400",
-  reserved: "bg-teal-400",
-  sold: "bg-orange-400",
-  shipped: "bg-lime-400",
+  received: "bg-violet-300",
+  sorted: "bg-violet-400",
+  photographed: "bg-violet-500",
+  measured: "bg-violet-600",
+  listing_ready: "bg-emerald-300",
+  listed: "bg-emerald-500",
+  reserved: "bg-amber-400",
+  sold: "bg-blue-500",
+  shipped: "bg-blue-300",
   completed: "bg-zinc-400",
-  on_hold: "bg-yellow-400",
-  rejected: "bg-red-400",
-  returned: "bg-rose-400",
+  on_hold: "bg-red-300",
+  rejected: "bg-red-600",
+  returned: "bg-red-400",
 };
 
 export const CONDITION_LABEL: Record<ItemCondition, string> = {

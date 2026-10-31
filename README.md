@@ -187,6 +187,22 @@ pivotées, dupliquées, retirées (avec « Annuler »). Vue 3D, vue de dessus et
 moins de 90 cm et les étagères hors du local. Enregistré pendant qu'on le modifie (responsables), visible par l'équipe.
 (`src/lib/warehouse.ts`, `npm run test:warehouse`)
 
+## Guide de style
+
+`/design` (⌘K « Guide de style ») montre les éléments communs, à réutiliser plutôt que de réécrire des classes :
+`btn.primary / secondary / danger / huge / sm / ghost / icon`, `seg` (onglets et choix), `chip` (pastilles), `Card`,
+`Stat`, `Field`, `Empty`, `PageHeader` (`src/components/ui.tsx`). Règles :
+
+- **Le vert est réservé aux actions.** Un onglet choisi, un menu actif ou un état n'est jamais vert plein.
+- **Statuts :** une famille de couleur par type d'état, la même partout et dans l'Entrepôt 3D. Violet = en atelier,
+  vert = disponible, jaune = réservé, bleu = vendu, gris = terminé, rouge = action requise (`STATUS_TONE` /
+  `STATUS_DOT`). Le mot dit toujours l'étape.
+- **Chiffres** (montants, compteurs) : classe `figure`, la police du texte à chiffres alignés. La police à chasse fixe
+  est réservée aux codes (SKU, lots, emplacements).
+- **En-tête de page :** une seule action principale (`btn.primary`), placée à droite sur ordinateur, en premier et sur
+  toute la largeur sur téléphone. Les filtres viennent dessous.
+- **Téléphone :** les notifications s'affichent en bas. Les postes cachent la barre du bas et proposent « Plein écran ».
+
 ## Entrepôt 3D
 
 Mise à jour `20261115000027_warehouse_3d`. `/entrepot` (menu Stock et lots) : le stock réel tel qu'il est rangé, en 3D.

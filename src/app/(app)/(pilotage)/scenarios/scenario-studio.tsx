@@ -186,7 +186,7 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
                           onClick={(e) => { e.preventDefault(); set(f.key, String(realValue)); }}>réel : {realValue.toLocaleString("fr-FR")}</button>}
                       </span>
                     </span>
-                    <input className={`${input} text-right font-mono tabular-nums`} type="number" inputMode="decimal" step={f.step ?? 1} min={0}
+                    <input className={`${input} text-right figure tabular-nums`} type="number" inputMode="decimal" step={f.step ?? 1} min={0}
                       value={current.inputs[f.key]} onChange={(e) => set(f.key, e.target.value)} aria-label={f.label} title={f.hint} />
                   </label>
                 );
@@ -238,7 +238,7 @@ export function ScenarioStudio({ orgId, baseline, saved: initial }: { orgId: str
                   ].map(([label, v, strong]) => (
                     <tr key={label as string} className={strong ? "border-t border-line font-semibold" : "text-muted"}>
                       <td className="py-1.5 pr-2">{label as string}</td>
-                      <td className={`py-1.5 text-right font-mono tabular-nums ${strong ? tone(v as number) : ""}`}>{eur(v as number)}</td>
+                      <td className={`py-1.5 text-right figure tabular-nums ${strong ? tone(v as number) : ""}`}>{eur(v as number)}</td>
                       <td className="w-14 py-1.5 text-right text-xs tabular-nums text-muted">{r.revenue > 0 && label !== "Chiffre d'affaires" ? `${Math.round(Math.abs(v as number) / r.revenue * 100)} %` : ""}</td>
                     </tr>
                   ))}
@@ -352,7 +352,7 @@ function ScenarioChip({ name, net, active, real, onClick }: { name: string; net:
         className={`flex min-h-14 min-w-44 flex-col items-start justify-center rounded-xl border px-3 py-2 text-left transition ${
           active ? "border-accent/50 bg-accent/10" : "border-line bg-panel/70 hover:border-fg/25"}`}>
         <span className="flex items-center gap-1.5 text-sm font-semibold">{real && <span className="size-2 rounded-full bg-accent" />}{name}</span>
-        <span className={`font-mono text-xs tabular-nums ${net < 0 ? "text-red-300" : "text-muted"}`}>{eur(net)} / mois</span>
+        <span className={`figure text-xs tabular-nums ${net < 0 ? "text-red-300" : "text-muted"}`}>{eur(net)} / mois</span>
       </button>
     </li>
   );
@@ -362,7 +362,7 @@ function Kpi({ label, value, hint, bad }: { label: string; value: string; hint: 
   return (
     <div className="rounded-2xl border border-line bg-panel/80 px-4 py-3">
       <div className="eyebrow-tight leading-tight text-muted">{label}</div>
-      <div className={`mt-1.5 font-mono text-[22px] font-semibold leading-tight tabular-nums tracking-tight sm:text-[26px] ${bad ? "text-red-300" : ""}`}>{value}</div>
+      <div className={`mt-1.5 figure text-[22px] font-semibold leading-tight tabular-nums tracking-tight sm:text-[26px] ${bad ? "text-red-300" : ""}`}>{value}</div>
       <div className="text-xs text-muted">{hint}</div>
     </div>
   );
@@ -372,7 +372,7 @@ function Mini({ label, value, hint, bad, strong }: { label: string; value: strin
   return (
     <div className={`rounded-xl border px-3 py-2 ${strong ? "border-accent/40 bg-accent/8" : "border-line bg-bg/40"}`}>
       <div className="text-[11px] text-muted">{label}</div>
-      <div className={`font-mono font-semibold tabular-nums ${bad ? "text-red-300" : ""}`}>{value}</div>
+      <div className={`figure font-semibold tabular-nums ${bad ? "text-red-300" : ""}`}>{value}</div>
       {hint && <div className="text-[10px] text-muted">{hint}</div>}
     </div>
   );

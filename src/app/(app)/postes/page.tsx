@@ -42,7 +42,7 @@ export default async function Stations() {
           <span className="block text-sm text-muted">Toute la chaîne en un coup d&apos;œil : glisser-déposer, priorités, prochaine tâche</span>
         </span>
         <span className="text-right">
-          <span className="block font-mono text-3xl font-semibold leading-none tabular-nums">{n("received", "sorted", "photographed", "measured", "listing_ready", "on_hold", "returned")}</span>
+          <span className="block figure text-3xl font-semibold leading-none tabular-nums">{n("received", "sorted", "photographed", "measured", "listing_ready", "on_hold", "returned")}</span>
           <span className="text-[11px] text-muted">en production</span>
         </span>
         <ChevronRight size={18} className="shrink-0 text-muted/60" />
@@ -60,7 +60,7 @@ export default async function Stations() {
               {count > 0 && age != null && <span className="block text-xs text-muted">plus ancien {age} j</span>}
             </span>
             <span className="text-right">
-              <span className={`block text-3xl font-mono font-semibold leading-none tabular-nums ${count ? "" : "text-muted/40"}`}>{count}</span>
+              <span className={`block text-3xl figure font-semibold leading-none tabular-nums ${count ? "" : "text-muted/40"}`}>{count}</span>
               <span className="text-[11px] text-muted">{unit ? `${unit}${count > 1 ? "s" : ""}` : "en attente"}</span>
             </span>
             <ChevronRight size={18} className="shrink-0 text-muted/60" />

@@ -361,7 +361,7 @@ export function Production({ initialBoard, initialError, overview: initialOvervi
       {managerMode && me.isManager && <ManagerPanel refreshKey={statsKey} />}
 
       {/* Filters */}
-      <section className="rounded-2xl border border-line bg-panel/70 p-2.5" aria-label="Filtres">
+      <section className="rounded-2xl border border-line bg-panel/80 p-2.5" aria-label="Filtres">
         <div className="flex flex-wrap items-center gap-2">
           <label className="relative min-w-48 flex-1">
             <span className="sr-only">Recherche</span>

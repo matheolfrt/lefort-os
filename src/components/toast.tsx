@@ -29,7 +29,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 top-3 z-[70] flex flex-col items-center gap-2 px-4" aria-live="polite">
+      {/* phone: at the bottom, above the bar, where the thumb and the eyes are; computer: at the top */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[70] flex flex-col items-center gap-2 px-4 md:bottom-auto md:top-3" aria-live="polite">
         {toasts.map((t) => (
           <div
             key={t.id}

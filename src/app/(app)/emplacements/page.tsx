@@ -59,7 +59,7 @@ export default async function Locations({ searchParams }: { searchParams: Promis
               {staging.map((l) => (
                 <Link prefetch={false} key={l.id} href={`/emplacements/${l.code}`} className="rounded-md border border-line p-3 hover:border-accent">
                   <div className="text-sm font-semibold">{l.label}</div>
-                  <div className="text-2xl font-mono font-semibold tabular-nums">{count.get(l.id) ?? 0}</div>
+                  <div className="text-2xl figure font-semibold tabular-nums">{count.get(l.id) ?? 0}</div>
                 </Link>
               ))}
             </div>
@@ -74,7 +74,7 @@ export default async function Locations({ searchParams }: { searchParams: Promis
                     className={`rounded-md border p-2 text-center hover:border-accent ${full ? "border-red-500 bg-red-500/15 text-red-200" : n ? "border-line bg-panel" : "border-dashed border-line"}`}>
                     <div className="break-words font-mono text-xs font-semibold">{l.code.replace("EMP-", "")}</div>
                     {l.label && <div className="truncate text-[10px] text-muted">{l.label}</div>}
-                    <div className="text-lg font-mono font-semibold tabular-nums">{n}{l.capacity ? <span className="text-xs font-normal">/{l.capacity}</span> : null}</div>
+                    <div className="text-lg figure font-semibold tabular-nums">{n}{l.capacity ? <span className="text-xs font-normal">/{l.capacity}</span> : null}</div>
                   </Link>
                 );
               })}

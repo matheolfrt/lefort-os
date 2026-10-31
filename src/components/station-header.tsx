@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
+import { FullscreenButton } from "./fullscreen-button";
 
 /** Shared header of every station: way back, what this station is, and today's progress. */
 export function StationHeader({ title, queue, done, children }: {
@@ -25,6 +26,7 @@ export function StationHeader({ title, queue, done, children }: {
           </p>
         )}
       </div>
+      <FullscreenButton />
       {children && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">{children}</div>}
     </header>
   );

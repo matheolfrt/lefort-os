@@ -147,9 +147,9 @@ export function InventoryImport({ batches }: { batches: { id: string; code: stri
         {result && (
           <Card title="Résultat">
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg bg-bg p-3"><div className="text-2xl font-mono font-semibold tabular-nums">{result.created}</div><div className="text-xs text-muted">créés</div></div>
-              <div className="rounded-lg bg-bg p-3"><div className="text-2xl font-mono font-semibold tabular-nums">{result.updated}</div><div className="text-xs text-muted">mis à jour</div></div>
-              <div className="rounded-lg bg-bg p-3"><div className={`text-2xl font-mono font-semibold tabular-nums ${result.errors.length ? "text-red-600 dark:text-red-400" : ""}`}>{result.errors.length}</div><div className="text-xs text-muted">refusés</div></div>
+              <div className="rounded-lg bg-bg p-3"><div className="text-2xl figure font-semibold tabular-nums">{result.created}</div><div className="text-xs text-muted">créés</div></div>
+              <div className="rounded-lg bg-bg p-3"><div className="text-2xl figure font-semibold tabular-nums">{result.updated}</div><div className="text-xs text-muted">mis à jour</div></div>
+              <div className="rounded-lg bg-bg p-3"><div className={`text-2xl figure font-semibold tabular-nums ${result.errors.length ? "text-red-600 dark:text-red-400" : ""}`}>{result.errors.length}</div><div className="text-xs text-muted">refusés</div></div>
             </div>
             {skipped > 0 && <p className="mt-2 text-sm text-muted">{skipped} SKU déjà existant(s) laissé(s) tel(s) quel(s).</p>}
             {result.errors.length > 0 && (

@@ -7,7 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { useConfirm } from "@/components/confirm";
 import { errorMessage } from "@/lib/errors";
-import { input } from "@/components/ui";
+import { btn, input } from "@/components/ui";
 import {
   MIN_AISLE, SHELF, clampToRoom, fits, freeSpot, inside, narrowAisles, newId, row, snap, stats,
   type Room, type Shelf,
@@ -174,7 +174,7 @@ export function Planner({ initial, canEdit, planId: initialId }: { initial: { ro
           {canEdit && (
             <section className="space-y-3 rounded-2xl border border-line bg-panel/80 p-4" aria-labelledby="add-t">
               <h2 id="add-t" className="section-title">Étagères 5 niveaux · 60 × 120 × 200 cm</h2>
-              <button onClick={add} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 font-semibold text-accent-fg" data-testid="add-shelf">
+              <button onClick={add} className={`${btn.primary} w-full`} data-testid="add-shelf">
                 <Plus size={18} /> Ajouter une étagère
               </button>
               <div className="flex flex-wrap items-end gap-2">
@@ -182,7 +182,7 @@ export function Planner({ initial, canEdit, planId: initialId }: { initial: { ro
                   <input className={`${input} w-20 text-right`} type="number" min={1} max={30} value={rowN} name="row-n"
                     onChange={(e) => setRowN(Math.max(1, Math.min(30, Number(e.target.value) || 1)))} /></label>
                 <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={double} onChange={(e) => setDouble(e.target.checked)} className="size-5" /> dos à dos</label>
-                <button onClick={addRow} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium ring-1 ring-inset ring-line hover:ring-fg/30" data-testid="add-row">
+                <button onClick={addRow} className={`${btn.secondary} flex-1 text-sm`} data-testid="add-row">
                   <Rows3 size={16} /> Ajouter la rangée
                 </button>
               </div>
@@ -193,10 +193,10 @@ export function Planner({ initial, canEdit, planId: initialId }: { initial: { ro
           <section className="rounded-2xl border border-line bg-panel/80 p-4" aria-labelledby="sum-t" data-testid="plan-stats">
             <h2 id="sum-t" className="section-title mb-2">Ce que le local contient</h2>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-              <dt className="text-muted">Étagères</dt><dd className="text-right font-mono tabular-nums" data-stat="shelves">{st.shelves}</dd>
-              <dt className="text-muted">Niveaux (tablettes)</dt><dd className="text-right font-mono tabular-nums">{st.levels}</dd>
-              <dt className="text-muted">Longueur de tablettes</dt><dd className="text-right font-mono tabular-nums" data-stat="metres">{m(st.shelfMetres, 1)}</dd>
-              <dt className="text-muted">Sol occupé</dt><dd className="text-right font-mono tabular-nums">{st.floorUsed.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} m² ({Math.round(st.floorPct)} %)</dd>
+              <dt className="text-muted">Étagères</dt><dd className="text-right figure tabular-nums" data-stat="shelves">{st.shelves}</dd>
+              <dt className="text-muted">Niveaux (tablettes)</dt><dd className="text-right figure tabular-nums">{st.levels}</dd>
+              <dt className="text-muted">Longueur de tablettes</dt><dd className="text-right figure tabular-nums" data-stat="metres">{m(st.shelfMetres, 1)}</dd>
+              <dt className="text-muted">Sol occupé</dt><dd className="text-right figure tabular-nums">{st.floorUsed.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} m² ({Math.round(st.floorPct)} %)</dd>
             </dl>
             {(aisles.length > 0 || outside.length > 0) && (
               <ul className="mt-3 space-y-1.5 text-sm" data-testid="plan-warnings">

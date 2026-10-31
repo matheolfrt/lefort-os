@@ -73,8 +73,8 @@ export function MonthsChart({ months }: { months: { month: string; paid_cents: n
         <div role="status" className="pointer-events-none absolute top-6 z-10 w-48 rounded-xl border border-line bg-panel-2/95 p-2.5 text-xs shadow-xl"
           style={{ left: Math.min(Math.max(L + hover! * slot + slot / 2 - 96, 0), Math.max(0, W - 192)) }}>
           <div className="mb-1 text-muted">{MONTHS[Number(m.month.slice(5, 7)) - 1]} {m.month.slice(0, 4)}</div>
-          <div className="flex items-center gap-2"><span aria-hidden className="h-0.5 w-3 rounded bg-series-2" /><b className="font-mono">{eur(m.paid_cents)}</b><span className="text-muted">payés</span></div>
-          <div className="flex items-center gap-2"><span aria-hidden className="h-0.5 w-3 rounded bg-series-1" /><b className="font-mono">{eur(m.revenue_cents)}</b><span className="text-muted">vendus ({m.sold})</span></div>
+          <div className="flex items-center gap-2"><span aria-hidden className="h-0.5 w-3 rounded bg-series-2" /><b className="figure">{eur(m.paid_cents)}</b><span className="text-muted">payés</span></div>
+          <div className="flex items-center gap-2"><span aria-hidden className="h-0.5 w-3 rounded bg-series-1" /><b className="figure">{eur(m.revenue_cents)}</b><span className="text-muted">vendus ({m.sold})</span></div>
         </div>
       )}
     </div>

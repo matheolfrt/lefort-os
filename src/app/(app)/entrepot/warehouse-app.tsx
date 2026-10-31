@@ -12,7 +12,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { errorMessage } from "@/lib/errors";
 import { STATUS_LABEL } from "@/i18n/fr";
-import { input } from "@/components/ui";
+import { btn, input, seg } from "@/components/ui";
 import type { ItemStatus } from "@/lib/types";
 import {
   capacity, frontPoint, layout, levelId, readConfig, slotPoint, withRacks, type WarehouseConfig, type Zone,
@@ -329,10 +329,10 @@ export function WarehouseApp({ warehouses, warehouseId, isManager }: { warehouse
 
       {/* ── toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" aria-label="Mode" className="inline-flex max-w-full overflow-x-auto rounded-xl border border-line bg-panel/70 p-1">
+        <div role="tablist" aria-label="Mode" className={seg.wrap}>
           {([["stock", "Stock", MapPin], ["performance", "Performance", Flame], ["picking", "Picking", PackageCheck], ...(isManager ? [["config", "Configuration", Settings2]] : [])] as [Mode, string, typeof MapPin][]).map(([m, l, Icon]) => (
             <button key={m} role="tab" aria-selected={mode === m} onClick={() => { setMode(m); if (m !== "picking") setPath(null); }}
-              className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium ${mode === m ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}>
+              className={seg.item(mode === m)}>
               <Icon size={15} /> {l}
             </button>
           ))}
@@ -354,7 +354,7 @@ export function WarehouseApp({ warehouses, warehouseId, isManager }: { warehouse
         <div className="flex gap-1" role="group" aria-label="Caméra">
           <IconBtn label="Zoomer" onClick={() => scene.current?.zoom(0.7)}><Plus size={16} /></IconBtn>
           <IconBtn label="Dézoomer" onClick={() => scene.current?.zoom(1.4)}><Minus size={16} /></IconBtn>
-          <button onClick={overview} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-sm ring-1 ring-inset ring-line hover:ring-fg/30" data-testid="overview"><Maximize2 size={15} /> Vue globale</button>
+          <button onClick={overview} className={btn.ghost} data-testid="overview"><Maximize2 size={15} /> Vue globale</button>
         </div>
       </div>
 
@@ -383,7 +383,7 @@ export function WarehouseApp({ warehouses, warehouseId, isManager }: { warehouse
                 aria-pressed={visible.has(g.id)} title={g.help} data-group={g.id}
                 className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-panel/90 px-2 text-xs shadow ring-1 ring-line backdrop-blur ${visible.has(g.id) ? "" : "opacity-45 line-through"}`}>
                 <span className="flex size-4 items-center justify-center rounded text-[9px] font-bold text-white" style={{ background: config.colors[g.id] }} aria-hidden>{g.letter}</span>
-                {g.label} <span className="font-mono tabular-nums text-muted">{num(counts[g.id] ?? 0)}</span>
+                {g.label} <span className="figure tabular-nums text-muted">{num(counts[g.id] ?? 0)}</span>
               </button>
             ))}
           </div>
@@ -393,10 +393,10 @@ export function WarehouseApp({ warehouses, warehouseId, isManager }: { warehouse
         <aside className="space-y-3" aria-label="Détails">
           {mode === "performance" && (
             <Panel title="Performance">
-              <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Métrique">
+              <div className={`${seg.wrap} flex-wrap`} role="radiogroup" aria-label="Métrique">
                 {METRICS.filter((m) => isManager || !m.money).map((m) => (
                   <button key={m.id} role="radio" aria-checked={metric === m.id} onClick={() => setMetric(m.id)}
-                    className={`min-h-10 rounded-lg px-3 text-sm ring-1 ring-inset ${metric === m.id ? "bg-fg text-bg ring-fg" : "ring-line text-muted hover:text-fg"}`}>{m.label}</button>
+                    className={seg.item(metric === m.id)}>{m.label}</button>
                 ))}
               </div>
               {!heat ? <p className="mt-3 text-sm text-muted">Calcul…</p> : <HeatTop heat={heat} metric={metric} onOpen={(id) => { setCard(null); setSel({ shelf: id, level: null, item: null, zone: null }); setHighlight(shelfBox(id)); const s = lay.shelves.get(id); if (s) scene.current?.focus({ x: s.x, y: 1, z: s.z }, 5); }} />}
@@ -419,7 +419,7 @@ export function WarehouseApp({ warehouses, warehouseId, isManager }: { warehouse
                       ))}
                     </ul>
                     <button onClick={startPicking} disabled={!chosen.size} data-testid="start-picking"
-                      className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold uppercase tracking-wide text-accent-fg disabled:opacity-50">
+                      className={`${btn.primary} mt-3 w-full uppercase tracking-wide`}>
                       <RouteIcon size={18} /> Démarrer le picking
                     </button>
                   </>
@@ -436,13 +436,13 @@ export function WarehouseApp({ warehouses, warehouseId, isManager }: { warehouse
                   </ol>
                   {pick.off.length > 0 && <p className="mt-2 text-xs text-muted">Hors étagère : {pick.off.map((r) => `${r.sku} (${r.location_code?.replace("EMP-", "") ?? "sans emplacement"})`).join(", ")}</p>}
                   {pick.current < pick.stops.length ? (
-                    <button onClick={picked} disabled={busy} data-testid="picked" className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent font-semibold text-accent-fg disabled:opacity-60">
+                    <button onClick={picked} disabled={busy} data-testid="picked" className={`${btn.primary} mt-3 w-full`}>
                       <Check size={18} /> {pick.stops[pick.current].sku} récupéré
                     </button>
                   ) : (
                     <div className="mt-3 space-y-2" data-testid="pick-done">
                       <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Tout est sur la table de préparation.</p>
-                      <Link href="/postes/expedition" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium ring-1 ring-inset ring-line">Emballer et expédier <ArrowRight size={16} /></Link>
+                      <Link href="/postes/expedition" className={`${btn.secondary} w-full text-sm`}>Emballer et expédier <ArrowRight size={16} /></Link>
                     </div>
                   )}
                   <button onClick={() => { setPick(null); setHighlight(null); void loadQueue(); }} className="mt-2 min-h-11 w-full text-sm text-muted hover:text-fg">Nouvelle liste</button>
@@ -535,17 +535,17 @@ function Kpi({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-line bg-panel/80 px-3 py-2">
       <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted">{k}</dt>
-      <dd className="font-mono text-lg font-semibold tabular-nums sm:text-xl">{v}</dd>
+      <dd className="figure text-lg font-semibold tabular-nums sm:text-xl">{v}</dd>
       {hint && <dd className="text-[11px] text-muted">{hint}</dd>}
     </div>
   );
 }
 function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
-  return <button onClick={onClick} aria-label={label} title={label} className="flex size-10 items-center justify-center rounded-lg ring-1 ring-inset ring-line hover:ring-fg/30">{children}</button>;
+  return <button onClick={onClick} aria-label={label} title={label} className={btn.icon}>{children}</button>;
 }
 function Panel({ title, children, onClose, testid }: { title: string; children: React.ReactNode; onClose?: () => void; testid?: string }) {
   return (
-    <section className="rounded-2xl border border-line bg-panel/80 p-4" data-testid={testid}>
+    <section className="rounded-2xl border border-line bg-panel/80 p-4 shadow-[0_1px_0_0_rgb(255_255_255/0.03)_inset]" data-testid={testid}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="section-title">{title}</h2>
         {onClose && <button onClick={onClose} aria-label="Fermer" className="flex size-9 items-center justify-center rounded-lg text-muted hover:text-fg"><X size={16} /></button>}
@@ -594,7 +594,7 @@ function ItemCard({ card, manager, busy, where, zones, prepId, onClose, onNext, 
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {next && <ActBtn onClick={() => onNext(next.to, next.label)} disabled={busy} primary>Étape suivante : {next.label}</ActBtn>}
-        {card.status === "listing_ready" && <Link href={`/stock/${encodeURIComponent(card.sku)}`} className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-accent px-3 text-sm font-semibold text-accent-fg">Publier <ExternalLink size={14} /></Link>}
+        {card.status === "listing_ready" && <Link href={`/stock/${encodeURIComponent(card.sku)}`} className={btn.sm}>Publier <ExternalLink size={14} /></Link>}
         {card.status === "sold" && card.location?.id !== prepId && <ActBtn onClick={onPick} disabled={busy} primary>Récupéré (préparation)</ActBtn>}
         {!["sold", "shipped", "completed"].includes(card.status) && <ActBtn onClick={onPlace} disabled={busy}>Ranger sur une étagère…</ActBtn>}
         {onShelf && <ActBtn onClick={onPath} disabled={busy}><RouteIcon size={14} /> Chemin</ActBtn>}
@@ -605,7 +605,7 @@ function ItemCard({ card, manager, busy, where, zones, prepId, onClose, onNext, 
             {zoneCodes.map((c) => <option key={c} value={c}>{c.replace("EMP-", "")}</option>)}
           </select>
         )}
-        <Link href={`/stock/${encodeURIComponent(card.sku)}`} className="inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-sm text-muted ring-1 ring-inset ring-line hover:text-fg">Fiche complète <ChevronRight size={14} /></Link>
+        <Link href={`/stock/${encodeURIComponent(card.sku)}`} className={`${btn.ghost} text-muted hover:text-fg`}>Fiche complète <ChevronRight size={14} /></Link>
       </div>
 
       <details className="mt-3" open>
@@ -633,7 +633,7 @@ const EVENT_LABEL: Record<string, string> = {
 };
 const Row = ({ k, v }: { k: string; v: string | null | undefined }) => (<><dt className="text-muted">{k}</dt><dd className="truncate text-right">{v ?? "—"}</dd></>);
 function ActBtn({ children, onClick, disabled, primary }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; primary?: boolean }) {
-  return <button onClick={onClick} disabled={disabled} className={`inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-sm font-medium disabled:opacity-60 ${primary ? "bg-accent text-accent-fg" : "ring-1 ring-inset ring-line hover:ring-fg/40"}`}>{children}</button>;
+  return <button onClick={onClick} disabled={disabled} className={primary ? btn.sm : btn.ghost}>{children}</button>;
 }
 
 function HeatTop({ heat, metric, onOpen }: { heat: Map<string, import("@/lib/warehouse3d/model").ShelfHeat>; metric: Metric; onOpen: (id: string) => void }) {
@@ -645,7 +645,7 @@ function HeatTop({ heat, metric, onOpen }: { heat: Map<string, import("@/lib/war
       {list.map((h, i) => (
         <li key={h.shelf}><button onClick={() => onOpen(h.shelf)} className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-fg/5">
           <span className="w-4 text-xs text-muted">{i + 1}</span><span className="size-3 rounded" style={{ background: ramp(h.t) }} aria-hidden />
-          <span className="font-mono">{h.shelf}</span><span className="ml-auto font-mono tabular-nums">{fmt(h.raw)}</span>
+          <span className="font-mono">{h.shelf}</span><span className="ml-auto figure tabular-nums">{fmt(h.raw)}</span>
         </button></li>
       ))}
     </ol>
@@ -741,8 +741,8 @@ function ConfigPanel({ draft, setDraft, staging, warnings, busy, onSave, onCance
         </div>
       </details>
       <div className="mt-4 flex gap-2">
-        <button onClick={onSave} disabled={busy} data-testid="cfg-save" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-accent font-semibold text-accent-fg disabled:opacity-60">Enregistrer et appliquer</button>
-        <button onClick={onCancel} className="min-h-11 rounded-xl px-3 text-sm ring-1 ring-inset ring-line">Annuler</button>
+        <button onClick={onSave} disabled={busy} data-testid="cfg-save" className={`${btn.primary} flex-1`}>Enregistrer et appliquer</button>
+        <button onClick={onCancel} className={btn.secondary}>Annuler</button>
       </div>
     </Panel>
   );

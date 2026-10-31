@@ -120,7 +120,7 @@ export default async function Ecoulement() {
         </div>
       </section>
 
-      <details className="rounded-2xl border border-line bg-panel/60 p-4 text-sm text-muted">
+      <details className="rounded-2xl border border-line bg-panel/80 p-4 text-sm text-muted">
         <summary className="cursor-pointer font-medium text-fg">Comment c&apos;est calculé</summary>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>Le compteur de chaque article démarre à sa <strong className="text-fg">réception</strong> (pas à sa mise en ligne) : un article qui attend ses photos compte contre vous, c&apos;est voulu.</li>

@@ -69,7 +69,7 @@ export default async function FinanceSettings({ searchParams }: { searchParams: 
             <ul className="mt-4 divide-y divide-line border-t border-line text-sm" data-testid="balances">
               {balances.data!.map((b, i) => (
                 <li key={b.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                  <span className="font-mono font-semibold tabular-nums">{euro(b.amount_cents)}</span>
+                  <span className="figure font-semibold tabular-nums">{euro(b.amount_cents)}</span>
                   <span className="text-muted">au {frDate(b.as_of.slice(0, 10))}{i === 0 && " · solde de référence"}</span>
                   <span className="min-w-0 flex-1 truncate text-muted">{b.note}</span>
                   <form action={deleteBalance.bind(null, b.id)}><button className={small} aria-label={`Supprimer le solde du ${frDate(b.as_of.slice(0, 10))}`}>Supprimer</button></form>
@@ -148,7 +148,7 @@ export default async function FinanceSettings({ searchParams }: { searchParams: 
                 <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className="font-medium">{r.label}</span>
                   <span className="text-muted">{CATEGORY_LABEL[r.category]} · {FREQ[r.frequency]}{r.frequency !== "weekly" && `, le ${r.day_of_month}`}{r.ends_on && ` · jusqu'au ${frDate(r.ends_on)}`}</span>
-                  <span className="ml-auto font-mono tabular-nums">{euro(r.amount_cents)}</span>
+                  <span className="ml-auto figure tabular-nums">{euro(r.amount_cents)}</span>
                   <form action={stopRecurring.bind(null, r.id)}><button className={small}>Arrêter</button></form>
                 </li>
               ))}
@@ -185,7 +185,7 @@ export default async function FinanceSettings({ searchParams }: { searchParams: 
                 <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className="text-muted">{frDate(e.spent_on)}</span>
                   <span>{CATEGORY_LABEL[e.category] ?? e.category}{e.supplier && <span className="text-muted"> · {e.supplier}</span>}</span>
-                  <span className="ml-auto font-mono tabular-nums">{euro(e.amount_cents)}</span>
+                  <span className="ml-auto figure tabular-nums">{euro(e.amount_cents)}</span>
                   <form action={deleteExpense.bind(null, e.id)}><button className={small}>Supprimer</button></form>
                 </li>
               ))}
@@ -204,7 +204,7 @@ export default async function FinanceSettings({ searchParams }: { searchParams: 
                 <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className="font-medium">{p.label}</span>
                   <span className="text-muted">{(p.suppliers as unknown as { name: string } | null)?.name ?? ""} le {frDate(p.due_on)}{p.due_on < today && " (dépassé)"}</span>
-                  <span className="ml-auto font-mono tabular-nums">{euro(p.amount_cents)}</span>
+                  <span className="ml-auto figure tabular-nums">{euro(p.amount_cents)}</span>
                   <form action={closePlanned.bind(null, p.id, "done")}><button className={small}>Acheté</button></form>
                   <form action={closePlanned.bind(null, p.id, "cancelled")}><button className={small}>Annuler</button></form>
                 </li>
