@@ -1,5 +1,7 @@
 // Unit tests of « Annonces » (src/lib/drafts/text.ts): measurements split by SKU, the model filled. Run: npm run test:drafts
 import assert from "node:assert/strict";
+import { strToU8, zipSync } from "fflate";
+import { readAnyText, readMeasuresFile, readTable, skuMatcher } from "../src/lib/drafts/measures-file";
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, descriptionFields, fieldsOf, fillTemplate, fillTitle, splitMeasures, type DraftContext } from "../src/lib/drafts/text";
 
 let passed = 0;
@@ -50,6 +52,66 @@ test("données du stock → mots du modèle", () => {
   assert.equal(fieldsOf(ctx, "Épaules 46 cm", null).mesures, "Épaules 46 cm", "les mesures collées priment");
   assert.equal(fieldsOf(ctx, "", 3000).prix, "30 €");
   assert.equal(fieldsOf({ sku: "Z-9", item: null }, "", null).marque, undefined, "pas dans le stock : rien d'inventé");
+});
+
+const isSku = skuMatcher(["A-1", "A-2"], "LSH");
+
+test("fichier : reconnaître un SKU", () => {
+  for (const s of ["LSH00012", "lsh-0012", "A-1", "AB12", "VT-2024"]) assert.ok(isSku(s), s);
+  for (const s of ["Épaules", "45", "cm", "T50", "2024", "M"]) assert.ok(!isSku(s), s);
+});
+
+test("fichier texte : blocs par SKU, SKU encore inconnus compris", () => {
+  const r = readAnyText("Mes mesures\nLSH00012\nÉpaules 45\nLSH00013 : Longueur 70\nManches 62", isSku);
+  assert.equal(r.format, "texte");
+  assert.deepEqual(r.rows, [{ sku: "LSH00012", measures: "Épaules 45" }, { sku: "LSH00013", measures: "Longueur 70\nManches 62" }]);
+  assert.equal(r.ignored, 1);
+});
+
+test("tableau large : une colonne par mesure", () => {
+  const r = readAnyText("SKU;Épaules;Poitrine (cm);Longueur;Remarque\nLSH00012;45;52,5;72;\nLSH00013;44;;70;doublure à recoudre\n;;;;\nTotal;;;;", isSku);
+  assert.equal(r.format, "tableau");
+  assert.deepEqual(r.rows, [
+    { sku: "LSH00012", measures: "Épaules : 45 cm\nPoitrine : 52,5 cm\nLongueur : 72 cm" },
+    { sku: "LSH00013", measures: "Épaules : 44 cm\nLongueur : 70 cm\nRemarque : doublure à recoudre" },
+  ]);
+});
+
+test("tableau long : une ligne par mesure, SKU sous un titre « Référence »", () => {
+  const r = readTable([["Référence", "Mesure", "Valeur"], ["X1", "Épaules", "45"], ["X1", "Longueur", "72 cm"], ["x1", "Manches", "60"], ["X2", "Tour de taille", "40"]], isSku);
+  assert.deepEqual(r.rows, [{ sku: "X1", measures: "Épaules : 45 cm\nLongueur : 72 cm\nManches : 60 cm" }, { sku: "X2", measures: "Tour de taille : 40 cm" }]);
+});
+
+test("tableau sans titres : première colonne = SKU", () => {
+  assert.equal(readTable([["SKU", "Taille", "Épaules"], ["LSH1", "50", "45"]], isSku).rows[0].measures, "Taille : 50\nÉpaules : 45 cm", "une taille n'a pas d'unité");
+  const r = readTable([["LSH00012", "Épaules 45", "Longueur 72"], ["LSH00013", "Épaules 44"]], isSku);
+  assert.deepEqual(r.rows, [{ sku: "LSH00012", measures: "Épaules 45\nLongueur 72" }, { sku: "LSH00013", measures: "Épaules 44" }]);
+});
+
+const xml = (s: string) => strToU8(s);
+test("Excel (.xlsx) : première feuille, textes partagés, nombres", () => {
+  const zip = zipSync({
+    "xl/workbook.xml": xml('<workbook><sheets><sheet name="Mesures" sheetId="1" r:id="rId1"/></sheets></workbook>'),
+    "xl/_rels/workbook.xml.rels": xml('<Relationships><Relationship Id="rId1" Type="worksheet" Target="worksheets/sheet1.xml"/></Relationships>'),
+    "xl/sharedStrings.xml": xml("<sst><si><t>SKU</t></si><si><t>Épaules</t></si><si><t>Longueur</t></si><si><t>LSH00012</t></si><si><r><t>LSH</t></r><r><t>00013</t></r></si></sst>"),
+    "xl/worksheets/sheet1.xml": xml('<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c></row>' +
+      '<row r="2"><c r="A2" t="s"><v>3</v></c><c r="B2"><v>45.5</v></c><c r="C2"><v>72</v></c></row>' +
+      '<row r="3"><c r="A3" t="s"><v>4</v></c><c r="C3"><v>70.000000000001</v></c></row></sheetData></worksheet>'),
+  });
+  const r = readMeasuresFile("mesures.xlsx", zip, isSku);
+  assert.equal(r.format, "excel");
+  assert.deepEqual(r.rows, [{ sku: "LSH00012", measures: "Épaules : 45,5 cm\nLongueur : 72 cm" }, { sku: "LSH00013", measures: "Longueur : 70 cm" }]);
+});
+
+test("Word (.docx) : paragraphes lus comme du texte", () => {
+  const p = (t: string) => `<w:p><w:r><w:t>${t}</w:t></w:r></w:p>`;
+  const zip = zipSync({ "word/document.xml": xml(`<w:document><w:body>${p("LSH00012")}${p("Épaules : 45 cm")}${p("LSH00013")}<w:p><w:r><w:t xml:space="preserve">Longueur : </w:t></w:r><w:r><w:t>70 cm</w:t></w:r></w:p></w:body></w:document>`) });
+  const r = readMeasuresFile("mesures.docx", zip, isSku);
+  assert.deepEqual(r.rows, [{ sku: "LSH00012", measures: "Épaules : 45 cm" }, { sku: "LSH00013", measures: "Longueur : 70 cm" }]);
+});
+
+test("formats non lus : message clair", () => {
+  assert.throws(() => readMeasuresFile("vieux.xls", new Uint8Array(), isSku), /enregistrez-le en \.xlsx/);
 });
 
 console.log(`\n${passed} tests réussis`);

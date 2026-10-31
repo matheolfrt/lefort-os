@@ -193,12 +193,12 @@ Menu **Annonces** : préparer les annonces Vinted en série.
 
 1. **Photos à trier** : ajoutez toutes vos photos d'un coup (glisser-déposer ou bouton). Elles gardent l'ordre de prise.
 2. Touchez les photos d'un article (Maj + clic pour une suite), tapez son **SKU**, « Créer l'article ». Un SKU du stock est retrouvé (même en minuscules) et ses données servent à la rédaction ; un SKU absent du stock est signalé.
-3. **Mesures** : collez le texte de toutes vos mesures ; chaque ligne qui contient un SKU commence le bloc de cet article.
+3. **Mesures** : « Importer un fichier » (Excel .xlsx, CSV, Word .docx ou texte) ou collez le texte. Chaque SKU est détecté et ses mesures vont à son article. Un tableau a une colonne SKU (ou Réf.) puis une colonne par mesure (un nombre seul devient « 45 cm », une taille reste sans unité), ou une ligne par mesure (SKU, Mesure, Valeur). Dans un texte, la ligne du SKU commence son bloc. Les SKU sans article encore créé gardent leurs mesures : elles s'ajoutent à la création de l'article. Une annonce marquée prête n'est jamais modifiée.
 4. **Modèle d'annonce** : titre et description types avec des mots entre accolades (`{marque}`, `{taille}`, `{mesures}`, `{sku}`…). Une ligne dont les mots sont inconnus disparaît.
 5. **Rédiger** : sans IA, le modèle est rempli avec le stock et les mesures. Avec la variable Vercel `ANTHROPIC_API_KEY`, Claude lit aussi les photos (8 au plus par article), suit le modèle, n'invente rien et liste ce qu'il n'a pas pu lire (« à vérifier »). Environ 5 à 10 centimes par article.
 6. Relisez, corrigez, « Marquer prête ». Plus tard, l'extension mettra les annonces prêtes en brouillon sur Vinted.
 
-Mise à jour de la base : `20261117000029_listing_drafts` (Paramètres → Mises à jour). Tests : `npm run test:drafts`, `npm run test:drafts-ai` (API simulée, aucun appel réel).
+Mises à jour de la base : `20261117000029_listing_drafts` et `20261118000030_sku_measures` (Paramètres → Mises à jour). Tests : `npm run test:drafts`, `npm run test:drafts-ai` (API simulée, aucun appel réel).
 
 ## Niches Vinted
 

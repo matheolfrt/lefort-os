@@ -4,7 +4,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Check, CheckCheck, ClipboardCopy, ImagePlus, Loader2, Plus, Ruler, Sparkles, Star, Trash2, Undo2, Upload, Wand2, X,
+  Check, CheckCheck, ClipboardCopy, FileUp, ImagePlus, Loader2, Plus, Ruler, Sparkles, Star, Trash2, Undo2, Upload, Wand2, X,
 } from "lucide-react";
 import { btn, chip, input, seg } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -12,8 +12,9 @@ import { useConfirm } from "@/components/confirm";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image";
 import { PLACEHOLDERS, TITLE_MAX } from "@/lib/drafts/text";
+import { readAnyText, readMeasuresFile, skuMatcher } from "@/lib/drafts/measures-file";
 import {
-  addPhotos, applyMeasures, createDraft, deleteDraft, deletePhotos, generate, makeCover, saveTemplate, unassignPhoto, updateDraft,
+  addPhotos, importMeasures, createDraft, deleteDraft, deletePhotos, generate, makeCover, saveTemplate, unassignPhoto, updateDraft,
 } from "./actions";
 
 export interface Draft {
@@ -34,7 +35,9 @@ const FILTERS = [["tous", "Tous"], ["a_faire", "À rédiger"], ["genere", "À re
 // positions of a batch of photos added now: after everything added before, in the order of the files
 const batchBase = () => Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 60000) * 1000;
 
-export function Studio({ orgId, drafts, photos, ai, template }: { orgId: string; drafts: Draft[]; photos: PhotoRow[]; ai: boolean; template: Template }) {
+export function Studio({ orgId, skuPrefix, drafts, photos, ai, template, waiting }: {
+  orgId: string; skuPrefix: string; drafts: Draft[]; photos: PhotoRow[]; ai: boolean; template: Template; waiting: string[] | null;
+}) {
   const router = useRouter();
   const toast = useToast();
   const confirm = useConfirm();
@@ -226,7 +229,7 @@ export function Studio({ orgId, drafts, photos, ai, template }: { orgId: string;
 
       {/* ── 2. measurements and model ── */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <MeasuresPanel disabled={!drafts.length} onDone={() => router.refresh()} />
+        <MeasuresPanel skus={drafts.map((d) => d.sku)} prefix={skuPrefix} waiting={waiting} onDone={() => router.refresh()} />
         <TemplatePanel template={template} ai={ai} />
       </div>
 
@@ -260,35 +263,84 @@ export function Studio({ orgId, drafts, photos, ai, template }: { orgId: string;
   );
 }
 
-function MeasuresPanel({ disabled, onDone }: { disabled: boolean; onDone: () => void }) {
+type ImportResult = { applied: string[]; pending: string[]; locked: string[]; ignored: number; format: string; file: string | null };
+
+/** Measurements by SKU: a file (text, table, Excel, Word) or a pasted text; each SKU's block goes to its article */
+function MeasuresPanel({ skus, prefix, waiting, onDone }: { skus: string[]; prefix: string; waiting: string[] | null; onDone: () => void }) {
   const toast = useToast();
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
-  const [result, setResult] = useState<{ applied: string[]; missing: string[]; orphan: number } | null>(null);
+  const [drag, setDrag] = useState(false);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const isSku = useMemo(() => skuMatcher(skus, prefix), [skus, prefix]);
+
+  const send = (rows: { sku: string; measures: string }[], meta: { ignored: number; format: string; file: string | null }) => start(async () => {
+    if (!rows.length) {
+      setResult(null);
+      return toast("Aucun SKU trouvé : chaque article doit commencer par son SKU, ou le tableau avoir une colonne « SKU ».", "error");
+    }
+    const r = await importMeasures(rows, meta.file);
+    if (r.error !== null) return toast(r.error, "error");
+    setResult({ ...r, ...meta });
+    toast(`${rows.length} SKU lu${rows.length > 1 ? "s" : ""} : ${r.applied.length} article${r.applied.length > 1 ? "s" : ""} complété${r.applied.length > 1 ? "s" : ""}`, "ok");
+    onDone();
+  });
+  const readFile = async (f: File | undefined) => {
+    if (!f) return;
+    try {
+      const r = readMeasuresFile(f.name, new Uint8Array(await f.arrayBuffer()), isSku);
+      send(r.rows, { ignored: r.ignored, format: r.format, file: f.name });
+    } catch (e) {
+      toast(e instanceof Error && /enregistrez-le/.test(e.message) ? e.message : `Fichier illisible : ${f.name}`, "error");
+    }
+  };
+  const FORMAT: Record<string, string> = { texte: "texte", tableau: "tableau", excel: "Excel", word: "Word" };
+
   return (
-    <section className="rounded-2xl border border-line bg-panel/80 p-4" data-testid="measures">
-      <h2 className="section-title"><Ruler size={16} className="mr-1 inline" />2. Mesures</h2>
-      <p className="mt-1 text-sm text-muted">Collez le texte de toutes vos mesures : chaque ligne avec un SKU commence le bloc de cet article.</p>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} rows={7} className={`${input} mt-2 py-2 font-mono text-sm`}
-        placeholder={"LSH-0123\nÉpaules : 45 cm\nLongueur : 72 cm\n\nLSH-0124\n…"} aria-label="Mesures de tous les articles" />
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <button type="button" disabled={disabled || pending || !text.trim()} className={btn.sm} data-testid="apply-measures"
-          onClick={() => start(async () => {
-            const r = await applyMeasures(text);
-            if (r.error !== null) return toast(r.error, "error");
-            setResult(r);
-            toast(r.applied.length ? `Mesures réparties sur ${r.applied.length} article${r.applied.length > 1 ? "s" : ""}` : "Aucun SKU reconnu dans le texte", r.applied.length ? "ok" : "error");
-            onDone();
-          })}>
-          <CheckCheck size={16} /> Répartir par SKU
+    <section className={`rounded-2xl border bg-panel/80 p-4 transition ${drag ? "border-accent ring-2 ring-accent/30" : "border-line"}`} data-testid="measures"
+      onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
+      onDrop={(e) => { e.preventDefault(); setDrag(false); readFile(e.dataTransfer.files[0]); }}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="section-title"><Ruler size={16} className="mr-1 inline" />2. Mesures</h2>
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={pending} className={btn.sm} data-testid="measures-file-button">
+          {pending ? <Loader2 size={16} className="animate-spin" /> : <FileUp size={16} />} Importer un fichier
         </button>
-        {disabled && <span className="text-xs text-muted">Créez d&apos;abord les articles.</span>}
+        <input ref={fileRef} type="file" hidden accept=".txt,.csv,.tsv,.xlsx,.xlsm,.docx,.md,text/plain,text/csv"
+          onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="measures-file" />
+      </div>
+      <p className="mt-1 text-sm text-muted">
+        Donnez votre fichier de mesures (Excel, CSV, Word ou texte) : chaque SKU est détecté et ses mesures vont à son article.
+        Un SKU sans article encore créé garde ses mesures pour plus tard.
+      </p>
+      <details className="mt-2 text-sm">
+        <summary className="cursor-pointer text-muted">Formats lus</summary>
+        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted">
+          <li>Tableau (Excel .xlsx, CSV) : une colonne <b>SKU</b> (ou Réf., Référence) puis une colonne par mesure (Épaules, Longueur…), une ligne par article. Ou bien une ligne par mesure : SKU, Mesure, Valeur.</li>
+          <li>Texte ou Word : le SKU sur une ligne, ses mesures en dessous, jusqu&apos;au SKU suivant.</li>
+          <li>Un nombre seul sous « Épaules » devient « Épaules : 45 cm » ; une taille reste sans unité.</li>
+        </ul>
+      </details>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} rows={5} className={`${input} mt-2 py-2 font-mono text-sm`}
+        placeholder={"Ou collez le texte ici :\nLSH-0123\nÉpaules : 45 cm\nLongueur : 72 cm\n\nLSH-0124\n…"} aria-label="Mesures de tous les articles" />
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" disabled={pending || !text.trim()} className={btn.ghost} data-testid="apply-measures"
+          onClick={() => { const r = readAnyText(text, isSku); send(r.rows, { ignored: r.ignored, format: r.format, file: null }); }}>
+          <CheckCheck size={16} /> Répartir le texte par SKU
+        </button>
       </div>
       {result && (
-        <p className="mt-2 text-sm" data-testid="measures-result">
-          {result.applied.length > 0 && <span className="text-emerald-700 dark:text-emerald-300">✓ {result.applied.join(", ")}</span>}
-          {result.missing.length > 0 && <span className="block text-muted">Sans mesures dans ce texte : {result.missing.join(", ")}</span>}
-          {result.orphan > 0 && <span className="block text-muted">{result.orphan} ligne{result.orphan > 1 ? "s" : ""} avant le premier SKU ignorée{result.orphan > 1 ? "s" : ""}.</span>}
+        <div className="mt-2 space-y-0.5 rounded-xl bg-fg/5 p-2 text-sm" data-testid="measures-result">
+          <p className="text-xs text-muted">{result.file ? `${result.file} · ` : ""}lu comme {FORMAT[result.format] ?? result.format}</p>
+          {result.applied.length > 0 && <p className="text-emerald-700 dark:text-emerald-300">✓ Ajoutées à {result.applied.length} article{result.applied.length > 1 ? "s" : ""} : {result.applied.join(", ")}</p>}
+          {result.pending.length > 0 && <p>En attente ({result.pending.length}), ajoutées quand vous créerez ces articles : {result.pending.join(", ")}</p>}
+          {result.locked.length > 0 && <p className="text-muted">Non modifiées car marquées prêtes : {result.locked.join(", ")}</p>}
+          {result.ignored > 0 && <p className="text-muted">{result.ignored} ligne{result.ignored > 1 ? "s" : ""} sans SKU ignorée{result.ignored > 1 ? "s" : ""}.</p>}
+        </div>
+      )}
+      {!result && waiting && waiting.length > 0 && (
+        <p className="mt-2 text-sm text-muted" data-testid="measures-waiting">
+          Mesures en attente pour {waiting.length} SKU sans article : {waiting.slice(0, 12).join(", ")}{waiting.length > 12 ? "…" : ""}
         </p>
       )}
     </section>

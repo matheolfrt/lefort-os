@@ -81,11 +81,36 @@ do $$ begin
   assert (select count(*) from draft_photos where draft_id is null) = 4, 'photos back in the pile';
 end $$;
 
+-- measurements imported from a file: into the prepared article, kept for the SKUs not prepared yet, never into a
+-- listing marked « prête »; a later article takes them at creation
+insert into listing_drafts(sku) values ('A-3');
+update listing_drafts set status = 'pret' where sku = 'A-1';
+do $$ declare r jsonb := public.import_sku_measures('[{"sku": "a-3", "measures": "Épaules : 44 cm"}, {"sku": "A-1", "measures": "Épaules : 50 cm"},
+  {"sku": "LSH-9", "measures": "Longueur : 70 cm"}, {"sku": "A-3", "measures": "doublon"}, {"sku": "", "measures": "rien"}, {"sku": "X-1", "measures": " "}]', 'mesures.xlsx');
+begin
+  assert r->'applied' = '["A-3"]' and r->'pending' = '["LSH-9"]' and r->'locked' = '["A-1"]', r::text;
+  assert (select measures from listing_drafts where sku = 'A-3') = 'Épaules : 44 cm', 'first of duplicates kept';
+  assert (select measures from listing_drafts where sku = 'A-1') <> 'Épaules : 50 cm', 'ready listing untouched';
+  assert (select count(*) from sku_measures) = 3, 'kept for every SKU read';
+end $$;
+insert into listing_drafts(sku) values ('lsh-9');
+do $$ begin
+  assert (select measures from listing_drafts where sku = 'lsh-9') = 'Longueur : 70 cm', 'taken at creation, ignoring case';
+end $$;
+-- a new import replaces the kept text, even written with another case
+select public.import_sku_measures('[{"sku": "LSH-9", "measures": "Longueur : 71 cm"}]');
+do $$ begin
+  assert (select measures from listing_drafts where sku = 'lsh-9') = 'Longueur : 71 cm';
+  assert (select count(*) from sku_measures where upper(sku) = 'LSH-9') = 1;
+end $$;
+select t.expect_error($$insert into sku_measures(sku, measures) values ('Z', 'x')$$, 'permission denied');
+select t.expect_error($$select public.import_sku_measures('{}')$$, 'Liste de mesures attendue');
+
 -- another shop sees nothing and cannot attach its photo to our draft
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select public.bootstrap_organization('Autre boutique', 'Autre');
 do $$ begin
-  assert (select count(*) from listing_drafts) = 0 and (select count(*) from draft_photos) = 0 and (select count(*) from listing_templates) = 0, 'isolated';
+  assert (select count(*) from listing_drafts) = 0 and (select count(*) from draft_photos) = 0 and (select count(*) from listing_templates) = 0 and (select count(*) from sku_measures) = 0, 'isolated';
 end $$;
 reset role;
 select set_config('t.draft', (select id::text from listing_drafts where sku = 'A-1'), false);

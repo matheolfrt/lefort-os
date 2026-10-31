@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/errors";
 import { aiEnabled, aiError, writeWithClaude } from "@/lib/drafts/ai";
 import {
-  DEFAULT_DESCRIPTION, DEFAULT_TITLE, descriptionFields, fieldsOf, fillTemplate, fillTitle, splitMeasures, type DraftContext,
+  DEFAULT_DESCRIPTION, DEFAULT_TITLE, descriptionFields, fieldsOf, fillTemplate, fillTitle, type DraftContext,
 } from "@/lib/drafts/text";
 
 type Res<T = object> = ({ error: null } & T) | { error: string };
@@ -116,23 +116,22 @@ export async function deleteDraft(id: string): Promise<Res> {
   return { error: null };
 }
 
-/** Measurements pasted for many SKUs: each article gets its block. Nothing is written for a SKU without article. */
-export async function applyMeasures(text: string): Promise<Res<{ applied: string[]; missing: string[]; orphan: number }>> {
+/**
+ * Measurements by SKU read from a file or a pasted text (read in the browser): kept for every SKU, written into the
+ * prepared articles at once, and into an article created later with that SKU.
+ */
+export async function importMeasures(rows: { sku: string; measures: string }[], fileName: string | null): Promise<Res<{ applied: string[]; pending: string[]; locked: string[] }>> {
   await getContext();
+  if (!rows.length) return { error: "Aucun SKU trouvé : chaque article doit commencer par son SKU (ou une colonne « SKU » dans un tableau)." };
   const supabase = await createClient();
-  const { data: drafts, error } = await supabase.from("listing_drafts").select("id, sku");
-  if (error) return fail(error);
-  const split = splitMeasures(text, (drafts ?? []).map((d) => d.sku));
-  const applied: string[] = [];
-  for (const d of drafts ?? []) {
-    const block = split.blocks.get(d.sku);
-    if (block === undefined) continue;
-    const { error: e } = await supabase.from("listing_drafts").update({ measures: block.slice(0, 5000) }).eq("id", d.id);
-    if (e) return fail(e);
-    applied.push(d.sku);
+  const { data, error } = await supabase.rpc("import_sku_measures", { p_rows: rows.slice(0, 5000), p_file: fileName });
+  if (error) {
+    if (/import_sku_measures/.test(error.message)) return { error: "Mise à jour de la base à appliquer (Paramètres → Mises à jour) pour importer un fichier de mesures." };
+    return fail(error);
   }
   revalidatePath(PATH);
-  return { error: null, applied, missing: (drafts ?? []).map((d) => d.sku).filter((s) => !split.blocks.has(s)), orphan: split.orphan.length };
+  const r = data as { applied: string[]; pending: string[]; locked: string[] };
+  return { error: null, applied: r.applied ?? [], pending: r.pending ?? [], locked: r.locked ?? [] };
 }
 
 export async function saveTemplate(t: { title_template: string; description_template: string; instructions: string }): Promise<Res> {

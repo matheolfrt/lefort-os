@@ -27,6 +27,10 @@ export default async function Annonces() {
       </>
     );
   }
+  // measurements imported for SKUs that have no article yet (null: database update not applied)
+  const stored = await supabase.from("sku_measures").select("sku").order("sku").limit(5000);
+  const draftSkus = new Set((drafts.data ?? []).map((d) => d.sku.toUpperCase()));
+  const waiting = stored.error ? null : (stored.data ?? []).map((r) => r.sku).filter((s) => !draftSkus.has(s.toUpperCase()));
   const rows = photos.data ?? [];
   const paths = rows.map((p) => p.storage_path);
   const urls = new Map<string, string>();
@@ -39,7 +43,7 @@ export default async function Annonces() {
     <>
       <PageHeader title="Annonces"
         subtitle="Ajoutez vos photos, regroupez-les par article avec leur SKU, collez vos mesures : Lefort OS écrit le titre et la description." />
-      <Studio orgId={ctx.org.id} drafts={(drafts.data ?? []) as Draft[]} photos={list} ai={aiEnabled()}
+      <Studio orgId={ctx.org.id} skuPrefix={ctx.org.sku_prefix} waiting={waiting} drafts={(drafts.data ?? []) as Draft[]} photos={list} ai={aiEnabled()}
         template={{
           title_template: tpl.data?.title_template ?? DEFAULT_TITLE,
           description_template: tpl.data?.description_template || DEFAULT_DESCRIPTION,
