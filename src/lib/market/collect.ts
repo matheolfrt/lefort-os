@@ -147,6 +147,8 @@ function setCookies(h: Headers): string[] {
 class Visit {
   cookies = new Map<string, string>();
   requests = 0;
+  /** who answered a refusal (anti-bot service), read from the response headers: diagnosis only */
+  guard: string | null = null;
   constructor(private domain: string, private fetchImpl: typeof fetch, private budget: { left: number }) {}
   private keep(h: Headers) {
     for (const c of setCookies(h)) { const [pair] = c.split(";"); const i = pair.indexOf("="); if (i > 0) this.cookies.set(pair.slice(0, i).trim(), pair.slice(i + 1).trim()); }
@@ -161,6 +163,7 @@ class Visit {
     this.requests++;
     const res = await this.fetchImpl(`https://${this.domain}/`, { headers: this.headers(false), redirect: "follow" });
     this.keep(res.headers);
+    if (res.status >= 400) this.guard = guardOf(res.headers);
     await res.text().catch(() => "");
     return res.status;
   }
@@ -169,6 +172,7 @@ class Visit {
     this.requests++;
     const res = await this.fetchImpl(`https://${this.domain}${path}`, { headers: this.headers(true) });
     this.keep(res.headers);
+    if (res.status >= 400) this.guard = guardOf(res.headers);
     const text = await res.text().catch(() => "");
     let body: unknown = null;
     try { body = text ? JSON.parse(text) : null; } catch { body = null; }
@@ -176,9 +180,16 @@ class Visit {
   }
 }
 
+function guardOf(h: Headers): string | null {
+  const cookies = setCookies(h).join(" ").toLowerCase();
+  if (h.get("x-datadome") || h.get("x-dd-b") || cookies.includes("datadome")) return "DataDome";
+  if (h.get("cf-mitigated") || (h.get("server") ?? "").toLowerCase().includes("cloudflare")) return "Cloudflare";
+  return null;
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const why = (status: number) =>
-  status === 403 ? "Vinted a refusé la requête (403) : ce collecteur est bloqué." :
+const why = (status: number, step: "accueil" | "catalogue", guard: string | null = null) =>
+  status === 403 ? `Vinted a refusé la requête (403${guard ? `, protection ${guard}` : ""}) dès ${step === "accueil" ? "la page d'accueil" : "le catalogue"} : l'adresse de ce collecteur est bloquée.` :
   status === 429 ? "Vinted demande de ralentir (429)." :
   status === 401 ? "Vinted n'a pas accepté la session anonyme (401)." :
   `Vinted a répondu ${status}.`;
@@ -203,7 +214,7 @@ export async function collect(o: CollectOptions): Promise<CollectSummary> {
       if (!v) {
         v = new Visit(job.domain, fetchImpl, budget);
         const s = await v.open();
-        if (s >= 400) { pay.ok = false; pay.http_status = s; pay.error = why(s); }
+        if (s >= 400) { pay.ok = false; pay.http_status = s; pay.error = why(s, "accueil", v.guard); }
         visits.set(job.domain, v);
         await sleep(delay);
       }
@@ -212,7 +223,7 @@ export async function collect(o: CollectOptions): Promise<CollectSummary> {
       for (let page = 1; pay.ok && page <= maxPages; page++) {
         const r = await v.json(catalogPath(job.query, page));
         pay.http_status = r.status;
-        if (r.status !== 200) { pay.ok = false; pay.error = why(r.status); break; }
+        if (r.status !== 200) { pay.ok = false; pay.error = why(r.status, "catalogue", v.guard); break; }
         const list = (r.body as { items?: unknown[] })?.items;
         if (!Array.isArray(list)) { pay.ok = false; pay.error = "Réponse de Vinted inattendue (pas de liste d'annonces)."; break; }
         if (page === 1 && list[0] && typeof list[0] === "object") pay.sample_keys = Object.keys(list[0] as object).sort();

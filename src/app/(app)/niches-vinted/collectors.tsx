@@ -67,6 +67,9 @@ export function Collectors({ collectors, keys, manager, supabaseUrl, anonKey, se
               {result.searches.map((s) => (
                 <li key={s.id}>{s.ok ? "✓" : "✗"} <b>{s.name}</b> : {s.ok ? `${s.seen} annonces lues, ${s.checked} revues (Vinted a répondu ${s.http})` : s.error ?? `échec (HTTP ${s.http ?? "—"})`}</li>
               ))}
+              {result.searches.some((s) => s.http === 403) && (
+                <li className="pt-1 text-muted" data-testid="blocked-hint">Ce test part des serveurs de Vercel, que Vinted refuse. Ça ne dit rien des autres collecteurs : installez GitHub Actions (page Niches Vinted → « Installer les collecteurs automatiques ») et lancez-le une fois pour voir si Vinted l&apos;accepte.</li>
+              )}
             </ul>
           )}
 

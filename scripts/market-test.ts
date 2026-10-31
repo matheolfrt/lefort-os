@@ -54,7 +54,7 @@ function fakeVinted(o: FakeOpts) {
   const f = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input)); calls.push(url.pathname + url.search); n++;
     const cookie = new Headers(init?.headers).get("Cookie") ?? "";
-    if (o.block) return new Response("blocked", { status: 403 });
+    if (o.block) return new Response("blocked", { status: 403, headers: { "x-datadome": "protected" } });
     if (url.pathname === "/") return new Response("<html>", { status: 200, headers: { "set-cookie": "access_token_web=abc; Path=/; HttpOnly" } });
     if (!cookie.includes("access_token_web=abc")) return json(401, { error: "no session" });
     if (o.slowDownAfter && n > o.slowDownAfter) return json(429, {});
@@ -92,7 +92,7 @@ test("passage : session anonyme, toutes les pages nouvelles, puis arrêt", async
 test("Vinted refuse : passage enregistré en échec avec sa réponse, aucune annonce inventée", async () => {
   const v = fakeVinted({ block: true }), { sent, l } = link([5, 6]);
   const s = await collect({ link: l, fetchImpl: v.f, delayMs: 0 });
-  assert.equal(sent[0].p.ok, false); assert.equal(sent[0].p.http_status, 403); assert.match(sent[0].p.error!, /bloqué/);
+  assert.equal(sent[0].p.ok, false); assert.equal(sent[0].p.http_status, 403); assert.match(sent[0].p.error!, /bloquée/); assert.match(sent[0].p.error!, /DataDome/); assert.match(sent[0].p.error!, /accueil/);
   assert.equal(sent[0].p.items.length, 0); assert.equal(sent[0].p.checks.length, 0); assert.equal(s.searches[0].ok, false);
 });
 
