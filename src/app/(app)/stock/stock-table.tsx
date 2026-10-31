@@ -12,7 +12,7 @@ import { HOLD_LABEL } from "@/i18n/fr";
 import { daysSince, eurosInput, money } from "@/lib/format";
 import { rpc } from "@/lib/client-data";
 import {
-  moveTo, parsePrice, restoreCategories, restoreLocations, restorePrice, restoreStatuses, setCategory as setItemsCategory, setPrice, setStatus,
+  BULK_BRANDS, moveTo, parsePrice, restoreBrands, restoreCategories, restoreLocations, restorePrice, restoreStatuses, setBrand as setItemsBrand, setCategory as setItemsCategory, setPrice, setStatus,
 } from "@/lib/item-edits";
 import type { HoldReason, ItemStatus } from "@/lib/types";
 
@@ -27,6 +27,8 @@ export interface StockRow {
   priceCents: number | null;
   minPriceCents?: number | null;
   categoryId?: string | null;
+  brandId?: string | null;
+  brand?: string | null;
   receivedAt: string;
 }
 
@@ -63,8 +65,14 @@ function Age({ row }: { row: StockRow }) {
   return <span className={`tabular-nums ${tone}`}>{d} j</span>;
 }
 
-export function StockTable({ rows, categories, locations = [], isManager = false, trash = false }: {
-  rows: StockRow[]; categories: { id: string; name: string }[]; locations?: { code: string; label: string | null }[];
+/** the brand, when the label (a title) does not already say it */
+function BrandTag({ r }: { r: StockRow }) {
+  if (!r.brand || r.brand === "Sans marque" || r.label.toLowerCase().includes(r.brand.toLowerCase())) return null;
+  return <span className="ml-1.5 text-xs text-muted" data-brand>· {r.brand}</span>;
+}
+
+export function StockTable({ rows, categories, locations = [], isManager = false, trash = false, orgId }: {
+  orgId: string; rows: StockRow[]; categories: { id: string; name: string }[]; locations?: { code: string; label: string | null }[];
   isManager?: boolean; trash?: boolean;
 }) {
   const router = useRouter();
@@ -77,6 +85,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
   const [location, setLocation] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [category, setCategory] = useState("");
+  const [brand, setBrand] = useState("");
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<BulkResult["errors"]>([]);
 
@@ -198,6 +207,17 @@ export function StockTable({ rows, categories, locations = [], isManager = false
     }, () => restoreCategories(before));
   };
 
+  const applyBrand = () => {
+    if (!brand) return;
+    const before = selectedRows().map((r) => ({ id: r.id, brandId: r.brandId ?? null }));
+    const chosen = selectedRows();
+    run(`Marque ${brand}`, async () => {
+      const done = new Set(await setItemsBrand(ids, brand, orgId));
+      return { updated: done.size, errors: chosen.filter((r) => !done.has(r.id)).map((r) => ({ sku: r.sku, error: "vendu : seul un responsable peut le modifier" })) };
+    }, () => restoreBrands(before));
+    setBrand("");
+  };
+
   // ── Changes made right in the table, one item at a time (click the cell, Enter to save, Échap to cancel)
   const editable = (r: StockRow) => !trash && !SOLD.includes(r.status);
   const savePrice = (r: StockRow, cents: number | null) => run(`Prix de ${r.sku}`, async () => {
@@ -248,7 +268,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                   <span className="font-mono text-sm font-bold">{r.sku}</span>
                   <StatusChip status={r.status} />
                 </div>
-                <div className="truncate text-sm">{r.label || <Blank />}</div>
+                <div className="truncate text-sm">{r.label || <Blank />}<BrandTag r={r} /></div>
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
                   {r.size && <span>T. {r.size}</span>}
                   {r.location && <span className="font-mono">{r.location.replace("EMP-", "")}</span>}
@@ -282,7 +302,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                 <td className="!px-1 !py-0"><Box checked={selected.has(r.id)} onClick={(e) => toggle(i, e.shiftKey)} label={`Sélectionner ${r.sku}`} /></td>
                 <td><Link prefetch={false} href={`/stock/${r.sku}`} className="font-mono font-semibold text-fg hover:text-accent">{r.sku}</Link></td>
                 <td>{editable(r) ? <StatusPicker sku={r.sku} status={r.status} onPick={(v) => saveStatus(r, v)} disabled={busy} /> : <StatusChip status={r.status} />}</td>
-                <td className="max-w-96 truncate">{r.label || <Blank />}</td>
+                <td className="max-w-96 truncate">{r.label || <Blank />}<BrandTag r={r} /></td>
                 <td>{r.size ?? "—"}</td>
                 <td className="font-mono text-xs text-muted">
                   {editable(r)
@@ -317,7 +337,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
         </div>
       )}
 
-      {ids.length > 0 && <div className="h-56 md:h-24" aria-hidden />}
+      {ids.length > 0 && <div className="h-72 md:h-28" aria-hidden />}
       {ids.length > 0 && (
         <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-3 md:bottom-4 md:left-64 md:px-8">
           <div className="mx-auto grid max-w-6xl gap-2 rounded-2xl bg-ink p-3 text-ink-fg shadow-2xl ring-1 ring-line md:flex md:flex-wrap md:items-center">
@@ -361,6 +381,13 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <button className="min-h-11 shrink-0 rounded-md bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 disabled:opacity-40" disabled={busy || !category} onClick={applyCategory}>OK</button>
+              </div>
+              <div className="flex gap-1.5">
+                <select className={`${input} min-w-0 bg-panel text-fg md:w-auto`} value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Marque" data-testid="bulk-brand">
+                  <option value="">Marque…</option>
+                  {BULK_BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <button className="min-h-11 shrink-0 rounded-md bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 disabled:opacity-40" disabled={busy || !brand} onClick={applyBrand} data-testid="bulk-brand-apply">OK</button>
               </div>
             </div>
             {isManager && (

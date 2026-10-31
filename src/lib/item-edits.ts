@@ -35,6 +35,39 @@ export async function setCategory(itemIds: string[], categoryId: string | null) 
   if (error) throw new Error(errorMessage(error));
 }
 
+/** Brands offered for a change on many items at once (the shop's choice, for now) */
+export const BULK_BRANDS = ["Harris Tweed", "Blazer Tweed"];
+
+/** The brand's id in the shop, created if it does not exist yet (any member may add a brand) */
+async function brandId(name: string, orgId: string): Promise<string> {
+  const sb = supabaseBrowser();
+  const { data: found, error } = await sb.from("brands").select("id, name").ilike("name", name.replace(/[%_\\]/g, "\\$&"));
+  if (error) throw new Error(errorMessage(error));
+  const same = ((found ?? []) as { id: string; name: string }[]).find((b) => b.name.toLowerCase() === name.toLowerCase());
+  if (same) return same.id;
+  const { data, error: insErr } = await sb.from("brands").insert({ org_id: orgId, name }).select("id").single();
+  if (insErr) throw new Error(errorMessage(insErr));
+  return data.id;
+}
+
+/** The ids really changed (a sold item is only changed by a manager: the others are left as they are) */
+export async function setBrand(itemIds: string[], brandName: string, orgId: string): Promise<string[]> {
+  const id = await brandId(brandName, orgId);
+  const { data, error } = await supabaseBrowser().from("items").update({ brand_id: id }).in("id", itemIds).select("id");
+  if (error) throw new Error(errorMessage(error));
+  return ((data ?? []) as { id: string }[]).map((r) => r.id);
+}
+
+/** Undo of a brand change: each item gets its brand back (or none) */
+export async function restoreBrands(before: { id: string; brandId: string | null }[]) {
+  const groups = new Map<string | null, string[]>();
+  for (const b of before) groups.set(b.brandId, [...(groups.get(b.brandId) ?? []), b.id]);
+  for (const [brand, ids] of groups) {
+    const { error } = await supabaseBrowser().from("items").update({ brand_id: brand }).in("id", ids);
+    if (error) throw new Error(errorMessage(error));
+  }
+}
+
 /** Statuses a person may set by hand; sold / shipped / completed / returned go through Ventes */
 export const STATUS_TARGETS: { value: ItemStatus | "release"; label: string }[] = [
   { value: "listed", label: "En ligne" },
