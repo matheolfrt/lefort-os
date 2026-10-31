@@ -115,4 +115,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_mkt -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_mkt -f supabase/tests/market_test.sql >/dev/null
+# Annonces en préparation on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_ld" -c "create database ${DB}_ld"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_ld -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_ld -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_ld -f supabase/tests/listing_drafts_test.sql >/dev/null
 echo "DB tests passed"
