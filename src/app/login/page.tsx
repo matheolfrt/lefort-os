@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { btn, Field, input } from "@/components/ui";
 import { errorMessage } from "@/lib/errors";
+import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function LoginPage() {
     <div className="flex min-h-dvh items-center justify-center px-4">
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-panel/80 p-6 shadow-2xl backdrop-blur">
         <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-accent font-mono text-xl font-bold text-accent-fg shadow-[0_0_28px_-6px_var(--accent)]">L</span>
+          <Logo className="size-11" />
           <div>
             <div className="eyebrow text-highlight">Lefort Second Hand</div>
             <div className="text-2xl font-bold tracking-[-0.03em]">Lefort OS</div>

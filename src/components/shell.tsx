@@ -10,6 +10,7 @@ import { useScanApi } from "./scan-provider";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { ThemeSwitch } from "./theme-switch";
 import type { Theme } from "@/lib/prefs";
+import { Logo } from "@/components/logo";
 
 const MOBILE = ["/", "/postes", "/stock", "/ventes"];
 
@@ -36,7 +37,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
     <div className="min-h-dvh md:flex">
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-ink/60 backdrop-blur md:flex">
         <div className="flex items-center gap-2.5 px-5 py-5">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-accent font-mono text-lg font-bold text-accent-fg shadow-[0_0_24px_-6px_var(--accent)]">L</span>
+          <Logo className="size-9" />
           <span className="min-w-0">
             <span className="block text-[17px] font-bold leading-tight tracking-[-0.02em]">Lefort OS</span>
             <span className="block truncate text-xs text-muted">{orgName}</span>
@@ -98,7 +99,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
       {/* Phone: top bar with search and the full menu */}
       <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-ink/85 px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-xl md:hidden">
         <Link href="/" className="flex min-h-11 items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-accent font-mono font-bold text-accent-fg">L</span>
+          <Logo className="size-8" />
           <span className="font-bold tracking-[-0.02em]">Lefort OS</span>
         </Link>
         <button onClick={openQuick} aria-label="Rechercher"
