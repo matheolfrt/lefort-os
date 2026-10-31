@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { stockSearch } from "@/lib/stock-search";
 import { createClient } from "@/lib/supabase/server";
 import { CONDITION_LABEL, STATUS_LABEL } from "@/i18n/fr";
 import { csvEuros, toCsv, type Cell } from "@/lib/csv";
@@ -30,10 +31,7 @@ export async function GET(request: NextRequest) {
     q = sp.get("deleted") ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
     if (sp.get("status")) q = q.eq("status", sp.get("status")!);
     if (sp.get("category")) q = q.eq("category_id", sp.get("category")!);
-    if (sp.get("q")) {
-      const s = sp.get("q")!.replace(/[%,()]/g, " ").trim();
-      q = q.or(`sku.ilike.%${s}%,title.ilike.%${s}%,size_label.eq.${s}`);
-    }
+    q = (await stockSearch(supabase, sp.get("q")))(q);
     const { data, error } = await q.order("received_at", { ascending: false }).range(from, from + 999);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     rows.push(...(data as unknown as Row[]));

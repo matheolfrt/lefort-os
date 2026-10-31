@@ -36,7 +36,7 @@ export async function setCategory(itemIds: string[], categoryId: string | null) 
 }
 
 /** Brands offered for a change on many items at once (the shop's choice, for now) */
-export const BULK_BRANDS = ["Harris Tweed", "Blazer Tweed"];
+export const BULK_BRANDS = ["Harris Tweed", "Blazer Tweed", "Blazer croisé", "Manteau vintage homme", "Manteau vintage femme"];
 
 /** The brand's id in the shop, created if it does not exist yet (any member may add a brand) */
 async function brandId(name: string, orgId: string): Promise<string> {

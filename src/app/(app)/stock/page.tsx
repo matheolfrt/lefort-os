@@ -6,6 +6,7 @@ import { Empty, input } from "@/components/ui";
 import { STATUS_LABEL, STATUS_DOT } from "@/i18n/fr";
 import type { ItemStatus } from "@/lib/types";
 import { StockTable, type StockRow } from "./stock-table";
+import { stockSearch } from "@/lib/stock-search";
 
 const PAGE_SIZES = [50, 100, 250];
 // Chip order follows the production line, then the exits
@@ -31,16 +32,8 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
   query = trash ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.category) query = query.eq("category_id", sp.category);
-  // every word must match somewhere: SKU, title, size or brand (« blazer bleu 50 », « hugo boss »)
-  const words = (sp.q ?? "").replace(/[%,()*"\\]/g, " ").split(/\s+/).filter(Boolean).slice(0, 6);
-  if (words.length) {
-    const { data: brands } = await supabase.from("brands").select("id, name").or(words.map((w) => `name.ilike.%${w}%`).join(","));
-    const fold = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    for (const w of words) {
-      const ids = (brands ?? []).filter((b) => fold(b.name as string).includes(fold(w))).map((b) => b.id as string);
-      query = query.or(`sku.ilike.%${w}%,title.ilike.%${w}%,size_label.ilike.${w}${ids.length ? `,brand_id.in.(${ids.join(",")})` : ""}`);
-    }
-  }
+  // every word must match somewhere (SKU, title, size or brand); « -mot » must match nowhere
+  query = (await stockSearch(supabase, sp.q))(query);
   const [{ data: items, count }, { data: categories }, { data: pipeline }, { count: trashCount }, { data: locations }] = await Promise.all([
     query.order("received_at", { ascending: false }).range((page - 1) * PAGE, page * PAGE - 1),
     supabase.from("categories").select("id, name").order("name"),
@@ -110,7 +103,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
         {trash && <input type="hidden" name="deleted" value="1" />}
         <label className="relative col-span-2 sm:col-span-1">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input className={`${input} pl-10`} name="q" defaultValue={sp.q} placeholder="SKU, titre, taille…" aria-label="Rechercher" />
+          <input className={`${input} pl-10`} name="q" defaultValue={sp.q} placeholder="SKU, titre, marque… (-mot pour exclure)" aria-label="Rechercher" />
         </label>
         <select className={input} name="category" defaultValue={sp.category ?? ""} aria-label="Catégorie">
           <option value="">Toutes catégories</option>
