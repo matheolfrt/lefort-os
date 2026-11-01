@@ -27,7 +27,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
 
   let query = supabase
     .from("items")
-    .select("id, sku, status, title, size_label, list_price_cents, min_price_cents, category_id, brand_id, status_changed_at, received_at, status_before_hold, categories(name), brands(name), locations(code)", { count: "exact" })
+    .select("id, sku, status, title, size_label, list_price_cents, min_price_cents, category_id, brand_id, status_changed_at, received_at, status_before_hold, categories(name), brands(name), locations(code), item_costs(allocated_cost_cents)", { count: "exact" })
     ;
   query = trash ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
   if (sp.status) query = query.eq("status", sp.status);
@@ -138,6 +138,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
               categoryId: i.category_id,
               brandId: i.brand_id,
               brand: (i.brands as unknown as { name: string } | null)?.name ?? null,
+              costCents: ctx.isManager ? (i as unknown as { item_costs: { allocated_cost_cents: number } | null }).item_costs?.allocated_cost_cents ?? null : undefined,
               receivedAt: i.received_at,
             }))}
             categories={categories ?? []}

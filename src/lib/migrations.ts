@@ -39,6 +39,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "20261116000028_market", marker: "market_ready", args: {} },
   { file: "20261117000029_listing_drafts", marker: "listing_drafts_ready", args: {} },
   { file: "20261118000030_sku_measures", marker: "sku_measures_ready", args: {} },
+  { file: "20261119000031_bulk_item_cost", marker: "bulk_item_cost_ready", args: {} },
 ];
 
 const notFound = (code?: string) => code === "PGRST202" || code === "PGRST205" || code === "42883" || code === "42P01";

@@ -29,6 +29,8 @@ export interface StockRow {
   categoryId?: string | null;
   brandId?: string | null;
   brand?: string | null;
+  /** purchase price (managers only: undefined for the team) */
+  costCents?: number | null;
   receivedAt: string;
 }
 
@@ -86,6 +88,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
   const [salePrice, setSalePrice] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
+  const [cost, setCost] = useState("");
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<BulkResult["errors"]>([]);
 
@@ -218,6 +221,18 @@ export function StockTable({ rows, categories, locations = [], isManager = false
     setBrand("");
   };
 
+  /** Purchase price of the chosen items; « Annuler » gives each its former price back */
+  const applyCost = () => {
+    const cents = parsePrice(cost);
+    if (cents == null) return toast("Prix d'achat invalide", "error");
+    const chosen = selectedRows();
+    const before = chosen.filter((r) => r.costCents != null).map((r) => ({ id: r.id, cost_cents: r.costCents! }));
+    run(`Prix d'achat ${money(cents)}`,
+      () => rpc<BulkResult>("bulk_set_item_cost", { p_items: chosen.map((r) => ({ id: r.id, cost_cents: cents })) }),
+      () => rpc<BulkResult>("bulk_set_item_cost", { p_items: before }));
+    setCost("");
+  };
+
   // ── Changes made right in the table, one item at a time (click the cell, Enter to save, Échap to cancel)
   const editable = (r: StockRow) => !trash && !SOLD.includes(r.status);
   const savePrice = (r: StockRow, cents: number | null) => run(`Prix de ${r.sku}`, async () => {
@@ -269,10 +284,11 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                   <StatusChip status={r.status} />
                 </div>
                 <div className="truncate text-sm">{r.label || <Blank />}<BrandTag r={r} /></div>
-                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
+                <div className="mt-0.5 flex items-center gap-2 whitespace-nowrap text-xs text-muted">
                   {r.size && <span>T. {r.size}</span>}
                   {r.location && <span className="font-mono">{r.location.replace("EMP-", "")}</span>}
-                  <span className="ml-auto font-semibold tabular-nums text-fg">{money(r.priceCents)}</span>
+                  {r.costCents != null && <span className="ml-auto tabular-nums">achat {money(r.costCents)}</span>}
+                  <span className={`${r.costCents != null ? "" : "ml-auto "}font-semibold tabular-nums text-fg`}>{money(r.priceCents)}</span>
                   <Age row={r} />
                 </div>
               </Link>
@@ -292,7 +308,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
           <thead>
             <tr>
               <th className="w-12 !px-1"><Box checked={allChecked} onClick={toggleAll} label="Tout sélectionner" /></th>
-              <th>SKU</th><th>Statut</th><th>Article</th><th>Taille</th><th title="Cliquez pour déplacer">Emplacement</th><th className="num" title="Cliquez pour changer le prix">Prix</th><th className="num">Âge</th>
+              <th>SKU</th><th>Statut</th><th>Article</th><th>Taille</th><th title="Cliquez pour déplacer">Emplacement</th><th className="num" title="Cliquez pour changer le prix">Prix</th>{isManager && <th className="num" title="Prix d'achat (part du lot)">Achat</th>}<th className="num">Âge</th>
               {isManager && <th className="w-12"><span className="sr-only">Actions</span></th>}
             </tr>
           </thead>
@@ -320,6 +336,7 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                         }} disabled={busy} />
                     : money(r.priceCents)}
                 </td>
+                {isManager && <td className="num text-muted" data-cost={r.sku}>{r.costCents == null ? "—" : money(r.costCents)}</td>}
                 <td className="num"><Age row={r} /></td>
                 {isManager && <td className="!px-1 !py-0"><RowAction r={r} /></td>}
               </tr>
@@ -382,6 +399,13 @@ export function StockTable({ rows, categories, locations = [], isManager = false
                 </select>
                 <button className="min-h-11 shrink-0 rounded-md bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 disabled:opacity-40" disabled={busy || !category} onClick={applyCategory}>OK</button>
               </div>
+              {isManager && (
+                <div className="flex gap-1.5">
+                  <input className={`${input} min-w-0 bg-panel text-fg md:w-32`} value={cost} inputMode="decimal" placeholder="Prix d'achat €"
+                    onChange={(e) => setCost(e.target.value)} onKeyDown={(e) => e.key === "Enter" && applyCost()} aria-label="Prix d'achat" data-testid="bulk-cost" />
+                  <button className="min-h-11 shrink-0 rounded-md bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 disabled:opacity-40" disabled={busy || !cost.trim()} onClick={applyCost} data-testid="bulk-cost-apply">OK</button>
+                </div>
+              )}
               <div className="flex gap-1.5">
                 <select className={`${input} min-w-0 bg-panel text-fg md:w-auto`} value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Marque" data-testid="bulk-brand">
                   <option value="">Marque…</option>
