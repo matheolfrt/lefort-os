@@ -7,6 +7,9 @@ import { Card, Field, PageHeader, btn, input } from "@/components/ui";
 import { ROLE_LABEL, TAX_LABEL, taxLabel } from "@/i18n/fr";
 import { date } from "@/lib/format";
 import type { AppRole } from "@/lib/types";
+import { BackupButton } from "@/components/backup-button";
+import { BACKUP_EVERY_DAYS, daysSince } from "@/lib/backup";
+import { getLastBackup } from "@/lib/prefs";
 
 const fail = (msg: string) => redirect(`/parametres?error=${encodeURIComponent(msg)}`);
 
@@ -75,6 +78,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     supabase.from("tax_rates").select("*").order("kind").order("valid_from", { ascending: false }),
   ]);
   const name = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const lastBackup = await getLastBackup();
+  const backupAge = daysSince(lastBackup);
   const o = ctx.org;
   const admin = ctx.role === "admin";
 
@@ -158,6 +163,24 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               </form>
             )}
           </Card>
+
+          <div id="sauvegarde" className="scroll-mt-20">
+            <Card title="Sauvegarde">
+              <p className="text-sm">
+                Toutes les données de la boutique dans un seul fichier ZIP : articles, lots, ventes, finance, fournisseurs, notes…
+                Chaque table en CSV (pour Excel) et en JSON (pour restaurer). À faire au moins une fois par semaine et à garder
+                hors de Supabase (iCloud, Google Drive, disque).
+              </p>
+              <p className={`mt-2 text-sm ${backupAge == null || backupAge >= BACKUP_EVERY_DAYS ? "font-medium text-amber-700 dark:text-amber-300" : "text-muted"}`} data-testid="backup-status">
+                {lastBackup == null
+                  ? "Aucune sauvegarde faite depuis cet appareil."
+                  : backupAge === 0 ? `Dernière sauvegarde depuis cet appareil : aujourd'hui (${date(lastBackup)}).`
+                  : `Dernière sauvegarde depuis cet appareil : il y a ${backupAge} jour${backupAge! > 1 ? "s" : ""} (${date(lastBackup)}).`}
+              </p>
+              <div className="mt-3"><BackupButton org={o.trade_name} /></div>
+              <p className="mt-2 text-xs text-muted">Les photos restent dans Supabase ; le fichier garde leurs chemins. Après une semaine sans sauvegarde, « Ma journée » vous le rappelle.</p>
+            </Card>
+          </div>
 
           <Card title="Base de données">
             <p className="text-sm text-muted">Les nouvelles fonctions ont parfois besoin d&apos;une mise à jour de la base Supabase.</p>
