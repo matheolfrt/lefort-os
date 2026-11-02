@@ -9,7 +9,12 @@ import { useConfirm } from "@/components/confirm";
 import { Empty, btn, input } from "@/components/ui";
 import { dateTime, daysSince } from "@/lib/format";
 import { rpc } from "@/lib/client-data";
-import { LabelPrinter } from "./label-printer";
+import dynamic from "next/dynamic";
+
+// the PDF toolkit is only downloaded when a bordereau is opened
+const LabelPrinter = dynamic(() => import("./label-printer").then((m) => m.LabelPrinter), {
+  ssr: false, loading: () => <div className="skeleton h-40 rounded-xl" />,
+});
 
 interface Row {
   order_id: string; order_number: number; channel: string; buyer_handle: string | null; sold_at: string;
