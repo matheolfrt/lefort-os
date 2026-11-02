@@ -8,6 +8,8 @@ import { btn } from "@/components/ui";
 import { useToast } from "@/components/toast";
 
 const PAGE = 1000;
+/** Without these the file would not be a real backup: nothing is downloaded and the date is not recorded */
+const ESSENTIAL = ["organizations", "batches", "items", "orders"];
 
 async function readTable(table: string, order: string[]): Promise<TableResult> {
   const supabase = supabaseBrowser();
@@ -38,6 +40,11 @@ export function BackupButton({ org }: { org: string }) {
         const part = tables.slice(i, i + 4);
         const read = await Promise.all(part.map(([t, order]) => readTable(t, order)));
         part.forEach(([t], j) => { results[t] = read[j]; });
+      }
+      const missing = ESSENTIAL.filter((t) => results[t]?.error);
+      if (missing.length) {
+        toast(`Sauvegarde annulée : ${missing.join(", ")} illisible (${results[missing[0]].error}). Vérifiez la connexion et réessayez.`, "error");
+        return;
       }
       setStep("Compression…");
       const at = new Date();

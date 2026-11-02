@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, Printer } from "lucide-react";
 import { useScan } from "@/components/scan-provider";
 import { StationHeader } from "@/components/station-header";
 import { useToast } from "@/components/toast";
@@ -9,6 +9,7 @@ import { useConfirm } from "@/components/confirm";
 import { Empty, btn, input } from "@/components/ui";
 import { dateTime, daysSince } from "@/lib/format";
 import { rpc } from "@/lib/client-data";
+import { LabelPrinter } from "./label-printer";
 
 interface Row {
   order_id: string; order_number: number; channel: string; buyer_handle: string | null; sold_at: string;
@@ -26,6 +27,7 @@ export function ShippingStation({ initialOrder = null }: { initialOrder?: string
   const [carrier, setCarrier] = useState(CARRIERS[0]);
   const [tracking, setTracking] = useState("");
   const [busy, setBusy] = useState(false);
+  const [labelOpen, setLabelOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -87,7 +89,14 @@ export function ShippingStation({ initialOrder = null }: { initialOrder?: string
 
   return (
     <div className="mx-auto max-w-3xl space-y-3">
-      <StationHeader title="Expédition" queue={orders.length} />
+      <StationHeader title="Expédition" queue={orders.length}>
+        {!labelOpen && (
+          <button type="button" className={btn.secondary} onClick={() => setLabelOpen(true)}>
+            <Printer size={18} aria-hidden /> Bordereau Vinted
+          </button>
+        )}
+      </StationHeader>
+      {labelOpen && <LabelPrinter onClose={() => setLabelOpen(false)} />}
       {orders.length === 0 ? (
         <Empty>Rien à expédier.</Empty>
       ) : (
@@ -128,7 +137,10 @@ export function ShippingStation({ initialOrder = null }: { initialOrder?: string
               </ul>
               {isActive && (
                 <div className="grid gap-2 border-t border-line bg-bg/60 p-4 sm:grid-cols-[180px_1fr]">
-                  <p className="text-xs text-muted sm:col-span-2">Scannez chaque article pour confirmer le prélèvement, puis le bordereau pour le numéro de suivi.</p>
+                  <p className="text-xs text-muted sm:col-span-2">
+                    Scannez chaque article pour confirmer le prélèvement, puis le bordereau pour le numéro de suivi.{" "}
+                    {!labelOpen && <button type="button" className="font-medium text-fg underline underline-offset-4" onClick={() => setLabelOpen(true)}>Imprimer le bordereau Vinted</button>}
+                  </p>
                   <select className={input} value={carrier} onChange={(e) => setCarrier(e.target.value)} aria-label="Transporteur">
                     {CARRIERS.map((c) => <option key={c}>{c}</option>)}
                   </select>
