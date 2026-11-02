@@ -129,4 +129,11 @@ for f in supabase/migrations/*.sql; do
   psql -q -v ON_ERROR_STOP=1 -d ${DB}_bc -f "$f"
 done
 psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_bc -f supabase/tests/bulk_item_cost_test.sql >/dev/null
+# What an operator can read and change, on its own fresh database
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists ${DB}_op" -c "create database ${DB}_op"
+psql -q -v ON_ERROR_STOP=1 -d ${DB}_op -f supabase/tests/supabase_stub.sql
+for f in supabase/migrations/*.sql; do
+  psql -q -v ON_ERROR_STOP=1 -d ${DB}_op -f "$f"
+done
+psql -q -t -v ON_ERROR_STOP=1 -d ${DB}_op -f supabase/tests/operator_access_test.sql >/dev/null
 echo "DB tests passed"
