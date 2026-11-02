@@ -35,8 +35,10 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
 
   return (
     <div className="min-h-dvh md:flex">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-ink/60 backdrop-blur md:flex">
-        <div className="flex items-center gap-2.5 px-5 py-5">
+      {/* Computer: the menu floats as a glass pane beside the page */}
+      <aside className="sticky top-0 hidden h-dvh w-[17rem] shrink-0 p-3 pr-0 md:flex">
+       <div className="glass flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl">
+        <div className="flex items-center gap-2.5 px-5 pb-4 pt-5">
           <Logo className="size-9" />
           <span className="min-w-0">
             <span className="block text-[17px] font-bold leading-tight tracking-[-0.02em]">Lefort OS</span>
@@ -46,21 +48,20 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
         <div className="px-3 pb-3">
           <button
             onClick={openQuick}
-            className="flex w-full items-center gap-2 rounded-xl border border-line bg-panel/70 px-3 py-2.5 text-left text-sm text-muted transition hover:border-fg/20 hover:text-fg"
+            className="flex w-full items-center gap-2 rounded-xl bg-[var(--fill)] px-3 py-2 text-left text-sm text-muted transition hover:bg-[var(--fill-hover)] hover:text-fg"
           >
             <Search size={16} /> <span className="flex-1">Rechercher, scanner…</span>
-            <kbd className="rounded-md border border-line px-1.5 font-mono text-[10px]">⌘K</kbd>
+            <kbd className="rounded-md bg-[var(--fill)] px-1.5 font-sans text-[11px]">⌘K</kbd>
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 pb-3">
-          {NAV_GROUPS.map(({ group, hint }) => {
+          {NAV_GROUPS.map(({ group }) => {
             const links = items.filter((i) => i.group === group);
             if (!links.length) return null;
             return (
               <div key={group} className="mt-4 first:mt-0" data-nav-group={group}>
-                <div className="flex items-baseline gap-1.5 px-3 pb-1.5">
-                  <span className="eyebrow text-[10px] text-muted/80">{group}</span>
-                  {hint && <span className="text-[11px] text-muted/50">· {hint}</span>}
+                <div className="flex items-baseline gap-1.5 px-3 pb-1">
+                  <span className="text-[13px] font-semibold text-muted">{group}</span>
                 </div>
                 <div className="space-y-0.5">
                   {links.map(({ href, label, icon: Icon, match }) => (
@@ -68,12 +69,11 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
                       key={label}
                       href={href}
                       aria-current={active(href, match) ? "page" : undefined}
-                      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-                        active(href, match) ? "bg-fg/[0.07] text-fg" : "text-fg/70 hover:bg-fg/5 hover:text-fg"
+                      className={`group relative flex items-center gap-3 rounded-xl px-3 py-[7px] text-[15px] transition-colors duration-150 ${
+                        active(href, match) ? "bg-[var(--fill-hover)] font-semibold text-fg" : "text-fg/80 hover:bg-[var(--fill)] hover:text-fg"
                       }`}
                     >
-                      {active(href, match) && <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" />}
-                      <Icon size={18} className="shrink-0" /> <span className="flex-1">{label}</span>
+                      <Icon size={18} className={`shrink-0 ${active(href, match) ? "text-accent" : "text-muted group-hover:text-fg"}`} /> <span className="flex-1">{label}</span>
                       <Pending />
                     </Link>
                   ))}
@@ -85,7 +85,7 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
         <div className="border-t border-line px-5 py-4 text-xs text-muted">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate">{userName}</span>
-            <span title="Raccourcis clavier" className="shrink-0">Raccourcis <kbd className="rounded-md border border-line px-1.5 font-mono text-[10px]">?</kbd></span>
+            <span title="Raccourcis clavier" className="shrink-0">Raccourcis <kbd className="rounded-md bg-[var(--fill)] px-1.5 font-sans text-[11px]">?</kbd></span>
           </div>
           <div className="mt-2 flex items-center justify-between gap-2">
             <form action="/logout" method="post">
@@ -94,41 +94,42 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
             <ThemeSwitch initial={theme} compact />
           </div>
         </div>
+       </div>
       </aside>
 
       {/* Phone: top bar with search and the full menu */}
-      <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-ink/85 px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-xl md:hidden">
+      <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-[var(--glass-edge)] bg-[var(--glass)] px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-2xl backdrop-saturate-[1.8] md:hidden">
         <Link href="/" className="flex min-h-11 items-center gap-2">
           <Logo className="size-8" />
           <span className="font-bold tracking-[-0.02em]">Lefort OS</span>
         </Link>
         <button onClick={openQuick} aria-label="Rechercher"
-          className="ml-auto flex min-h-11 flex-1 items-center gap-2 rounded-xl border border-line bg-panel/70 px-3 text-sm text-muted max-w-48">
+          className="ml-auto flex min-h-10 max-w-48 flex-1 items-center gap-2 rounded-full bg-[var(--fill)] px-3.5 text-sm text-muted">
           <Search size={16} /> Rechercher
         </button>
         <button onClick={() => setMenu(true)} aria-label="Menu" aria-expanded={menu}
-          className="flex size-11 items-center justify-center rounded-xl border border-line bg-panel/70"><Menu size={20} /></button>
+          className="flex size-11 items-center justify-center rounded-full bg-[var(--fill)]"><Menu size={20} /></button>
       </header>
       {menu && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setMenu(false)}>
+        <div className="panel-fade fixed inset-0 z-50 bg-black/35 md:hidden" onClick={() => setMenu(false)}>
           <nav aria-label="Menu" onClick={(e) => e.stopPropagation()}
-            className="absolute inset-x-0 top-0 max-h-dvh overflow-y-auto rounded-b-2xl border-b border-line bg-panel px-3 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            className="glass-strong pop-in absolute inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-3xl px-3 pb-4 pt-2">
             <div className="mb-2 flex items-center justify-between px-2">
               <span className="eyebrow text-muted">{orgName}</span>
               <button onClick={() => setMenu(false)} aria-label="Fermer" className="flex size-11 items-center justify-center rounded-xl"><X size={20} /></button>
             </div>
-            {NAV_GROUPS.map(({ group, hint }) => {
+            {NAV_GROUPS.map(({ group }) => {
               const links = items.filter((i) => i.group === group);
               if (!links.length) return null;
               return (
                 <div key={group} className="mt-3 first:mt-0" data-nav-group={group}>
-                  <div className="px-2 pb-1.5 text-xs font-semibold text-muted">{group}{hint && <span className="font-normal text-muted/60"> · {hint}</span>}</div>
+                  <div className="px-2 pb-1.5 text-[13px] font-semibold text-muted">{group}</div>
                   <div className="grid grid-cols-2 gap-1.5">
                     {links.map(({ href, label, icon: Icon, match }) => (
                       <Link key={label} href={href} onClick={() => setMenu(false)}
-                        className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium ${
-                          active(href, match) ? "bg-fg/[0.08] text-fg ring-1 ring-inset ring-fg/15" : "bg-bg/60 text-fg/85"}`}>
-                        <Icon size={18} /> {label}
+                        className={`flex min-h-12 items-center gap-3 rounded-2xl px-3 text-sm font-medium ${
+                          active(href, match) ? "bg-[var(--fill-hover)] font-semibold text-fg" : "bg-[var(--fill)] text-fg/85"}`}>
+                        <Icon size={18} className={active(href, match) ? "text-accent" : "text-muted"} /> {label}
                       </Link>
                     ))}
                   </div>
@@ -151,11 +152,11 @@ export function Shell({ children, isManager, orgName, userName, theme }: {
 
       <KeyboardShortcuts isManager={isManager} />
 
-      {/* Phone: bottom bar with a central scan button */}
-      <nav className={`fixed inset-x-0 bottom-0 z-40 grid-cols-5 ${station ? "hidden" : "grid"} border-t border-line bg-ink/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden`} data-bottom-nav>
+      {/* Phone: a floating glass tab bar, as on iOS, with the scan button in the middle */}
+      <nav className={`glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 h-16 grid-cols-5 items-center rounded-full px-1.5 ${station ? "hidden" : "grid"} md:hidden`} data-bottom-nav>
         {MOBILE.slice(0, 2).map((href) => <MobileLink key={href} href={href} active={active(href)} />)}
-        <button onClick={openCamera} className="-mt-5 flex flex-col items-center" aria-label="Scanner">
-          <span className="rounded-full bg-accent p-4 text-accent-fg shadow-[0_0_28px_-4px_var(--accent)] ring-4 ring-bg"><ScanLine size={28} /></span>
+        <button onClick={openCamera} className="flex items-center justify-center" aria-label="Scanner">
+          <span className="flex size-12 items-center justify-center rounded-full bg-accent text-accent-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.3),0_6px_16px_-6px_var(--accent)] transition active:scale-95"><ScanLine size={24} /></span>
         </button>
         {MOBILE.slice(2).map((href) => <MobileLink key={href} href={href} active={active(href)} />)}
       </nav>
@@ -167,9 +168,9 @@ function MobileLink({ href, active }: { href: string; active: boolean }) {
   const item = NAV.find((n) => n.href === href)!;
   const Icon = item.icon;
   return (
-    <Link href={href} className={`relative flex flex-col items-center gap-0.5 py-2 text-[11px] transition-colors ${active ? "font-semibold text-fg" : "text-muted"}`}>
-      <span className="absolute right-[30%] top-1.5"><Pending /></span>
-      <Icon size={22} />
+    <Link href={href} className={`relative mx-0.5 flex h-[52px] flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-colors ${active ? "bg-[var(--fill-hover)] text-accent" : "text-fg/75"}`}>
+      <span className="absolute right-[22%] top-1.5"><Pending /></span>
+      <Icon size={21} strokeWidth={active ? 2.3 : 2} />
       {item.label.split(" ")[0]}
     </Link>
   );

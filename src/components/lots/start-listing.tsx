@@ -90,7 +90,7 @@ export function StartListing({ batchId, startedAt, editedAt, missing, suggested,
   }
   return (
     <button type="button" disabled={pending} onClick={() => run(null, false)} data-testid="start-listing"
-      className="inline-flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl bg-accent px-6 text-lg font-bold text-accent-fg shadow-[0_0_32px_-8px_var(--accent)] transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 sm:w-auto">
+      className="inline-flex min-h-16 w-full items-center justify-center gap-3 rounded-full bg-accent px-6 text-lg font-bold text-accent-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.28),0_10px_28px_-12px_var(--accent)] transition hover:brightness-105 active:scale-[0.985] disabled:opacity-60 sm:w-auto">
       <Rocket size={22} /> 🚀 Premier article mis en ligne
     </button>
   );

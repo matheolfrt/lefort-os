@@ -22,13 +22,13 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
     <div className="mx-auto max-w-7xl space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-[28px]">Chiffre d&apos;affaires et statistiques</h1>
+          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.03em] sm:text-[34px]">Chiffre d&apos;affaires et statistiques</h1>
           <p className="text-sm text-muted">Toutes les ventes, historiques comprises · {period === 12 ? "la dernière année" : period === 24 ? "les 2 dernières années" : `${period} derniers mois`}</p>
         </div>
-        <nav aria-label="Période" className="inline-flex rounded-lg border border-line bg-panel p-1">
+        <nav aria-label="Période" className="inline-flex rounded-full bg-[var(--fill)] p-1">
           {PERIODS.map((n) => (
             <Link key={n} href={`/statistiques?p=${n}`} aria-current={n === period ? "true" : undefined}
-              className={`inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium ${n === period ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}>
+              className={`inline-flex min-h-11 items-center rounded-full px-3.5 text-sm font-medium ${n === period ? "bg-[var(--seg-on)] text-fg shadow-sm" : "text-muted hover:text-fg"}`}>
               {n === 12 ? "1 an" : n === 24 ? "2 ans" : `${n} mois`}
             </Link>
           ))}

@@ -63,7 +63,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
     <div className="mx-auto max-w-7xl space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-[28px]">{trash ? "Corbeille" : "Stock"}</h1>
+          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.03em] sm:text-[34px]">{trash ? "Corbeille" : "Stock"}</h1>
           <p className="text-sm text-muted">
             {count ?? 0} article{(count ?? 0) > 1 ? "s" : ""}
             {sp.status && ` · ${STATUS_LABEL[sp.status as ItemStatus]}`}
@@ -112,7 +112,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
         <select className={`${input} hidden sm:block`} name="size" defaultValue={String(PAGE)} aria-label="Articles par page">
           {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} / page</option>)}
         </select>
-        <button className="min-h-11 rounded-xl bg-fg px-4 font-semibold text-bg hover:opacity-90">Filtrer</button>
+        <button className="min-h-11 rounded-full bg-fg px-5 font-semibold text-bg hover:opacity-90">Filtrer</button>
       </form>
 
       {!items?.length ? (
