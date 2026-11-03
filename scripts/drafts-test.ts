@@ -1,6 +1,7 @@
 // Unit tests of « Annonces » (src/lib/drafts/text.ts): measurements split by SKU, the model filled. Run: npm run test:drafts
 import assert from "node:assert/strict";
 import { strToU8, zipSync } from "fflate";
+import { findDefinition, matchMeasures, parseMeasureLines } from "../src/lib/drafts/to-stock";
 import { readAnyText, readMeasuresFile, readTable, skuMatcher } from "../src/lib/drafts/measures-file";
 import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, descriptionFields, fieldsOf, fillTemplate, fillTitle, splitMeasures, type DraftContext } from "../src/lib/drafts/text";
 
@@ -112,6 +113,33 @@ test("Word (.docx) : paragraphes lus comme du texte", () => {
 
 test("formats non lus : message clair", () => {
   assert.throws(() => readMeasuresFile("vieux.xls", new Uint8Array(), isSku), /enregistrez-le en \.xlsx/);
+});
+
+const DEFS = [
+  { id: "e", key: "shoulders", label: "Épaules", min_mm: 300, max_mm: 700 },
+  { id: "l", key: "length", label: "Longueur dos", min_mm: 500, max_mm: 1000 },
+  { id: "p", key: "chest", label: "Poitrine", min_mm: 350, max_mm: 800 },
+  { id: "m", key: "sleeve", label: "Manches", min_mm: 400, max_mm: 800 },
+];
+test("vers le stock : lignes de mesures lues", () => {
+  assert.deepEqual(parseMeasureLines("• Épaules : 45,5 cm\nLongueur dos 72cm\nPoitrine - 520 mm\nMesures à plat :\nRéf. LSH1\nRéf. CSV-0001\nManches: 62."), [
+    { label: "Épaules", mm: 455 }, { label: "Longueur dos", mm: 720 }, { label: "Poitrine", mm: 520 }, { label: "Manches", mm: 620 },
+  ]);
+});
+test("vers le stock : nom de mesure retrouvé", () => {
+  assert.equal(findDefinition("epaules", DEFS)?.id, "e");
+  assert.equal(findDefinition("Longueur", DEFS)?.id, "l", "« Longueur » est dans « Longueur dos »");
+  assert.equal(findDefinition("Tour de taille", DEFS), null);
+  const suit = [{ id: "a", key: "j_len", label: "Veste — longueur dos", min_mm: 600, max_mm: 900 }, { id: "b", key: "t_len", label: "Pantalon — longueur extérieure", min_mm: 850, max_mm: 1200 }];
+  assert.equal(findDefinition("Longueur", suit), null, "deux longueurs possibles");
+  assert.match(matchMeasures("Longueur : 74 cm", suit).skipped[0].reason, /plusieurs mesures possibles : Veste — longueur dos, Pantalon — longueur extérieure/);
+  assert.equal(findDefinition("Longueur dos", suit)?.id, "a");
+});
+test("vers le stock : limites respectées, inconnues signalées", () => {
+  const r = matchMeasures("Épaules : 45 cm\nPoitrine : 12 cm\nTour de taille : 40 cm\nÉpaules : 47 cm", DEFS);
+  assert.deepEqual(r.saved, [{ definition_id: "e", label: "Épaules", mm: 450 }]);
+  assert.deepEqual(r.skipped.map((x) => x.label), ["Poitrine", "Tour de taille"]);
+  assert.match(r.skipped[0].reason, /hors limites \(35–80 cm\)/);
 });
 
 console.log(`\n${passed} tests réussis`);

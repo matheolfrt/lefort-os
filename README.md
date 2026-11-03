@@ -196,9 +196,10 @@ Menu **Annonces** : préparer les annonces Vinted en série.
 3. **Mesures** : « Importer un fichier » (Excel .xlsx, CSV, Word .docx ou texte) ou collez le texte. Chaque SKU est détecté et ses mesures vont à son article. Un tableau a une colonne SKU (ou Réf.) puis une colonne par mesure (un nombre seul devient « 45 cm », une taille reste sans unité), ou une ligne par mesure (SKU, Mesure, Valeur). Dans un texte, la ligne du SKU commence son bloc. Les SKU sans article encore créé gardent leurs mesures : elles s'ajoutent à la création de l'article. Une annonce marquée prête n'est jamais modifiée.
 4. **Modèle d'annonce** : titre et description types avec des mots entre accolades (`{marque}`, `{taille}`, `{mesures}`, `{sku}`…). Une ligne dont les mots sont inconnus disparaît.
 5. **Rédiger** : sans IA, le modèle est rempli avec le stock et les mesures. Avec la variable Vercel `ANTHROPIC_API_KEY`, Claude lit aussi les photos (8 au plus par article), suit le modèle, n'invente rien et liste ce qu'il n'a pas pu lire (« à vérifier »). Environ 5 à 10 centimes par article.
-6. Relisez, corrigez, « Marquer prête ». Plus tard, l'extension mettra les annonces prêtes en brouillon sur Vinted.
+6. Relisez, corrigez, « Marquer prête » : si le SKU est dans le stock, le titre, la description, le prix et les mesures sont copiés dans sa fiche (le prix minimum est retiré s'il est plus haut ; une mesure n'est copiée que si son nom correspond à une mesure de la catégorie et reste dans ses limites, sinon la raison est affichée). Plus tard, l'extension mettra les annonces prêtes en brouillon sur Vinted.
+7. **IA utilisée** (dans le modèle d'annonce, quand la clé est installée) : « Qualité » (Claude Opus, environ 5 à 10 centimes par annonce) ou « Économique » (Claude Haiku, environ 0,2 centime, un peu moins fin).
 
-Mises à jour de la base : `20261117000029_listing_drafts` et `20261118000030_sku_measures` (Paramètres → Mises à jour). Tests : `npm run test:drafts`, `npm run test:drafts-ai` (API simulée, aucun appel réel).
+Mises à jour de la base : `20261117000029_listing_drafts`, `20261118000030_sku_measures` et `20261120000032_listing_stock` (Paramètres → Mises à jour). Tests : `npm run test:drafts`, `npm run test:drafts-ai` (API simulée, aucun appel réel).
 
 ## Niches Vinted
 

@@ -37,6 +37,14 @@ const message = (text: string, stop = "end_turn") => ({ id: "msg_1", type: "mess
   assert.match(text, /Épaules : 46 cm/); assert.match(text, /marque : Hugo Boss/); assert.match(text, /Ton simple/);
   console.log("ok  requête : modèle, photos, mesures, consignes, réponse JSON lue");
 
+  reply = { status: 200, body: message(JSON.stringify({ title: "Blazer", description: "Blazer", to_check: [] })) };
+  await writeWithClaude({ ...input, choice: "economique" });
+  const eco = last as unknown as { model: string; fallbacks?: string };
+  assert.equal(eco.model, "claude-haiku-5-5");
+  assert.equal(eco.fallbacks, undefined, "pas de modèle de secours pour l'économique");
+  assert.doesNotMatch(String(headers["anthropic-beta"] ?? ""), /server-side-fallback/);
+  console.log("ok  mode économique : Claude Haiku, sans secours");
+
   reply = { status: 200, body: { ...message(""), content: [], stop_reason: "refusal" } };
   await assert.rejects(writeWithClaude(input), /refusé/);
   console.log("ok  refus de l'IA : message clair");
@@ -46,5 +54,5 @@ const message = (text: string, stop = "end_turn") => ({ id: "msg_1", type: "mess
   assert.match(aiError(e), /ANTHROPIC_API_KEY/);
   console.log("ok  clé refusée : message clair");
   server.close();
-  console.log("\n3 tests réussis");
+  console.log("\n4 tests réussis");
 })().catch((e) => { console.error(e); process.exit(1); });

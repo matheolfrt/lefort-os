@@ -19,10 +19,10 @@ import {
 
 export interface Draft {
   id: string; sku: string; item_id: string | null; measures: string; title: string; description: string; price_cents: number | null;
-  status: "a_faire" | "genere" | "pret" | "envoye"; generated_by: "modele" | "ia" | null; generated_at: string | null; to_check: string[]; created_at: string;
+  status: "a_faire" | "genere" | "pret" | "envoye"; generated_by: "modele" | "ia" | null; generated_at: string | null; to_check: string[]; created_at: string; stock_applied_at?: string | null;
 }
 export interface PhotoRow { id: string; draft_id: string | null; file_name: string | null; position: number; url: string | null }
-interface Template { title_template: string; description_template: string; instructions: string }
+interface Template { title_template: string; description_template: string; instructions: string; ai_model: "qualite" | "economique" }
 interface Local { key: string; id?: string; url: string; name: string; state: "uploading" | "ready" | "error" }
 
 const STATUS: Record<Draft["status"], { label: string; tone: string }> = {
@@ -34,6 +34,11 @@ const STATUS: Record<Draft["status"], { label: string; tone: string }> = {
 const FILTERS = [["tous", "Tous"], ["a_faire", "À rédiger"], ["genere", "À relire"], ["pret", "Prêtes"]] as const;
 // positions of a batch of photos added now: after everything added before, in the order of the files
 const batchBase = () => Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 60000) * 1000;
+
+const AI_CHOICES = [
+  { value: "qualite", label: "Qualité", hint: "Claude Opus · environ 5 à 10 centimes par annonce" },
+  { value: "economique", label: "Économique", hint: "Claude Haiku · environ 0,2 centime par annonce, un peu moins fin" },
+] as const;
 
 export function Studio({ orgId, skuPrefix, drafts, photos, ai, template, waiting }: {
   orgId: string; skuPrefix: string; drafts: Draft[]; photos: PhotoRow[]; ai: boolean; template: Template; waiting: string[] | null;
@@ -158,7 +163,7 @@ export function Studio({ orgId, skuPrefix, drafts, photos, ai, template, waiting
     <div className="space-y-4">
       <p className={`rounded-xl px-3 py-2 text-sm ${ai ? "bg-violet-500/10 text-violet-800 dark:text-violet-200" : "bg-fg/5 text-muted"}`} data-testid="ai-mode">
         {ai
-          ? <><Sparkles size={14} className="mr-1 inline" /> IA activée : elle lit les photos (jusqu&apos;à 8 par article), vos mesures et votre modèle. Elle n&apos;invente rien et liste ce qu&apos;elle n&apos;a pas pu lire. Environ 5 à 10 centimes par article.</>
+          ? <><Sparkles size={14} className="mr-1 inline" /> IA activée : elle lit les photos (jusqu&apos;à 8 par article), vos mesures et votre modèle. Elle n&apos;invente rien et liste ce qu&apos;elle n&apos;a pas pu lire. Mode {template.ai_model === "economique" ? "économique : environ 0,2 centime" : "qualité : environ 5 à 10 centimes"} par article (à changer dans le modèle d&apos;annonce).</>
           : <>Sans IA pour l&apos;instant : votre modèle est rempli avec les données du stock et vos mesures. Pour que l&apos;IA lise aussi les photos (marque, couleur, matière…), ajoutez la variable <code className="font-mono text-xs">ANTHROPIC_API_KEY</code> dans Vercel puis redéployez.</>}
       </p>
 
@@ -374,6 +379,18 @@ function TemplatePanel({ template, ai }: { template: Template; ai: boolean }) {
         ))}
       </div>
       {ai && (
+        <div className="mt-2 text-sm" data-testid="ai-choice">
+          <span className="mb-1 block text-xs text-muted">IA utilisée</span>
+          <div role="radiogroup" aria-label="IA utilisée" className={seg.wrap}>
+            {AI_CHOICES.map((c) => (
+              <button key={c.value} type="button" role="radio" aria-checked={t.ai_model === c.value} onClick={() => setT({ ...t, ai_model: c.value })}
+                className={seg.item(t.ai_model === c.value)}>{c.label}</button>
+            ))}
+          </div>
+          <span className="mt-1 block text-xs text-muted">{AI_CHOICES.find((c) => c.value === t.ai_model)?.hint}</span>
+        </div>
+      )}
+      {ai && (
         <label className="mt-2 block text-sm"><span className="mb-1 block text-xs text-muted">Consignes pour l&apos;IA (ton, mots à éviter, phrase de fin…)</span>
           <textarea value={t.instructions} onChange={(e) => setT({ ...t, instructions: e.target.value })} rows={3} className={`${input} py-2 text-sm`}
             placeholder="Ex. : ton simple et direct, toujours finir par « Envoi rapide et soigné »" /></label>
@@ -405,6 +422,20 @@ function DraftCard({ d, photos, ai, picked, onAddPicked }: { d: Draft; photos: P
     const r = await updateDraft(d.id, patch);
     if (r.error) toast(r.error, "error"); else { if (ok) toast(ok, "ok"); router.refresh(); }
   });
+  /** marked ready: the listing also goes into its stock article; say what was copied and what was not */
+  const ready = () => start(async () => {
+    const r = await updateDraft(d.id, { status: "pret" });
+    if (r.error !== null) return toast(r.error, "error");
+    const c = r.stock;
+    if (!c) toast(`${d.sku} prête${d.item_id ? "" : " (pas dans le stock : rien à copier)"}`, "ok");
+    else {
+      const parts = [...c.fields, ...(c.measures ? [`${c.measures} mesure${c.measures > 1 ? "s" : ""}`] : [])];
+      toast(parts.length ? `${d.sku} prête · copié dans le stock : ${parts.join(", ")}` : `${d.sku} prête`, c.note ? "error" : "ok");
+      if (c.note) toast(c.note, "error");
+      if (c.skipped.length) toast(`Non copié : ${c.skipped.join(" · ")}`, "info");
+    }
+    router.refresh();
+  });
   const gen = (mode: "ia" | "modele") => start(async () => {
     const r = await generate(d.id, mode);
     if (r.error !== null) toast(r.error, "error");
@@ -430,6 +461,11 @@ function DraftCard({ d, photos, ai, picked, onAddPicked }: { d: Draft; photos: P
         </span>
         <span className={`${chip} ${st.tone}`} data-status={d.status}>{st.label}</span>
         {d.generated_by && <span className="text-xs text-muted">{d.generated_by === "ia" ? "par l'IA" : "avec le modèle"}</span>}
+        {d.item_id && d.stock_applied_at && (
+          <a href={`/stock/${encodeURIComponent(d.sku)}`} className="text-xs text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-300" data-stock-copied>
+            copiée dans la fiche du stock
+          </a>
+        )}
         <button type="button" className={`${btn.icon} ml-auto`} aria-label={`Supprimer l'article ${d.sku}`} onClick={async () => {
           if (await confirm({ title: `Supprimer l'article ${d.sku} ?`, message: "Ses photos retournent dans les photos à trier.", confirmLabel: "Supprimer", danger: true }))
             start(async () => { const r = await deleteDraft(d.id); toast(r.error ?? "Article supprimé", r.error ? "error" : "ok"); router.refresh(); });
@@ -502,7 +538,7 @@ function DraftCard({ d, photos, ai, picked, onAddPicked }: { d: Draft; photos: P
               <Wand2 size={16} /> {ai ? "Avec le modèle" : d.title ? "Refaire avec le modèle" : "Rédiger avec le modèle"}</button>
           </>
         )}
-        {d.status === "genere" && <button type="button" onClick={() => save({ status: "pret" }, `${d.sku} prête`)} disabled={pending || !title.trim()} className={btn.ghost} data-action="ready"><Check size={16} /> Marquer prête</button>}
+        {d.status === "genere" && <button type="button" onClick={ready} disabled={pending || !title.trim()} className={btn.ghost} data-action="ready"><Check size={16} /> Marquer prête</button>}
         {d.status === "pret" && <button type="button" onClick={() => save({ status: "genere" })} disabled={pending} className={btn.ghost} data-action="unready"><Undo2 size={16} /> À revoir</button>}
       </footer>
     </article>

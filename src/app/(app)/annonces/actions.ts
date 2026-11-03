@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getContext } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/errors";
-import { aiEnabled, aiError, writeWithClaude } from "@/lib/drafts/ai";
+import { aiEnabled, aiError, writeWithClaude, type AiChoice } from "@/lib/drafts/ai";
+import { matchMeasures, type Definition } from "@/lib/drafts/to-stock";
 import {
   DEFAULT_DESCRIPTION, DEFAULT_TITLE, descriptionFields, fieldsOf, fillTemplate, fillTitle, type DraftContext,
 } from "@/lib/drafts/text";
@@ -87,7 +88,7 @@ export async function deletePhotos(photoIds: string[]): Promise<Res> {
   return { error: null };
 }
 
-export async function updateDraft(id: string, patch: { sku?: string; measures?: string; title?: string; description?: string; price_cents?: number | null; status?: string }): Promise<Res> {
+export async function updateDraft(id: string, patch: { sku?: string; measures?: string; title?: string; description?: string; price_cents?: number | null; status?: string }): Promise<Res<{ stock?: StockCopy | null }>> {
   await getContext();
   const row: Record<string, unknown> = {};
   if (patch.sku !== undefined) { const s = cleanSku(patch.sku); if (!s) return { error: "Le SKU ne peut pas être vide." }; row.sku = s; }
@@ -102,8 +103,57 @@ export async function updateDraft(id: string, patch: { sku?: string; measures?: 
   const supabase = await createClient();
   const { error } = await supabase.from("listing_drafts").update(row).eq("id", id);
   if (error) return /duplicate/i.test(error.message) ? { error: "Un autre article a déjà ce SKU." } : fail(error);
+  // a listing marked « prête » goes into its stock article
+  const stock = patch.status === "pret" ? await copyToStock(id) : null;
   revalidatePath(PATH);
-  return { error: null };
+  return { error: null, stock };
+}
+
+export interface StockCopy { sku: string; fields: string[]; measures: number; skipped: string[]; note: string | null }
+
+/**
+ * Title, description, price and measurements of a listing written into its stock article. The price is kept above
+ * the article's minimum price (the minimum is dropped if needed, as when the price is changed in the Stock); a
+ * measurement is written only if it names one of the article's measurements and stays within its limits.
+ */
+async function copyToStock(id: string): Promise<StockCopy | null> {
+  const supabase = await createClient();
+  const { data: d } = await supabase.from("listing_drafts").select("sku, item_id, title, description, price_cents, measures").eq("id", id).single();
+  if (!d?.item_id) return null;
+  const { data: item } = await supabase.from("items").select("id, org_id, status, min_price_cents, category_id, categories(measurement_template_id)").eq("id", d.item_id).single();
+  if (!item) return null;
+  const res: StockCopy = { sku: d.sku, fields: [], measures: 0, skipped: [], note: null };
+  const patch: Record<string, unknown> = {};
+  if (d.title.trim()) { patch.title = d.title.trim(); res.fields.push("titre"); }
+  if (d.description.trim()) { patch.description = d.description; res.fields.push("description"); }
+  const sold = ["sold", "shipped", "completed"].includes(item.status);
+  if (d.price_cents && !sold) {
+    patch.list_price_cents = d.price_cents;
+    if (item.min_price_cents != null && item.min_price_cents > d.price_cents) patch.min_price_cents = null;
+    res.fields.push("prix");
+  }
+  if (Object.keys(patch).length) {
+    const { data: done, error } = await supabase.from("items").update(patch).eq("id", item.id).select("id");
+    if (error || !done?.length) {
+      res.fields = [];
+      res.note = sold ? "Article vendu : seule une personne responsable peut changer sa fiche." : `Fiche du stock non modifiée : ${errorMessage(error)}`;
+    }
+  }
+  const template = (item.categories as unknown as { measurement_template_id: string | null } | null)?.measurement_template_id;
+  if (d.measures.trim() && template) {
+    const { data: defs } = await supabase.from("measurement_definitions").select("id, key, label, min_mm, max_mm").eq("template_id", template);
+    const m = matchMeasures(d.measures, (defs ?? []) as Definition[]);
+    if (m.saved.length) {
+      const { error } = await supabase.from("item_measurements").upsert(m.saved.map((x) => ({ item_id: item.id, org_id: item.org_id, definition_id: x.definition_id, value_mm: x.mm })));
+      if (error) res.note = `Mesures non enregistrées : ${errorMessage(error)}`;
+      else res.measures = m.saved.length;
+    }
+    res.skipped = m.skipped.map((x) => `${x.label} (${x.reason})`);
+  } else if (d.measures.trim() && !template) {
+    res.skipped = ["mesures : l'article n'a pas de catégorie avec des mesures"];
+  }
+  await supabase.from("listing_drafts").update({ stock_applied_at: new Date().toISOString() }).eq("id", id); // fails quietly before the update 0032
+  return res;
 }
 
 /** the article goes; its photos go back to the pile */
@@ -134,18 +184,22 @@ export async function importMeasures(rows: { sku: string; measures: string }[], 
   return { error: null, applied: r.applied ?? [], pending: r.pending ?? [], locked: r.locked ?? [] };
 }
 
-export async function saveTemplate(t: { title_template: string; description_template: string; instructions: string }): Promise<Res> {
+export async function saveTemplate(t: { title_template: string; description_template: string; instructions: string; ai_model?: AiChoice }): Promise<Res> {
   const ctx = await getContext();
   const supabase = await createClient();
-  const row = { title_template: t.title_template.slice(0, 500), description_template: t.description_template.slice(0, 10000),
+  const base = { title_template: t.title_template.slice(0, 500), description_template: t.description_template.slice(0, 10000),
     instructions: t.instructions.slice(0, 5000), updated_by: ctx.userId };
-  // one model per shop: changed if it exists, else created (the shop itself never changes)
-  const { data: done, error } = await supabase.from("listing_templates").update(row).eq("org_id", ctx.org.id).select("org_id");
+  const save = async (row: Record<string, unknown>) => {
+    // one model per shop: changed if it exists, else created (the shop itself never changes)
+    const { data: done, error } = await supabase.from("listing_templates").update(row).eq("org_id", ctx.org.id).select("org_id");
+    if (error) return error;
+    if (!done?.length) return (await supabase.from("listing_templates").insert({ org_id: ctx.org.id, ...row })).error;
+    return null;
+  };
+  let error = await save(t.ai_model ? { ...base, ai_model: t.ai_model } : base);
+  // before the database update that brings the AI choice, the model is still saved
+  if (error && t.ai_model && /ai_model/.test(error.message)) error = await save(base);
   if (error) return fail(error);
-  if (!done?.length) {
-    const { error: insErr } = await supabase.from("listing_templates").insert({ org_id: ctx.org.id, ...row });
-    if (insErr) return fail(insErr);
-  }
   revalidatePath(PATH);
   return { error: null };
 }
@@ -161,7 +215,7 @@ export async function generate(id: string, mode: "ia" | "modele"): Promise<Res<{
   const supabase = await createClient();
   const [{ data: d, error }, { data: tpl }, ctxRes] = await Promise.all([
     supabase.from("listing_drafts").select("id, sku, measures, price_cents, status").eq("id", id).single(),
-    supabase.from("listing_templates").select("title_template, description_template, instructions").maybeSingle(),
+    supabase.from("listing_templates").select("*").maybeSingle(),
     supabase.rpc("listing_draft_context", { p_id: id }),
   ]);
   if (error || !d) return fail(error ?? { message: "Article introuvable." });
@@ -187,7 +241,7 @@ export async function generate(id: string, mode: "ia" | "modele"): Promise<Res<{
     for (const k of ["categorie", "marque", "taille", "etat", "couleur", "motif", "matiere", "defauts", "prix"]) if (fields[k]) known[k] = String(fields[k]);
     try {
       out = await writeWithClaude({ photos: images, sku: d.sku, measures: String(fields.mesures ?? ""), known, titleTemplate: titleT,
-        descriptionTemplate: descT, instructions: tpl?.instructions ?? "" });
+        descriptionTemplate: descT, instructions: tpl?.instructions ?? "", choice: tpl?.ai_model === "economique" ? "economique" : "qualite" });
       by = "ia";
     } catch (e) {
       return { error: `${d.sku} : ${aiError(e)}` };

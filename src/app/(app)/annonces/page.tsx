@@ -13,9 +13,9 @@ export default async function Annonces() {
   const ctx = await getContext();
   const supabase = await createClient();
   const [drafts, photos, tpl] = await Promise.all([
-    supabase.from("listing_drafts").select("id, sku, item_id, measures, title, description, price_cents, status, generated_by, generated_at, to_check, created_at").order("created_at"),
+    supabase.from("listing_drafts").select("*").order("created_at"),
     supabase.from("draft_photos").select("id, draft_id, storage_path, file_name, position, created_at").order("position").order("created_at").limit(3000),
-    supabase.from("listing_templates").select("title_template, description_template, instructions").maybeSingle(),
+    supabase.from("listing_templates").select("*").maybeSingle(),
   ]);
   if (drafts.error) {
     return (
@@ -48,6 +48,7 @@ export default async function Annonces() {
           title_template: tpl.data?.title_template ?? DEFAULT_TITLE,
           description_template: tpl.data?.description_template || DEFAULT_DESCRIPTION,
           instructions: tpl.data?.instructions ?? "",
+          ai_model: tpl.data?.ai_model === "economique" ? "economique" : "qualite",
         }} />
     </>
   );

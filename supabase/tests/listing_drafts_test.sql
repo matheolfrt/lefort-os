@@ -81,6 +81,11 @@ do $$ begin
   assert (select count(*) from draft_photos where draft_id is null) = 4, 'photos back in the pile';
 end $$;
 
+-- the AI choice: quality by default, economical allowed, nothing else
+do $$ begin assert (select ai_model from listing_templates) = 'qualite'; end $$;
+update listing_templates set ai_model = 'economique';
+select t.expect_error($$update listing_templates set ai_model = 'gratuit'$$, 'check');
+
 -- measurements imported from a file: into the prepared article, kept for the SKUs not prepared yet, never into a
 -- listing marked « prête »; a later article takes them at creation
 insert into listing_drafts(sku) values ('A-3');

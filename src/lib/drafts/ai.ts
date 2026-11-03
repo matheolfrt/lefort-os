@@ -6,7 +6,12 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export const aiEnabled = () => Boolean(process.env.ANTHROPIC_API_KEY);
 
+/** The two choices offered to the shop: the best writing, or about 40 times cheaper */
+export type AiChoice = "qualite" | "economique";
+export const AI_MODELS: Record<AiChoice, string> = { qualite: "claude-opus-5-5", economique: "claude-haiku-5-5" };
+
 export interface AiInput {
+  choice?: AiChoice;
   photos: { data: string; mediaType: "image/jpeg" | "image/png" | "image/webp" }[];
   sku: string;
   measures: string;
@@ -59,21 +64,22 @@ ${input.descriptionTemplate || "(aucun)"}
 ${input.instructions.trim() ? `\nConsignes de la boutique :\n${input.instructions.trim()}\n` : ""}
 Les ${input.photos.length} photos de l'article sont jointes. Rédige le titre et la description.`;
 
-  const response = await client.beta.messages.create({
-    model: "claude-opus-5-5",
+  const params = {
     max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
+    output_config: { effort: "medium" as const, format: { type: "json_schema" as const, schema: SCHEMA } },
     system: SYSTEM,
     messages: [{
-      role: "user",
+      role: "user" as const,
       content: [
         ...input.photos.map((p) => ({ type: "image" as const, source: { type: "base64" as const, media_type: p.mediaType, data: p.data } })),
         { type: "text" as const, text },
       ],
     }],
-  });
+  };
+  // the quality model may hand a declined request to another model; the economical one has no such fallback
+  const response = input.choice === "economique"
+    ? await client.messages.create({ model: AI_MODELS.economique, ...params })
+    : await client.beta.messages.create({ model: AI_MODELS.qualite, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default", ...params });
   if (response.stop_reason === "refusal") throw new Error("L'IA a refusé de rédiger cette annonce.");
   if (response.stop_reason === "max_tokens") throw new Error("Réponse de l'IA coupée : réessayez.");
   const out = response.content.find((b) => b.type === "text");
