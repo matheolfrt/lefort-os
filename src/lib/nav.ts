@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Compass, Container, Factory, Gauge, FlaskConical, Images, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, NotebookPen, Radar, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, Warehouse, type LucideIcon,
+  BarChart3, Boxes, Calculator, Compass, Container, Eye, Factory, Gauge, FlaskConical, Images, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, NotebookPen, Radar, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, Warehouse, type LucideIcon,
 } from "lucide-react";
 
 export type NavGroup = "Aujourd'hui" | "Stock et lots" | "Argent" | "Réglages";
@@ -35,10 +35,12 @@ export const NAV: NavItem[] = [
   // ── Stock et lots: ce que j'ai
   { href: "/stock", label: "Stock", icon: Package, manager: false, keywords: "articles inventaire", group: "Stock et lots" },
   { href: "/lots", label: "Lots", icon: Boxes, manager: false, keywords: "achats batch rotation remboursement", group: "Stock et lots" },
-  { href: "/ecoulement", label: "Rotation", icon: Gauge, manager: true, group: "Stock et lots", match: ["/ecoulement", "/prix", "/niches"],
-    keywords: "écoulement prix à baisser niches" },
+  { href: "/ecoulement", label: "Rotation", icon: Gauge, manager: true, group: "Stock et lots", match: ["/ecoulement", "/prix", "/attractivite", "/niches"],
+    keywords: "écoulement prix à baisser attractivité annonces niches" },
   { href: "/ecoulement", label: "Écoulement", icon: Gauge, manager: true, keywords: "rotation 30 jours 80% vente rapide taux lot objectif", group: "Stock et lots", hub: "/ecoulement" },
   { href: "/prix", label: "Prix à baisser", icon: TrendingDown, manager: true, keywords: "baisser prix stock dormant démarque solde rotation suggestion", group: "Stock et lots", hub: "/ecoulement" },
+  { href: "/attractivite", label: "Attractivité des annonces", tabLabel: "Attractivité", icon: Eye, manager: true, group: "Stock et lots", hub: "/ecoulement",
+    keywords: "pourquoi ne se vend pas vues favoris offres annonces vinted invendu peu vue" },
   { href: "/niches", label: "Niches", icon: Compass, manager: true, keywords: "tester nouvelles niches marques idées essai lot de test", group: "Stock et lots", hub: "/ecoulement" },
   { href: "/fournisseurs", label: "Fournisseurs", icon: Truck, manager: true, group: "Stock et lots" },
   { href: "/niches-vinted", label: "Niches Vinted", icon: Radar, manager: false, group: "Stock et lots",
