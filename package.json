@@ -18,6 +18,8 @@
     "test:drafts": "npx --yes tsx scripts/drafts-test.ts",
     "test:search": "npx --yes tsx scripts/stock-search-test.ts",
     "test:drafts-ai": "NODE_OPTIONS=--conditions=react-server npx --yes tsx scripts/drafts-ai-test.ts",
+    "test:backup": "npx --yes tsx scripts/backup-test.ts",
+    "test:label": "npx --yes tsx scripts/shipping-label-test.ts",
     "typecheck": "tsc --noEmit",
     "build:extension": "rm -f public/lefort-os-vinted.zip && cd extension && zip -qr ../public/lefort-os-vinted.zip . -x \"*.DS_Store\""
   },

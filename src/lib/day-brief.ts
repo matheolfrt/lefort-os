@@ -2,6 +2,7 @@
 // what today asks for: orders to ship, items ready to publish, prices to lower, the pace the month's objective needs.
 // Operators get the same sentence without money.
 
+import { BACKUP_EVERY_DAYS } from "@/lib/backup";
 import { METRICS, standing, targets, type GoalMetric, type GoalProgress } from "@/lib/goals";
 
 export interface BriefPart { text: string; note?: string; href?: string; tone?: "good" | "bad" | "same" }
@@ -19,9 +20,11 @@ export interface BriefInput {
   publish: number;  // items ready to publish
   prices: number;   // prices the rules suggest lowering today
   manager: boolean;
+  /** days since this device last downloaded a full backup (null: never from here, so no reminder) */
+  backupDays?: number | null;
 }
 
-export function dayBrief({ progress: p, ship, publish, prices, manager }: BriefInput): Brief {
+export function dayBrief({ progress: p, ship, publish, prices, manager, backupDays }: BriefInput): Brief {
   const yesterday: BriefPart[] = [];
   const today: BriefPart[] = [];
   const days = p?.days ?? [];
@@ -59,6 +62,9 @@ export function dayBrief({ progress: p, ship, publish, prices, manager }: BriefI
   if (ship > 0) today.push({ text: `${plural(ship, "commande")} à expédier`, href: "/postes/expedition" });
   if (publish > 0) today.push({ text: `${plural(publish, "article prêt", "articles prêts")} à publier`, href: "/stock?status=listing_ready" });
   if (manager && prices > 0) today.push({ text: `${plural(prices, "prix", "prix")} à baisser`, href: "/prix" });
+  if (manager && backupDays != null && backupDays >= BACKUP_EVERY_DAYS) {
+    today.push({ text: `une sauvegarde à faire (la dernière date de ${plural(backupDays, "jour")})`, href: "/parametres#sauvegarde" });
+  }
 
   // the month's objectives: what each remaining day has to bring (or that it is done)
   if (p) {

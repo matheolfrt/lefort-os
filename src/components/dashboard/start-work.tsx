@@ -46,7 +46,7 @@ export function StartWork({ counts }: { counts: StartCounts }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="act-primary inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 sm:w-auto text-base font-bold text-accent-fg shadow-[0_0_28px_-6px_var(--accent)] transition hover:brightness-110 active:scale-[0.98]"
+        className="act-primary inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-accent px-6 sm:w-auto text-base font-semibold text-accent-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.28),0_4px_14px_-8px_var(--accent)] transition hover:brightness-105 active:scale-[0.97]"
       >
         <Play size={18} fill="currentColor" /> Commencer le travail
       </button>

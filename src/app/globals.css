@@ -6,60 +6,115 @@
   @media (prefers-color-scheme: dark) { &:where([data-theme=auto], [data-theme=auto] *) { @slot; } }
 }
 
-/* Night-green palette: deep green-black surfaces, green for actions, orange for highlights */
+/* « Liquid glass »: neutral Apple-like surfaces, translucent panels over a soft coloured backdrop, green kept for the
+   brand and the actions. Dark by default, light and « auto » are options. */
 :root {
   color-scheme: dark;
-  --bg: #0a110e;
-  --panel: #111a16;
-  --panel-2: #16211c;
-  --line: #233029;
-  --fg: #ecf2ee;
-  --muted: #8a998f;
-  --accent: #22c55e;
-  --accent-fg: #03140a;
-  --highlight: #ff8a2a;
-  --ink: #070c0a;
-  --ink-fg: #ecf2ee;
+  --bg: #050608;
+  --panel: #1c1c1f;
+  --panel-2: #2a2a2e;
+  --line: rgb(255 255 255 / 0.09);
+  --fg: #f5f5f7;
+  --muted: #9a9aa2;
+  --accent: #30d158;
+  --accent-fg: #032611;
+  --highlight: #ff9f0a;
+  --ink: #141416;
+  --ink-fg: #f5f5f7;
+  /* glass */
+  --glass: rgb(40 40 48 / 0.34);
+  --glass-strong: rgb(34 34 42 / 0.8);
+  --glass-edge: rgb(255 255 255 / 0.1);
+  --glass-rim: rgb(255 255 255 / 0.22);
+  --glass-rim-2: rgb(255 255 255 / 0.06);
+  --glass-sheen: linear-gradient(140deg, rgb(255 255 255 / 0.09) 0%, rgb(255 255 255 / 0.02) 38%, transparent 60%, rgb(255 255 255 / 0.03) 100%);
+  --glass-shadow: 0 12px 36px -14px rgb(0 0 0 / 0.65);
+  /* controls: fills of fields, secondary buttons, segmented controls */
+  --fill: rgb(118 118 128 / 0.22);
+  --fill-hover: rgb(118 118 128 / 0.32);
+  --control: rgb(255 255 255 / 0.08);
+  --control-hover: rgb(255 255 255 / 0.13);
+  --seg-on: #5b5b61;
+  /* backdrop behind the glass */
+  --wall-1: rgb(48 209 88 / 0.46);
+  --wall-2: rgb(10 132 255 / 0.42);
+  --wall-3: rgb(191 90 242 / 0.34);
+  --wall-4: rgb(255 159 10 / 0.24);
+  --wall-5: rgb(100 210 255 / 0.28);
   /* chart series (validated categorical pair on the panel surface: green, orange) */
   --series-1: #199e70;
   --series-2: #d95926;
 }
 
-/* Light theme (chosen, or « auto » on a device in light mode). Same green identity, on paper-white surfaces */
+/* Light theme (chosen, or « auto » on a device in light mode): frosted white glass on a pale backdrop */
 :root[data-theme=light] {
-  color-scheme: light;
-  --bg: #f3f6f3;
-  --panel: #ffffff;
-  --panel-2: #edf2ee;
-  --line: #d8e0da;
-  --fg: #10201a;
-  --muted: #5a6a60;
-  --accent: #15803d;
-  --accent-fg: #ffffff;
-  --highlight: #c2410c;
-  --ink: #ffffff;
-  --ink-fg: #10201a;
-  /* light tints written for the dark theme become dark enough to read on white */
-  --color-red-100: #7f1d1d; --color-red-200: #991b1b; --color-red-300: #b91c1c;
-  --color-amber-200: #92400e; --color-amber-300: #b45309;
-  --color-sky-200: #075985; --color-sky-300: #0369a1;
-  --color-emerald-200: #065f46; --color-yellow-200: #854d0e; --color-orange-200: #9a3412;
-  --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46; --color-blue-200: #1e40af;
+    color-scheme: light;
+    --bg: #eceef3;
+    --panel: #ffffff;
+    --panel-2: #f2f2f6;
+    --line: rgb(60 60 67 / 0.13);
+    --fg: #1d1d1f;
+    --muted: #6e6e73;
+    --accent: #248a3d;
+    --accent-fg: #ffffff;
+    --highlight: #c93400;
+    --ink: #ffffff;
+    --ink-fg: #1d1d1f;
+    --glass: rgb(255 255 255 / 0.4);
+    --glass-strong: rgb(255 255 255 / 0.84);
+    --glass-edge: rgb(255 255 255 / 0.55);
+    --glass-rim: rgb(255 255 255 / 1);
+    --glass-rim-2: rgb(255 255 255 / 0.45);
+    --glass-sheen: linear-gradient(140deg, rgb(255 255 255 / 0.55) 0%, rgb(255 255 255 / 0.12) 40%, transparent 62%, rgb(255 255 255 / 0.18) 100%);
+    --glass-shadow: 0 0 0 0.5px rgb(20 30 50 / 0.08), 0 1px 2px rgb(20 30 50 / 0.05), 0 12px 32px -12px rgb(20 30 50 / 0.24);
+    --fill: rgb(118 118 128 / 0.1);
+    --fill-hover: rgb(118 118 128 / 0.16);
+    --control: rgb(255 255 255 / 0.72);
+    --control-hover: rgb(255 255 255 / 0.95);
+    --seg-on: #ffffff;
+    --wall-1: rgb(52 199 89 / 0.6);
+    --wall-2: rgb(0 122 255 / 0.46);
+    --wall-3: rgb(175 82 222 / 0.38);
+    --wall-4: rgb(255 149 0 / 0.42);
+    --wall-5: rgb(90 200 250 / 0.42);
+    /* light tints written for the dark theme become dark enough to read on white */
+    --color-red-100: #7f1d1d; --color-red-200: #991b1b; --color-red-300: #b91c1c;
+    --color-amber-200: #92400e; --color-amber-300: #b45309;
+    --color-sky-200: #075985; --color-sky-300: #0369a1;
+    --color-emerald-200: #065f46; --color-yellow-200: #854d0e; --color-orange-200: #9a3412;
+    --color-lime-200: #3f6212; --color-violet-200: #5b21b6; --color-zinc-300: #3f3f46; --color-blue-200: #1e40af;
 }
 @media (prefers-color-scheme: light) {
   :root[data-theme=auto] {
     color-scheme: light;
-    --bg: #f3f6f3;
+    --bg: #eceef3;
     --panel: #ffffff;
-    --panel-2: #edf2ee;
-    --line: #d8e0da;
-    --fg: #10201a;
-    --muted: #5a6a60;
-    --accent: #15803d;
+    --panel-2: #f2f2f6;
+    --line: rgb(60 60 67 / 0.13);
+    --fg: #1d1d1f;
+    --muted: #6e6e73;
+    --accent: #248a3d;
     --accent-fg: #ffffff;
-    --highlight: #c2410c;
+    --highlight: #c93400;
     --ink: #ffffff;
-    --ink-fg: #10201a;
+    --ink-fg: #1d1d1f;
+    --glass: rgb(255 255 255 / 0.4);
+    --glass-strong: rgb(255 255 255 / 0.84);
+    --glass-edge: rgb(255 255 255 / 0.55);
+    --glass-rim: rgb(255 255 255 / 1);
+    --glass-rim-2: rgb(255 255 255 / 0.45);
+    --glass-sheen: linear-gradient(140deg, rgb(255 255 255 / 0.55) 0%, rgb(255 255 255 / 0.12) 40%, transparent 62%, rgb(255 255 255 / 0.18) 100%);
+    --glass-shadow: 0 0 0 0.5px rgb(20 30 50 / 0.08), 0 1px 2px rgb(20 30 50 / 0.05), 0 12px 32px -12px rgb(20 30 50 / 0.24);
+    --fill: rgb(118 118 128 / 0.1);
+    --fill-hover: rgb(118 118 128 / 0.16);
+    --control: rgb(255 255 255 / 0.72);
+    --control-hover: rgb(255 255 255 / 0.95);
+    --seg-on: #ffffff;
+    --wall-1: rgb(52 199 89 / 0.6);
+    --wall-2: rgb(0 122 255 / 0.46);
+    --wall-3: rgb(175 82 222 / 0.38);
+    --wall-4: rgb(255 149 0 / 0.42);
+    --wall-5: rgb(90 200 250 / 0.42);
     /* light tints written for the dark theme become dark enough to read on white */
     --color-red-100: #7f1d1d; --color-red-200: #991b1b; --color-red-300: #b91c1c;
     --color-amber-200: #92400e; --color-amber-300: #b45309;
@@ -83,38 +138,98 @@
   --color-ink-fg: var(--ink-fg);
   --color-series-1: var(--series-1);
   --color-series-2: var(--series-2);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  /* San Francisco on Apple devices (iPhone, Mac), Geist elsewhere */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-geist-sans), system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", var(--font-geist-mono), Menlo, monospace;
+}
+
+/* Rounder corners, as on iOS */
+@theme {
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.375rem;
+  --radius-3xl: 1.75rem;
 }
 
 body {
-  background:
-    radial-gradient(1200px 520px at 70% -120px, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
-    radial-gradient(900px 420px at -10% 0, color-mix(in srgb, var(--highlight) 5%, transparent), transparent 70%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
+  letter-spacing: -0.008em;
   -webkit-tap-highlight-color: transparent;
 }
+/* The backdrop the glass shows: large soft colour fields, fixed behind the page (also on iPhone, where
+   background-attachment: fixed does not work) */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(62vmax 48vmax at 90% -6%, var(--wall-1), transparent 64%),
+    radial-gradient(58vmax 48vmax at -10% 30%, var(--wall-2), transparent 64%),
+    radial-gradient(55vmax 44vmax at 50% 112%, var(--wall-3), transparent 64%),
+    radial-gradient(40vmax 34vmax at 102% 68%, var(--wall-4), transparent 66%),
+    radial-gradient(38vmax 30vmax at 58% 38%, var(--wall-5), transparent 68%),
+    var(--bg);
+}
+/* the glass recipe, shared by every pane: blur and brighten what is behind, a light sheen from the top-left, bright
+   rims on the top and left edges (a fainter one bottom-right), a soft shadow */
+:root {
+  --glass-fx: blur(30px) saturate(210%) brightness(1.04);
+  --glass-box: inset 1px 1px 0 0 var(--glass-rim), inset -1px -1px 0 0 var(--glass-rim-2), var(--glass-shadow);
+}
+
+/* ── Glass ──────────────────────────────────────────────────────────────── */
+/* A translucent pane: blurs and brightens what lies behind, a light rim on its top edge, a soft shadow */
+.glass, .glass-strong {
+  background-color: var(--glass);
+  background-image: var(--glass-sheen);
+  -webkit-backdrop-filter: var(--glass-fx);
+  backdrop-filter: var(--glass-fx);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-box);
+}
+.glass-strong { background-color: var(--glass-strong); }
+/* Every neutral card of the app (rounded, panel colour, hairline border) becomes a glass pane */
+:where([class~="bg-panel"], [class~="bg-panel/40"], [class~="bg-panel/50"], [class~="bg-panel/60"], [class~="bg-panel/70"],
+  [class~="bg-panel/80"], [class~="bg-panel/90"], [class~="bg-panel/95"])[class~="border-line"]:where([class~="rounded-2xl"], [class~="rounded-xl"], [class~="rounded-3xl"]) {
+  background-color: var(--glass);
+  background-image: var(--glass-sheen);
+  -webkit-backdrop-filter: var(--glass-fx);
+  backdrop-filter: var(--glass-fx);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-box);
+}
+/* Small buttons and links drawn by hand across the pages (outlined, panel colour) become glass capsules too */
+:where(a, button, label)[class~="inline-flex"][class~="border-line"]:where([class~="bg-panel"], [class~="bg-panel-2"], [class~="bg-panel/70"], [class~="bg-panel/80"]):where([class~="rounded-lg"], [class~="rounded-xl"], [class~="rounded-md"], [class~="rounded-full"]) {
+  border-radius: 999px;
+  background-color: var(--control);
+  border-color: var(--glass-edge);
+  box-shadow: inset 1px 1px 0 0 var(--glass-rim), inset -1px -1px 0 0 var(--glass-rim-2), 0 1px 3px rgb(0 0 0 / 0.08);
+  -webkit-backdrop-filter: var(--glass-fx);
+  backdrop-filter: var(--glass-fx);
+}
+:where(a, button, label)[class~="inline-flex"][class~="border-line"]:where([class~="bg-panel"], [class~="bg-panel-2"], [class~="bg-panel/70"], [class~="bg-panel/80"]):hover { background-color: var(--control-hover); }
+input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--accent); }
+/* dashed « empty » boxes stay light and see-through */
+:where([class~="bg-panel/40"], [class~="bg-panel/50"])[class~="border-dashed"] { background-color: transparent; background-image: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--line); }
+/* dialogs and the search palette: more opaque, so the text stays crisp over anything */
+[role="dialog"] :where([class~="bg-panel"])[class~="border-line"], [aria-modal="true"][class~="bg-panel"] { background-color: var(--glass-strong); }
 
 /* Grid children may shrink below their content (wide tables scroll inside their card instead of widening the page) */
 .grid > * { min-width: 0; }
 
 ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 
-/* Small mono label in capitals, widely spaced (section titles, eyebrows) */
-.eyebrow { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; }
+/* Small label in capitals above a group, as in iOS Settings (section titles, eyebrows) */
+.eyebrow { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.035em; }
 /* Title of a section of a page: readable at a glance, few of them per page */
 .section-title { font-size: 1rem; line-height: 1.4; font-weight: 600; letter-spacing: -0.01em; color: var(--fg); }
 /* Labels inside tiles and forms: plain words, read at a glance (the capitals are kept for section titles) */
 .eyebrow-tight { font-family: var(--font-sans); font-size: 0.8125rem; font-weight: 500; letter-spacing: 0; line-height: 1.3; }
 
 table.data { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-table.data th { text-align: left; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.data th { text-align: left; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 600; letter-spacing: 0; color: var(--muted); padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
 table.data td { padding: 0.625rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
 table.data tbody tr:last-child td { border-bottom: 0; }
-table.data tr:hover td { background: color-mix(in srgb, var(--fg) 4%, transparent); }
+table.data tr:hover td { background: color-mix(in srgb, var(--fg) 5%, transparent); }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Codes (lots, SKU, invoices) and dates never break in the middle: the table scrolls sideways instead */
 table.data td.font-mono, table.data td > .font-mono, table.data td:has(> a.font-mono) { white-space: nowrap; }
@@ -146,7 +261,6 @@ table.data td.font-mono, table.data td > .font-mono, table.data td:has(> a.font-
 .nav-progress::after {
   content: ""; position: absolute; inset: 0; width: 40%;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  box-shadow: 0 0 12px var(--accent);
   animation: nav-progress 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 @keyframes nav-progress { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
@@ -179,7 +293,7 @@ table.data td.font-mono, table.data td > .font-mono, table.data td:has(> a.font-
 /* Visible keyboard focus everywhere, never on mouse clicks */
 :focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 2px; border-radius: 6px; }
 
-/* Discreet scrollbars in the dark theme */
+/* Discreet scrollbars */
 * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fg) 18%, transparent) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--fg) 16%, transparent); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }

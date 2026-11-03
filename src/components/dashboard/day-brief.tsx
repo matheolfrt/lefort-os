@@ -4,15 +4,18 @@ import { createClient } from "@/lib/supabase/server";
 import { dayBrief, type BriefPart } from "@/lib/day-brief";
 import type { GoalProgress } from "@/lib/goals";
 import type { PriceData } from "@/lib/pricing";
+import { daysSince } from "@/lib/backup";
+import { getLastBackup } from "@/lib/prefs";
 
 /** « Ma journée »: yesterday and today in one sentence, at the top of the dashboard */
 export async function DayBrief({ ship, publish, manager }: { ship: number; publish: number; manager: boolean }) {
   const supabase = await createClient();
-  const [progress, prices] = await Promise.all([
+  const [progress, prices, lastBackup] = await Promise.all([
     supabase.rpc("goal_progress").then((r) => (r.error ? null : (r.data as GoalProgress))),
     manager ? supabase.rpc("price_suggestions").then((r) => (r.error || !r.data ? 0 : (r.data as PriceData).items.length)) : 0,
+    getLastBackup(),
   ]);
-  const b = dayBrief({ progress, ship, publish, prices, manager });
+  const b = dayBrief({ progress, ship, publish, prices, manager, backupDays: daysSince(lastBackup) });
   return (
     <section aria-label="Ma journée" data-testid="day-brief" className="rise flex gap-3 rounded-2xl border border-line bg-panel/80 px-4 py-3 text-[15px] leading-relaxed">
       <Sun size={20} aria-hidden className="mt-0.5 shrink-0 text-highlight" />

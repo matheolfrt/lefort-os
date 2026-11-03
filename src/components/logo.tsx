@@ -5,7 +5,7 @@ export function Logo({ className = "size-9" }: { className?: string }) {
   // one gradient per logo: a hidden copy (menu of the other screen size) must not hold the only one
   const id = `lefort-logo-${useId().replace(/:/g, "")}`;
   return (
-    <svg viewBox="0 0 512 512" className={`${className} shrink-0 drop-shadow-[0_0_18px_rgba(34,197,94,0.35)]`} role="img" aria-label="Lefort OS">
+    <svg viewBox="0 0 512 512" className={`${className} shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.18)]`} role="img" aria-label="Lefort OS">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#4ade80" /><stop offset="1" stopColor="#166534" />

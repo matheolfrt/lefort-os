@@ -24,3 +24,9 @@ export async function getDashLayout(): Promise<DashLayout | null> {
     return { order: ids(v.order), hidden: ids(v.hidden) };
   } catch { return null; }
 }
+
+/** Date of the last full backup downloaded from this device (set by the backup button), or null */
+export async function getLastBackup(): Promise<string | null> {
+  const v = (await cookies()).get("lf_backup")?.value;
+  return v && !Number.isNaN(Date.parse(decodeURIComponent(v))) ? decodeURIComponent(v) : null;
+}

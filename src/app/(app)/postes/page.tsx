@@ -31,7 +31,7 @@ export default async function Stations() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-[28px]">Postes</h1>
+        <h1 className="text-[28px] font-bold leading-tight tracking-[-0.03em] sm:text-[34px]">Postes</h1>
         <p className="text-sm text-muted">Ouvrez un poste et traitez les articles un par un.</p>
       </header>
       <Link href="/postes/production" data-testid="production-tile"

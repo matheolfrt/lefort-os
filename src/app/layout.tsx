@@ -17,9 +17,9 @@ export async function generateViewport(): Promise<Viewport> {
     width: "device-width",
     initialScale: 1,
     viewportFit: "cover",
-    themeColor: theme === "light" ? "#f3f6f3"
-      : theme === "auto" ? [{ media: "(prefers-color-scheme: light)", color: "#f3f6f3" }, { media: "(prefers-color-scheme: dark)", color: "#0a110e" }]
-      : "#0a110e",
+    themeColor: theme === "light" ? "#eceef3"
+      : theme === "auto" ? [{ media: "(prefers-color-scheme: light)", color: "#eceef3" }, { media: "(prefers-color-scheme: dark)", color: "#050608" }]
+      : "#050608",
   };
 }
 
