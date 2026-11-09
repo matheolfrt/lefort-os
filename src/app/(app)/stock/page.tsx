@@ -15,7 +15,7 @@ const CHIP_ORDER: ItemStatus[] = [
   "on_hold", "returned", "sold", "shipped", "completed", "rejected",
 ];
 
-type Params = { q?: string; status?: string; category?: string; page?: string; size?: string; deleted?: string };
+type Params = { q?: string; status?: string; category?: string; page?: string; size?: string; deleted?: string; cout?: string };
 
 export default async function Stock({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
@@ -25,10 +25,13 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
   const PAGE = PAGE_SIZES.includes(Number(sp.size)) ? Number(sp.size) : 50;
   const supabase = await createClient();
 
+  // « cout=inconnu » (from Indicateurs): the items whose purchase price was never entered (0 or 1 € from an import)
+  const noCost = sp.cout === "inconnu";
   let query = supabase
     .from("items")
-    .select("id, sku, status, title, size_label, list_price_cents, min_price_cents, category_id, brand_id, status_changed_at, received_at, status_before_hold, categories(name), brands(name), locations(code), item_costs(allocated_cost_cents)", { count: "exact" })
+    .select(`id, sku, status, title, size_label, list_price_cents, min_price_cents, category_id, brand_id, status_changed_at, received_at, status_before_hold, categories(name), brands(name), locations(code), ${noCost ? "item_costs!inner(allocated_cost_cents)" : "item_costs(allocated_cost_cents)"}`, { count: "exact" })
     ;
+  if (noCost) query = query.lte("item_costs.allocated_cost_cents", 100);
   query = trash ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
   if (sp.status) query = query.eq("status", sp.status);
   if (sp.category) query = query.eq("category_id", sp.category);
@@ -68,6 +71,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
             {count ?? 0} article{(count ?? 0) > 1 ? "s" : ""}
             {sp.status && ` · ${STATUS_LABEL[sp.status as ItemStatus]}`}
             {sp.q && ` · « ${sp.q} »`}
+            {noCost && <> · sans prix d&apos;achat <Link href={href({ cout: undefined, page: undefined })} className="underline underline-offset-2 hover:text-fg">(tout afficher)</Link></>}
           </p>
         </div>
         <div className="flex w-full gap-2 sm:w-auto">
@@ -101,6 +105,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<Pa
       <form className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_190px_130px_auto]" action="/stock">
         {sp.status && <input type="hidden" name="status" value={sp.status} />}
         {trash && <input type="hidden" name="deleted" value="1" />}
+        {noCost && <input type="hidden" name="cout" value="inconnu" />}
         <label className="relative col-span-2 sm:col-span-1">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input className={`${input} pl-10`} name="q" defaultValue={sp.q} placeholder="SKU, titre, marque… (-mot pour exclure)" aria-label="Rechercher" />

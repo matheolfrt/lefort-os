@@ -1,5 +1,5 @@
 import {
-  BarChart3, Boxes, Calculator, Compass, Container, Eye, Factory, Gauge, FlaskConical, Images, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, NotebookPen, Radar, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, Warehouse, type LucideIcon,
+  Activity, BarChart3, Boxes, Calculator, Compass, Container, Eye, Factory, Gauge, FlaskConical, Images, Landmark, TrendingDown, LayoutDashboard, Lightbulb, MapPin, Package, ListTodo, NotebookPen, Radar, RefreshCw, Settings, ShoppingBag, Sprout, Target, Truck, Undo2, Warehouse, type LucideIcon,
 } from "lucide-react";
 
 export type NavGroup = "Aujourd'hui" | "Stock et lots" | "Argent" | "Réglages";
@@ -52,10 +52,12 @@ export const NAV: NavItem[] = [
 
   // ── Argent: ce que je gagne
   { href: "/finance", label: "Mon argent", icon: Landmark, manager: true, group: "Argent",
-    match: ["/finance", "/conseils", "/objectifs", "/statistiques", "/reinvestir", "/scenarios"], keywords: "finance pilotage" },
+    match: ["/finance", "/conseils", "/indicateurs", "/objectifs", "/statistiques", "/reinvestir", "/scenarios"], keywords: "finance pilotage" },
   { href: "/finance", label: "Où est mon argent ?", tabLabel: "Vue d'ensemble", icon: Landmark, manager: true, group: "Argent", hub: "/finance",
     keywords: "finance trésorerie cash capital budget d'achat prévision stock dormant immobilisé rotation rentabilité" },
   { href: "/conseils", label: "Conseils", icon: Lightbulb, manager: true, keywords: "priorités rentabilité recommandations à faire acheter pilotage", group: "Argent", hub: "/finance" },
+  { href: "/indicateurs", label: "Indicateurs : que racheter, à quel prix", tabLabel: "Indicateurs", icon: Activity, manager: true, group: "Argent", hub: "/finance",
+    keywords: "kpi indicateurs racheter prix d'achat max marque type harris tweed croisé manteau taille acheteurs fidèles ancienneté stock dormant rythme mises en ligne couverture cycle trésorerie marge par heure juger un lot fleek" },
   { href: "/objectifs", label: "Objectifs", icon: Target, manager: true, keywords: "objectif chiffre d'affaires ca ventes jour semaine mois année but", group: "Argent", hub: "/finance" },
   { href: "/statistiques", label: "Chiffre d'affaires et statistiques", tabLabel: "CA & statistiques", icon: BarChart3, manager: true, group: "Argent", hub: "/finance",
     keywords: "ca chiffre d'affaires statistiques kpi graphiques marge 3 mois 6 mois un an 12 mois 2 ans 24 mois historique évolution" },

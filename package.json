@@ -21,6 +21,7 @@
     "test:backup": "npx --yes tsx scripts/backup-test.ts",
     "test:label": "npx --yes tsx scripts/shipping-label-test.ts",
     "test:attractivite": "npx --yes tsx scripts/listing-performance-test.ts",
+    "test:kpi": "npx --yes tsx scripts/kpi-test.ts",
     "typecheck": "tsc --noEmit",
     "build:extension": "rm -f public/lefort-os-vinted.zip && cd extension && zip -qr ../public/lefort-os-vinted.zip . -x \"*.DS_Store\""
   },
