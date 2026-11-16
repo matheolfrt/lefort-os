@@ -2,13 +2,16 @@ import Link from "next/link";
 import { ArrowRight, FlaskConical, Settings2 } from "lucide-react";
 import { requireManager } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { Empty, PageHeader, btn, seg as tabs } from "@/components/ui";
+import { Empty, PageHeader, btn, input, seg as tabs } from "@/components/ui";
 import { loadFinance } from "@/lib/finance/server";
 import { MIN_SEGMENT_SALES, evolution, euro, frDate, frShort, insights, liquidationValue, pct, type Segment } from "@/lib/finance";
 import { Kpi, LevelBadge, Section, Trend } from "@/components/finance/kpi";
 import { Explain } from "@/components/finance/explain";
 import { CapitalMap } from "@/components/finance/capital-map";
 import { ForecastChart } from "@/components/finance/forecast-chart";
+import { Plain } from "@/components/finance/plain";
+import { Months } from "@/components/finance/months";
+import { declareBalanceQuick } from "./parametres/actions";
 
 export const metadata = { title: "Où est mon argent ?" };
 
@@ -34,7 +37,7 @@ const TONE = {
 } as const;
 const AGE_COLOR = ["#199e70", "#3987e5", "#9085e9", "#d95926"];
 
-export default async function Finance({ searchParams }: { searchParams: Promise<{ axe?: string; periode?: string; tri?: string }> }) {
+export default async function Finance({ searchParams }: { searchParams: Promise<{ axe?: string; periode?: string; tri?: string; ok?: string; erreur?: string }> }) {
   await requireManager();
   const sp = await searchParams;
   const f = await loadFinance({ snapshot: true });
@@ -46,7 +49,9 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
       </>
     );
   }
-  const { o, today, cash, cap, perf, turn, fc, budget, immob } = f;
+  const { o, today, cash, cap, perf, turn, fc, budget, immob, draw, months } = f;
+  const est = o.estimate;
+  const plural = (n: number) => (n > 1 ? "s" : "");
   const s = o.settings;
   const axe = DIMS.some((d) => d.key === sp.axe) ? sp.axe! : "category";
   const periode = PERIODS.some((p) => p.key === sp.periode) ? sp.periode! : "365";
@@ -82,16 +87,51 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
         actions={<Link href="/finance/parametres" prefetch={false} className={btn.secondary}><Settings2 size={16} /> Paramètres financiers</Link>} />
 
       <nav aria-label="Sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 text-sm [scrollbar-width:none]">
-        {[["capital", "Capital"], ["stock", "Stock"], ["performance", "Performance"], ["rotation", "Rotation"], ["prevision", "Trésorerie"],
+        {[["capital", "Capital"], ["stock", "Stock"], ["performance", "Performance"], ["mois", "Mois par mois"], ["rotation", "Rotation"], ["prevision", "Trésorerie"],
           ["budget", "Budget d'achat"], ["recommandations", "Recommandations"], ["segments", "Analyse"]].map(([id, label]) => (
           <a key={id} href={`#${id}`} className="inline-flex min-h-10 shrink-0 items-center rounded-full border border-line bg-panel/60 px-3 text-muted transition hover:border-fg/25 hover:text-fg">{label}</a>
         ))}
       </nav>
 
-      {!cash.known && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.07] p-4 text-sm">
-          <p><strong className="font-semibold">Trésorerie non déclarée.</strong> <span className="text-muted">Saisissez le solde de votre compte une fois : ensuite, les ventes, achats et charges le mettent à jour.</span></p>
-          <Link href="/finance/parametres#tresorerie" prefetch={false} className={btn.primary}>Déclarer mon solde</Link>
+      {sp.ok === "solde" && <p role="status" className="rounded-2xl border border-accent/30 bg-accent/[0.07] p-3 text-sm">Solde enregistré : les chiffres ci-dessous en tiennent compte.</p>}
+      {sp.erreur && <p role="alert" data-testid="flash-error" className="rounded-2xl border border-red-400/30 bg-red-500/[0.07] p-3 text-sm">{sp.erreur}</p>}
+
+      {(!cash.known || stale) && (
+        <div className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.07] p-4 text-sm" data-testid="cash-banner">
+          {cash.known
+            ? <p><strong className="font-semibold">Votre solde date de {cash.staleDays} jours.</strong> <span className="text-muted">Recopiez le solde de votre compte aujourd&apos;hui pour repartir d&apos;un chiffre sûr.</span></p>
+            : <p><strong className="font-semibold">Combien avez-vous sur votre compte ?</strong> <span className="text-muted">Indiquez-le une fois : ensuite, les ventes, achats et charges le mettent à jour. Sans lui, pas de budget d&apos;achat ni de prévision.</span></p>}
+          <form action={declareBalanceQuick} className="mt-3 flex flex-wrap items-center gap-2">
+            <label className="w-full sm:w-56">
+              <span className="sr-only">Solde de votre compte aujourd&apos;hui, en euros</span>
+              <input name="amount" inputMode="decimal" required autoComplete="off" placeholder="Solde du compte, en €" className={input} />
+            </label>
+            <button type="submit" className={btn.primary}>Enregistrer</button>
+            <Link href="/finance/parametres#tresorerie" prefetch={false} className="inline-flex min-h-11 items-center px-1 text-xs text-muted underline hover:text-fg">Solde à une autre date</Link>
+          </form>
+        </div>
+      )}
+
+      <Plain f={f} />
+
+      {!f.estimated && (
+        <p role="alert" data-testid="estimate-failed" className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.07] p-4 text-sm">
+          <strong className="font-semibold">Estimation indisponible pour l&apos;instant.</strong>{" "}
+          <span className="text-muted">Les pièces sans prix d&apos;achat réel sont comptées telles que saisies (0 ou 1 €) : stock et marges sont donc sous-estimés ou trop flatteurs. Rechargez la page dans un instant.</span>
+        </p>
+      )}
+
+      {est && (est.stockCount > 0 || est.yearCount > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-panel/60 p-4 text-sm" data-testid="cost-notice">
+          <p className="min-w-0 flex-1 basis-64">
+            <strong className="font-semibold">Prix d&apos;achat manquants : chiffres estimés.</strong>{" "}
+            <span className="text-muted">
+              {[est.stockCount ? `${est.stockCount} pièce${plural(est.stockCount)} en stock` : "", est.yearCount ? `${est.yearCount} vente${plural(est.yearCount)} sur ${est.yearSold} en 12 mois` : ""].filter(Boolean).join(" et ")}
+              {" "}{est.stockCount + est.yearCount > 1 ? "ont" : "a"} un prix d&apos;achat de 0 ou 1 €. Lefort OS compte 10 € pour un Harris, un manteau ou un costume et 4 € pour le reste
+              {est.stockExtra > 0 && <> : {euro(est.stockExtra)} de stock en plus</>}{est.periodExtra > 0 && <>, {euro(est.periodExtra)} de marge en moins sur {perf.days} jours</>}.
+            </span>
+          </p>
+          <Link href="/stock?cout=inconnu" prefetch={false} className={btn.secondary}>Saisir les vrais prix</Link>
         </div>
       )}
 
@@ -104,7 +144,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
           delta={evo ? { pct: evo.pct, text: `depuis le ${frShort(evo.since)}` } : null}
           sub={evo ? undefined : "L'évolution apparaîtra avec l'historique (un relevé par jour)"} />
         <Kpi label="Stock au coût" value={euro(o.stock.cost_cents)} href="/finance/articles?vue=stock"
-          sub={`${o.stock.count} articles · ${euro(o.stock.price_cents)} au prix affiché`} />
+          sub={`${o.stock.count} articles · ${euro(o.stock.price_cents)} au prix affiché${est?.stockExtra ? ` · dont ${euro(est.stockExtra)} estimés` : ""}`} />
         <Kpi label="Capital immobilisé" value={immob.share == null ? "—" : pct(immob.share, 0)} badge={<LevelBadge level={immob.level} />}
           href="#stock" sub={`du capital est en stock (seuils ${s.immob_levels.normal} / ${s.immob_levels.high} / ${s.immob_levels.critical} %)`}
           lines={[{ label: "Stock au coût", value: euro(o.stock.cost_cents) }, { label: "Capital total", value: euro(cap.total), op: "÷" }, { label: "Part immobilisée", value: pct(immob.share), op: "=" }]} />
@@ -241,7 +281,11 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
         </div>
       </Section>
 
-      <Section id="rotation" n={4} title="Rotation et rendement du capital">
+      <Section id="mois" n={4} title="Bénéfice mois par mois">
+        {months ? <Months months={months} ratePct={s.contribution_rate_pct} /> : <p className="text-sm text-muted">Le détail mois par mois n&apos;a pas pu être chargé. Rechargez la page dans un instant.</p>}
+      </Section>
+
+      <Section id="rotation" n={5} title="Rotation et rendement du capital">
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Kpi label="Rotation mensuelle" value={times(turn.monthly)} sub="fois que le stock est vendu par mois" lines={turn.lines} />
           <Kpi label="Rotation annuelle" value={times(turn.yearly, 1)} sub={turn.yearlyMeasured ? "mesurée sur 12 mois" : `projetée depuis les ${turn.days} derniers jours`} />
@@ -254,7 +298,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
         </div>
       </Section>
 
-      <Section id="prevision" n={5} title="Trésorerie et prévision"
+      <Section id="prevision" n={6} title="Trésorerie et prévision"
         aside={<Link prefetch={false} href="/scenarios" className="inline-flex min-h-11 items-center gap-1 text-sm text-accent hover:underline"><FlaskConical size={14} /> Scénarios</Link>}>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Kpi label="Trésorerie actuelle" value={cash.known ? euro(cash.cents) : "—"} href="/finance/parametres#tresorerie" lines={cash.lines}
@@ -313,7 +357,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
         </div>
       </Section>
 
-      <Section id="budget" n={6} title="Budget d'achat">
+      <Section id="budget" n={7} title="Budget d'achat et ce qui reste pour vous">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <div className="grid content-start gap-2">
             <Kpi big label="Budget recommandé" value={budget.known ? euro(budget.recommended) : "—"} sub={budget.reason} lines={budget.lines}
@@ -322,6 +366,9 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
               <Kpi label="Maximum" value={budget.known ? euro(budget.max) : "—"} sub="sans toucher la réserve" />
               <Kpi label="Déjà engagé" value={euro(budget.committed)} href="/finance/parametres#achats" sub={`${o.planned.length} achat${o.planned.length > 1 ? "s" : ""} prévu${o.planned.length > 1 ? "s" : ""}`} />
             </div>
+            <Kpi label="Disponible pour vous" value={draw.known ? euro(draw.cents) : "—"} lines={draw.lines}
+              sub={draw.known ? "ce que vous pouvez vous verser sans toucher à la réserve ni au stock à racheter" : "déclarez votre trésorerie"}
+              note="Une estimation : elle suppose que les ventes continuent au rythme actuel." />
           </div>
           <div className="rounded-2xl border border-line bg-panel/80 p-4 text-sm">
             <h3 className="mb-2 font-medium">Ce qui entre dans le calcul</h3>
@@ -349,7 +396,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
         </div>
       </Section>
 
-      <Section id="recommandations" n={7} title="Recommandations">
+      <Section id="recommandations" n={8} title="Recommandations">
         {bi.list.length > 0 ? (
           <ul className="grid gap-2 md:grid-cols-2" data-testid="insights">
             {bi.list.map((i) => (
@@ -371,7 +418,7 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
         )}
       </Section>
 
-      <Section id="segments" n={8} title="Analyse détaillée">
+      <Section id="segments" n={9} title="Analyse détaillée">
         <div className="flex flex-wrap items-center gap-2">
           <div role="tablist" aria-label="Axe" className={tabs.wrap}>
             {DIMS.map((d) => (
@@ -386,6 +433,11 @@ export default async function Finance({ searchParams }: { searchParams: Promise<
             ))}
           </div>
         </div>
+        {est && !est.reliable && (
+          <p className="rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-3 text-xs" data-testid="segments-warning">
+            Marge et ROI de ce tableau partent des prix d&apos;achat saisis. {est.yearCount} vente{plural(est.yearCount)} sur {est.yearSold} en 12 mois n&apos;en {est.yearCount > 1 ? "ont" : "a"} pas de réel (0 ou 1 €) : ces deux colonnes sont trop flatteuses tant qu&apos;ils manquent.
+          </p>
+        )}
         {sorted.length ? (
           <div className="overflow-x-auto rounded-2xl border border-line bg-panel/80">
             <table className="data min-w-[860px]" data-testid="segments">

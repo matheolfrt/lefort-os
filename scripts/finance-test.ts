@@ -4,9 +4,10 @@
 
 import assert from "node:assert/strict";
 import {
-  cashPosition, capital, charges, evolution, forecast, immobilization, insights, liquidationValue, occurrences,
-  performance, purchaseBudget, turnover,
+  cashPosition, capital, charges, estimateCosts, evolution, forecast, immobilization, insights, liquidationValue, monthlyPnl, occurrences,
+  ownerDraw, performance, pnlSummary, purchaseBudget, turnover,
 } from "../src/lib/finance";
+import type { SoldCostRow, StockCostRow } from "../src/lib/finance";
 import type { Overview, Recurring } from "../src/lib/finance/types";
 import { DEFAULTS, PRESETS, compute, funding } from "../src/lib/scenario";
 
@@ -259,6 +260,137 @@ test("recommandations : jamais sans assez de données", () => {
   assert.ok(best && best.text.includes("Harris Tweed"), JSON.stringify(rich.list));
   assert.ok(rich.list.find((i) => i.id === "sizes")!.text.includes("100 %"));
   assert.ok(rich.list.some((i) => i.id === "dormant"));
+});
+
+// ───────────────────────── Prix d'achat jamais saisis ─────────────────────────
+
+const piece = (title: string, cost: number) => ({ title, brand: null, category: null, cost });
+const STOCK: StockCostRow[] = [
+  { ...piece("Blazer Harris Tweed gris", 100), age: 10, priced: true },   // 10 € supposés : +9 €
+  { ...piece("Blazer laine bleu", 0), age: 45, priced: false },           // 4 € supposés : +4 €, sans prix
+  { ...piece("Manteau long camel", 100), age: 120, priced: true },        // 10 € supposés : +9 €, dormant
+  { ...piece("Blazer croisé", 1500), age: 5, priced: true },              // vrai prix : rien ne change
+];
+const sale = (title: string, cost: number, soldAt: string, revenue = 4000, variable = 300, inDaily = false): SoldCostRow =>
+  ({ ...piece(title, cost), soldAt, revenue, variable, inDaily });
+const SOLD: SoldCostRow[] = [
+  sale("Blazer Harris Tweed", 100, "2026-10-20T15:00:00Z", 4000, 300, true), // période : +9 €, compté jour par jour
+  sale("Blazer marine", 100, "2026-10-10T15:00:00Z"),                         // période : +3 €, vente importée
+  sale("Blazer gris", 0, "2026-09-15T15:00:00Z"),                             // période précédente : +4 €
+  sale("Costume 3 pièces", 100, "2026-03-01T15:00:00Z"),                      // 12 mois : +9 €
+  sale("Blazer Burberry", 2000, "2026-10-21T15:00:00Z"),                      // vrai prix
+  sale("Blazer ancien", 100, "2025-08-01T15:00:00Z"),                         // plus d'un an : hors des périodes
+];
+
+test("prix d'achat manquants : stock, dormant, tranches d'âge et articles sans prix corrigés", () => {
+  const o = estimateCosts(overview(), STOCK, SOLD);
+  const e = o.estimate!;
+  assert.deepEqual([e.stockCount, e.stockRecorded, e.stockExtra, e.dormantExtra], [3, 200, 2200, 900]);
+  assert.equal(o.stock.cost_cents, 402200);
+  assert.equal(o.stock.unpriced_cost_cents, 30400);
+  assert.equal(o.stock.dormant_cost_cents, 90900);
+  assert.deepEqual(o.stock.aging.map((b) => b.cost_cents), [180900, 90400, 40000, 90900]);
+  // the overview given is not modified
+  assert.equal(overview().stock.cost_cents, 400000);
+});
+
+test("prix d'achat manquants : coût des ventes et marge des périodes, ventes comptées jour par jour", () => {
+  const o = estimateCosts(overview(), STOCK, SOLD);
+  const e = o.estimate!;
+  assert.deepEqual([e.periodCount, e.periodRecorded, e.periodExtra], [2, 200, 1200]);
+  assert.deepEqual([e.yearCount, e.yearExtra, e.yearSold, e.reliable], [4, 2500, 600, true]);
+  assert.deepEqual([o.periods.current.cogs_cents, o.periods.current.gross_profit_cents], [76200, 88800]);
+  assert.deepEqual([o.periods.previous.cogs_cents, o.periods.previous.gross_profit_cents], [62400, 75600]);
+  assert.equal(o.periods.year.cogs_cents, 752500);
+  // only the sale the forecast counts changes its day; the imported one does not
+  assert.equal(o.daily.find((d) => d.day === "2026-10-20")!.cogs_cents, 3400);
+  assert.equal(o.daily.find((d) => d.day === "2026-10-10")!.cogs_cents, 2500);
+  // the margin of the page follows, and the calculation says so
+  const perf = performance(o, TODAY);
+  assert.equal(perf.gross, 88800);
+  assert.ok(perf.lines.some((l) => l.label.includes("2 ventes sans prix d'achat réel")));
+  assert.ok(capital(o, cashPosition(o, TODAY)).lines.some((l) => l.label.includes("3 pièces sans prix d'achat réel")));
+});
+
+test("prix d'achat manquants : les relevés passés reçoivent la même correction", () => {
+  const o = estimateCosts(overview({ snapshots: [{ day: "2026-09-28", cash_cents: 250000, stock_cost_cents: 380000, dormant_cost_cents: 80000, receivable_cents: 10000 }] }), STOCK, SOLD);
+  assert.deepEqual([o.snapshots[0].stock_cost_cents, o.snapshots[0].dormant_cost_cents], [382200, 80900]);
+  const cap = capital(o, cashPosition(o, TODAY));
+  // the evolution is the one of the recorded figures: 731 000 − 640 000
+  assert.equal(evolution(o, cap.total, TODAY)!.delta, cap.total - (250000 + 382200 + 10000));
+});
+
+test("prix d'achat manquants : pas de comparaison de rentabilité quand trop de ventes sont estimées", () => {
+  const base = overview();
+  const o = estimateCosts({ ...base, periods: { ...base.periods, year: { ...base.periods.year, items: 10 } } }, STOCK, SOLD);
+  assert.equal(o.estimate!.reliable, false); // 4 ventes sur 10
+  const cash = cashPosition(o, TODAY), cap = capital(o, cash), perf = performance(o, TODAY), fc = forecast(o, cash, TODAY);
+  const seg = (name: string, margin: number) => ({ name, items: 12, sold: 10, stock: 2, avg_cost_cents: 100, avg_price_cents: 3000, revenue_cents: margin + 1000,
+    margin_cents: margin, sold_cost_cents: 1000, avg_days: null, timed: 0, stock_cost_cents: 200 });
+  const r = insights({ o, cap, perf, turn: turnover(o, perf, cap, TODAY), fc, budget: purchaseBudget(o, cash, fc, TODAY), today: TODAY,
+    brands: [seg("Harris Tweed", 600000), seg("Zara", 10000)], categories: [], sizes: [] });
+  assert.ok(!r.list.some((i) => i.id === "brand-best"));
+  assert.ok(r.missing.some((m) => m.includes("sans prix d'achat réel")));
+  const costs = r.list.find((i) => i.id === "costs")!;
+  assert.equal(costs.tone, "warn");
+  assert.ok(costs.text.includes("4 ventes sur 10") && costs.text.includes("3 pièces en stock"), costs.text);
+  // nothing to say when every price is known
+  const clean = estimateCosts(overview(), [], []);
+  assert.equal(clean.estimate!.stockCount, 0);
+  assert.equal(clean.stock.cost_cents, 400000);
+});
+
+test("mois par mois : ventes − achats − frais − cotisations − charges, mois de Paris", () => {
+  const o = overview({ recurring: [] });
+  const sold: SoldCostRow[] = [
+    sale("Blazer Harris Tweed", 100, "2026-10-20T15:00:00Z", 4000, 300),  // octobre, achat supposé 10 €
+    sale("Blazer Burberry", 2000, "2026-10-21T15:00:00Z", 6000, 400),     // octobre, vrai prix 20 €
+    sale("Blazer gris", 0, "2026-09-30T22:30:00Z", 3000, 200),            // 1er octobre 00 h 30 à Paris, achat supposé 4 €
+    sale("Costume 3 pièces", 100, "2026-09-10T15:00:00Z", 9000, 500),     // septembre, achat supposé 10 €
+    sale("Blazer", 100, "2026-05-10T15:00:00Z"),                          // avant les 3 mois : ignoré
+  ];
+  const spent = [{ spentOn: "2026-08-31", category: "packaging", cents: 500 }, { spentOn: "2026-09-30", category: "packaging", cents: 3000 },
+    { spentOn: "2026-10-01", category: "software", cents: 1000 }];
+  const [aug, sep, oct] = monthlyPnl(o, sold, spent, TODAY, 3);
+  assert.deepEqual([aug.month, sep.month, oct.month], ["2026-08", "2026-09", "2026-10"]);
+  assert.deepEqual([aug.items, aug.charges, aug.net, aug.partial], [0, 500, -500, false]);
+  // septembre : 90 − 10 − 5 = 75 € de marge ; cotisations 12,4 % de 90 € = 11,16 € ; charges 30 €
+  assert.deepEqual([sep.items, sep.revenue, sep.cogs, sep.variable, sep.gross, sep.contributions, sep.charges, sep.net, sep.estimated],
+    [1, 9000, 1000, 500, 7500, 1116, 3000, 3384, 1]);
+  // octobre : 130 − 34 − 9 = 87 € ; cotisations 16,12 € ; charges 10 €
+  assert.deepEqual([oct.items, oct.revenue, oct.cogs, oct.variable, oct.gross, oct.contributions, oct.charges, oct.net, oct.estimated, oct.partial],
+    [3, 13000, 3400, 900, 8700, 1612, 1000, 6088, 2, true]);
+  const s = pnlSummary([aug, sep, oct])!;
+  assert.deepEqual([s.best.month, s.count, s.avgNet, s.totalNet, s.totalRevenue], ["2026-09", 1, 3384, 8972, 22000]);
+  assert.equal(pnlSummary([aug]), null);
+});
+
+test("mois par mois : une charge récurrente compte à sa date, jamais après aujourd'hui", () => {
+  const o = overview(); // loyer de 500 € le 5 de chaque mois
+  const [sep, oct] = monthlyPnl(o, [], [{ spentOn: "2026-10-06", category: "rent", cents: 50000 }], TODAY, 2);
+  assert.deepEqual([sep.charges, oct.charges], [50000, 50000]); // the rent paid is the recurring charge, not a second one
+  const early = monthlyPnl(o, [], [], "2026-10-03", 1)[0];
+  assert.equal(early.charges, 0); // the 5th has not come yet
+});
+
+test("disponible pour vous : au-dessus de la réserve, moins le stock à racheter", () => {
+  const lean = overview({ stock: { ...overview().stock, cost_cents: 100000, count: 50 }, planned: [] });
+  const cash = cashPosition(lean, TODAY), fc = forecast(lean, cash, TODAY);
+  const b = purchaseBudget(lean, cash, fc, TODAY);
+  const d = ownerDraw(b);
+  const free = Math.min(b.max, b.safeFromForecast!);
+  assert.equal(d.cents, Math.max(0, free - b.recommended));
+  assert.ok(d.cents + b.recommended <= b.max);
+  // stock that already covers the sales: nothing to buy, everything above the reserve is free
+  const full = overview({ planned: [] });
+  const cash2 = cashPosition(full, TODAY), fc2 = forecast(full, cash2, TODAY), b2 = purchaseBudget(full, cash2, fc2, TODAY);
+  assert.equal(b2.recommended, 0);
+  assert.equal(ownerDraw(b2).cents, Math.min(b2.max, b2.safeFromForecast!));
+  assert.ok(ownerDraw(b2).cents > 0);
+  // unknown cash: nothing is promised
+  const blind = overview({ balance: null, ledger: null });
+  const cash3 = cashPosition(blind, TODAY);
+  assert.deepEqual([ownerDraw(purchaseBudget(blind, cash3, forecast(blind, cash3, TODAY), TODAY)).known, ownerDraw(purchaseBudget(blind, cash3, forecast(blind, cash3, TODAY), TODAY)).cents], [false, 0]);
 });
 
 test("scénarios : cash nécessaire, retour sur capital et scénarios types", () => {

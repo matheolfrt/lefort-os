@@ -21,7 +21,7 @@ const at = (d: string) => new Date(`${d}T12:00:00Z`);
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 export const addDays = (d: string, n: number) => iso(new Date(at(d).getTime() + n * DAY));
 export const daysBetween = (a: string, b: string) => Math.round((at(b).getTime() - at(a).getTime()) / DAY);
-const parisDay = (ts: string) =>
+export const parisDay = (ts: string) =>
   new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ts));
 const lastDayOfMonth = (y: number, m0: number) => new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
 
@@ -114,6 +114,7 @@ export function capital(o: Overview, cash: Cash): Capital {
     { label: `Ventes pas encore versées (${o.receivable.count})`, value: euro(receivable), op: "+" },
     { label: "Capital total", value: euro(total), op: "=" },
   ];
+  if (o.estimate?.stockCount) lines.splice(2, 0, { label: `dont ${o.estimate.stockCount} pièce${o.estimate.stockCount > 1 ? "s" : ""} sans prix d'achat réel, comptée${o.estimate.stockCount > 1 ? "s" : ""} 10 € ou 4 €`, value: euro(o.estimate.stockExtra + o.estimate.stockRecorded), muted: true });
   if (cash.known && (cash.cents ?? 0) < 0) lines.splice(1, 0, { label: "La trésorerie estimée est négative : comptée 0 dans le capital", value: euro(cash.cents), muted: true });
   if (o.rejected.count) lines.push({ label: `Non compté : ${o.rejected.count} article(s) écarté(s), coût perdu`, value: euro(o.rejected.cost_cents), muted: true });
   return { total, cashKnown: cash.known, cash: cashCents, stockActive: stock - dormant, dormant, receivable, stock, parts, lines };
@@ -168,6 +169,7 @@ export function performance(o: Overview, today: string): Performance {
     lines: [
       { label: `Chiffre d'affaires des ${c.items} ventes (${days} j, remboursements déduits)`, value: euro(c.revenue_cents) },
       { label: "Coût d'achat des articles vendus", value: euro(c.cogs_cents), op: "−" },
+      ...(o.estimate?.periodCount ? [{ label: `dont ${o.estimate.periodCount} vente${o.estimate.periodCount > 1 ? "s" : ""} sans prix d'achat réel, comptée${o.estimate.periodCount > 1 ? "s" : ""} 10 € ou 4 €`, value: euro(o.estimate.periodExtra + o.estimate.periodRecorded), muted: true } as Line] : []),
       { label: "Frais Vinted, port et emballage", value: euro(variable), op: "−" },
       { label: "Marge brute", value: euro(c.gross_profit_cents), op: "=" },
       { label: `Cotisations estimées (${pct(o.settings.contribution_rate_pct)} de ${euro(p.cashed_cents)} encaissés)`, value: euro(contributions), op: "−" },
@@ -406,6 +408,25 @@ export function purchaseBudget(o: Overview, cash: Cash, fc: Forecast, today: str
     { label: "Budget recommandé (le plus petit des trois)", value: euro(recommended), op: "=" },
   ];
   return { known: cash.known, max, recommended, committed, safeFromForecast, need, coverDays, available, due30: Math.max(0, due30), lines, reason };
+}
+
+/**
+ * What can leave the business for its owner: what is above the reserve once the coming expenses are paid, without ever
+ * taking the cash below the reserve in the forecast, minus what the stock needs to keep selling.
+ */
+export function ownerDraw(budget: Budget): { known: boolean; cents: Cents; lines: Line[] } {
+  if (!budget.known) return { known: false, cents: 0, lines: [{ label: "Trésorerie non déclarée", value: "—" }] };
+  const free = budget.safeFromForecast == null ? budget.max : Math.min(budget.max, budget.safeFromForecast);
+  const cents = Math.max(0, free - budget.recommended);
+  return {
+    known: true, cents,
+    lines: [
+      { label: "Disponible au-dessus de la réserve, dépenses des 30 jours payées", value: euro(budget.max) },
+      ...(free < budget.max ? [{ label: "Limité au plus bas niveau prévu de la trésorerie", value: euro(free), op: "=" as const }] : []),
+      { label: "Stock à racheter (budget d'achat recommandé)", value: euro(budget.recommended), op: "−" },
+      { label: "Disponible pour vous", value: euro(cents), op: "=" },
+    ],
+  };
 }
 
 export const frDate = (d: string) => at(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "UTC" });

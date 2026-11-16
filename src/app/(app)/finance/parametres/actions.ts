@@ -50,6 +50,18 @@ export async function declareBalance(fd: FormData) {
   back("tresorerie");
 }
 
+/** The same declaration from the banner of « Où est mon argent ? » : the amount only, as of now, and back to that page */
+export async function declareBalanceQuick(fd: FormData) {
+  await requireManager();
+  const amount = signedEuros(str(fd, "amount"));
+  const home = (q: string): never => { revalidatePath("/finance", "layout"); revalidatePath("/"); redirect(`/finance?${q}`); };
+  if (amount == null) home(`erreur=${encodeURIComponent("Montant invalide : écrivez par exemple 1250 ou 1250,50.")}`);
+  const supabase = await createClient();
+  const { error } = await supabase.from("cash_balances").insert({ amount_cents: amount, as_of: new Date().toISOString(), note: null });
+  if (error) home(`erreur=${encodeURIComponent(errorMessage(error))}`);
+  home("ok=solde");
+}
+
 export async function deleteBalance(id: string) {
   await requireManager();
   const supabase = await createClient();

@@ -41,6 +41,14 @@ export function insights(input: {
       href: "/finance/articles?vue=dormant", basis: `Stock dormant au coût / capital total ${euro(cap.total)}` });
   }
 
+  const est = o.estimate;
+  if (est && (est.stockCount > 0 || est.yearCount > 0)) {
+    const parts = [est.yearCount ? `${est.yearCount} vente${est.yearCount > 1 ? "s" : ""} sur ${est.yearSold} en 12 mois` : "", est.stockCount ? `${est.stockCount} pièce${est.stockCount > 1 ? "s" : ""} en stock` : ""].filter(Boolean);
+    list.push({ id: "costs", tone: est.reliable ? "info" : "warn", icon: "🧾",
+      text: `${parts.join(" et ")} n'${est.yearCount + est.stockCount > 1 ? "ont" : "a"} pas de prix d'achat réel : le stock et les marges sont estimés (10 € pour un Harris, un manteau ou un costume, 4 € sinon). Saisissez les vrais prix pour des chiffres exacts.`,
+      href: "/stock?cout=inconnu", basis: "Prix d'achat de 0 ou 1 €" });
+  }
+
   if (o.stock.unpriced_count > 0) {
     list.push({ id: "unpriced", tone: "info", icon: "🏷️", text: `${o.stock.unpriced_count} article${o.stock.unpriced_count > 1 ? "s" : ""} sans prix (${euro(o.stock.unpriced_cost_cents)} au coût) : ils ne peuvent pas encore se vendre.`,
       href: "/finance/articles?vue=unpriced", basis: "Articles en stock sans prix affiché" });
@@ -48,6 +56,8 @@ export function insights(input: {
 
   // segments: margin per euro invested, against the average of the segments with enough sales
   const compare = (rows: Segment[], label: (n: string) => string, id: string) => {
+    // a margin « per euro invested » means nothing when the euros invested were never entered
+    if (est && !est.reliable) { missing.push(`${label("…")} : trop de ventes sans prix d'achat réel pour comparer la rentabilité.`); return; }
     const ok = rows.filter((s) => s.sold >= MIN_SEGMENT_SALES && perEuro(s) != null && !/^(Sans|Non renseign)/.test(s.name));
     if (ok.length < 2) { missing.push(`${label("…")} : pas assez de données (il faut ${MIN_SEGMENT_SALES} ventes par segment, sur au moins 2 segments).`); return; }
     const all = ok.reduce((a, s) => ({ m: a.m + s.margin_cents, c: a.c + s.sold_cost_cents }), { m: 0, c: 0 });

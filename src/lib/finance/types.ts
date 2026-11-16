@@ -47,6 +47,20 @@ export interface Overview {
   snapshots: { day: string; cash_cents: Cents | null; stock_cost_cents: Cents; dormant_cost_cents: Cents; receivable_cents: Cents }[];
   recurring: Recurring[];
   planned: Planned[];
+  /** Set by estimateCosts: the purchase prices that were never entered, and what assuming them changes */
+  estimate?: CostEstimate;
+}
+
+/** Pieces whose purchase price was never entered (0 or 1 €), counted at an assumed price instead */
+export interface CostEstimate {
+  /** in stock: how many, what was recorded for them, what the assumed prices add */
+  stockCount: number; stockRecorded: Cents; stockExtra: Cents; dormantExtra: Cents;
+  /** sold over the analysis period */
+  periodCount: number; periodRecorded: Cents; periodExtra: Cents;
+  /** sold over the last 365 days, against all the sales of those days */
+  yearCount: number; yearSold: number; yearExtra: Cents;
+  /** false when too many sales rest on assumed prices to compare returns by brand or category */
+  reliable: boolean;
 }
 
 export interface Segment {
