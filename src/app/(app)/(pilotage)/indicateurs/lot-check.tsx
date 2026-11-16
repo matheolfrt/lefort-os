@@ -40,7 +40,7 @@ export function LotCheck({ refs }: { refs: LotRef[] }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
       <div className="space-y-2">
-        <p className="text-sm text-muted">Compte les pièces du lot par type ou par marque, puis indique son prix livré.</p>
+        <p className="text-sm text-muted">Comptez les pièces du lot par type ou par marque, puis indiquez son prix livré.</p>
         <ul className="space-y-2" aria-label="Pièces du lot">
           {lines.map((l, n) => (
             <li key={l.id} className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export function LotCheck({ refs }: { refs: LotRef[] }) {
           Prix max conseillé : <strong className="text-accent">{eur(j.maxPrice)}</strong>
           <span className="block text-xs text-muted">¼ de la revente estimée{Number(extra) ? ", douane déduite" : ""}.</span>
         </p>
-        <p className="mt-2 text-xs text-muted">Estimé sur tes prix moyens de vente. Une pièce abîmée vaut moins : compte large.</p>
+        <p className="mt-2 text-xs text-muted">Estimé sur vos prix moyens de vente. Une pièce abîmée vaut moins : comptez large.</p>
       </div>
     </div>
   );

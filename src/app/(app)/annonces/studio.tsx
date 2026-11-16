@@ -4,9 +4,9 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Check, CheckCheck, ClipboardCopy, FileUp, ImagePlus, Loader2, Plus, Ruler, Sparkles, Star, Trash2, Undo2, Upload, Wand2, X,
+  Check, CheckCheck, ClipboardCopy, FileUp, ImagePlus, Loader2, Plus, Ruler, Sparkles, Star, Trash2, Undo2, Upload, Wand2, X, Lightbulb,
 } from "lucide-react";
-import { btn, chip, input, seg } from "@/components/ui";
+import { Help, btn, chip, input, seg } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useConfirm } from "@/components/confirm";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -40,8 +40,11 @@ const AI_CHOICES = [
   { value: "economique", label: "Économique", hint: "Claude Haiku · environ 0,2 centime par annonce, un peu moins fin" },
 ] as const;
 
-export function Studio({ orgId, skuPrefix, drafts, photos, ai, template, waiting }: {
+export type PriceAdvice = { price: number; text: string };
+
+export function Studio({ orgId, skuPrefix, drafts, photos, ai, template, waiting, advice = {} }: {
   orgId: string; skuPrefix: string; drafts: Draft[]; photos: PhotoRow[]; ai: boolean; template: Template; waiting: string[] | null;
+  advice?: Record<string, PriceAdvice>;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -259,7 +262,7 @@ export function Studio({ orgId, skuPrefix, drafts, photos, ai, template, waiting
         </div>
         {!drafts.length && <p className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">Pas encore d&apos;article : choisissez des photos ci-dessus et donnez-leur un SKU.</p>}
         {shown.map((d) => (
-          <DraftCard key={d.id} d={d} photos={byDraft.get(d.id) ?? []} ai={ai} picked={pickedInOrder}
+          <DraftCard key={d.id} d={d} photos={byDraft.get(d.id) ?? []} ai={ai} advice={advice[d.id]} picked={pickedInOrder}
             onAddPicked={() => run(() => addPhotos(d.id, pickedInOrder), "Photos ajoutées", () => setPicked([]))} />
         ))}
         {drafts.length > 0 && <p className="text-xs text-muted">Bientôt : l&apos;extension Lefort OS mettra les annonces « prêtes » en brouillon sur Vinted, avec leurs photos.</p>}
@@ -403,7 +406,7 @@ function TemplatePanel({ template, ai }: { template: Template; ai: boolean }) {
   );
 }
 
-function DraftCard({ d, photos, ai, picked, onAddPicked }: { d: Draft; photos: PhotoRow[]; ai: boolean; picked: string[]; onAddPicked: () => void }) {
+function DraftCard({ d, photos, ai, advice, picked, onAddPicked }: { d: Draft; photos: PhotoRow[]; ai: boolean; advice?: PriceAdvice; picked: string[]; onAddPicked: () => void }) {
   const router = useRouter();
   const toast = useToast();
   const confirm = useConfirm();
@@ -529,6 +532,15 @@ function DraftCard({ d, photos, ai, picked, onAddPicked }: { d: Draft; photos: P
           <input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" disabled={locked} placeholder="—" aria-label={`Prix de ${d.sku}`}
             onBlur={() => { const v = Math.round(Number(price.replace(",", ".")) * 100); const next = Number.isFinite(v) && v > 0 ? v : null; if (next !== d.price_cents) save({ price_cents: next }); }}
             className={`${input} !min-h-10 !w-24 text-right figure`} /> €</label>
+        {advice && !locked && advice.price !== d.price_cents && (
+          <span className="inline-flex items-center gap-1" data-testid="price-advice">
+            <button type="button" disabled={pending} className={btn.ghost} title={advice.text} data-action="apply-price"
+              onClick={() => { setPrice(String(advice.price / 100).replace(".", ",")); save({ price_cents: advice.price }, `Prix conseillé appliqué : ${advice.price / 100} €`); }}>
+              <Lightbulb size={15} /> Conseillé : {advice.price / 100} €
+            </button>
+            <Help text={advice.text} />
+          </span>
+        )}
         <span className="flex-1" />
         {!locked && (
           <>

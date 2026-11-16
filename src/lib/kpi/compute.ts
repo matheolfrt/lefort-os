@@ -101,16 +101,16 @@ export function adviceFor(g: Omit<GroupStats, "advice">): Advice {
   if (g.sold === 0) return { tone: "few", text: "Pas encore vendu sur la période." };
   if (g.sold < FEW_SALES) return { tone: "few", text: `${g.sold} vente${g.sold > 1 ? "s" : ""} seulement : à confirmer avant d'en acheter beaucoup.` };
   if (g.fastShare != null && g.timed >= FEW_SALES && g.fastShare >= 0.5)
-    return { tone: "up", text: `${Math.round(g.fastShare * 100)} % partent en moins de ${FAST_DAYS} jours : monte le prix de 10 à 15 %.` };
+    return { tone: "up", text: `${Math.round(g.fastShare * 100)} % partent en moins de ${FAST_DAYS} jours : montez le prix de 10 à 15 %.` };
   if (g.sellThrough.pct != null && !g.sellThrough.approx && g.sellThrough.base >= 10 && g.sellThrough.pct < 60)
-    return { tone: "down", text: `${Math.round(g.sellThrough.pct)} % vendus seulement : achète-en moins, ou moins cher.` };
+    return { tone: "down", text: `${Math.round(g.sellThrough.pct)} % vendus seulement : achetez-en moins, ou moins cher.` };
   if (g.recent.avg != null && g.before.avg != null && g.recent.n >= FEW_SALES && g.before.n >= FEW_SALES && g.recent.avg < g.before.avg * 0.85)
     return { tone: "down", text: `Prix en baisse de ${Math.round((1 - g.recent.avg / g.before.avg) * 100)} % ces 90 derniers jours.` };
   if (g.cold.avg != null && g.warm.avg != null && g.cold.n >= FEW_SALES && g.warm.n >= FEW_SALES) {
     if (g.cold.avg >= g.warm.avg * 1.25)
-      return { tone: "ok", text: `${Math.round((g.cold.avg / g.warm.avg - 1) * 100)} % plus cher d'octobre à mars : garde-les pour l'automne-hiver.` };
+      return { tone: "ok", text: `${Math.round((g.cold.avg / g.warm.avg - 1) * 100)} % plus cher d'octobre à mars : gardez-les pour l'automne-hiver.` };
     if (g.warm.avg >= g.cold.avg * 1.25)
-      return { tone: "ok", text: `${Math.round((g.warm.avg / g.cold.avg - 1) * 100)} % plus cher d'avril à septembre : mets-les en ligne au printemps.` };
+      return { tone: "ok", text: `${Math.round((g.warm.avg / g.cold.avg - 1) * 100)} % plus cher d'avril à septembre : mettez-les en ligne au printemps.` };
   }
   return { tone: "ok", text: g.marginPerPiece != null ? `Rentable : ${eur(g.marginPerPiece)} de marge par pièce.` : "Rentable." };
 }
@@ -220,10 +220,10 @@ export interface Aging {
   undated: number;
 }
 const BUCKETS: { key: AgingBucket["key"]; from: number; to: number; label: string; advice: string; href: string }[] = [
-  { key: "0-30", from: 0, to: 30, label: "Moins de 30 jours", advice: "Laisse-les : c'est leur période normale de vente.", href: "/stock?status=listed" },
+  { key: "0-30", from: 0, to: 30, label: "Moins de 30 jours", advice: "Laissez-les : c'est leur période normale de vente.", href: "/stock?status=listed" },
   { key: "30-60", from: 30, to: 60, label: "30 à 60 jours", advice: "Baisse de 10 à 20 %.", href: "/prix" },
-  { key: "60-90", from: 60, to: 90, label: "60 à 90 jours", advice: "Baisse de 30 %, ou mets-les dans un lot groupé.", href: "/prix" },
-  { key: "90+", from: 90, to: Infinity, label: "Plus de 90 jours", advice: "Déstocke : lots groupés de 3 ou 4, ou dernière baisse.", href: "/prix" },
+  { key: "60-90", from: 60, to: 90, label: "60 à 90 jours", advice: "Baisse de 30 %, ou mettez-les dans un lot groupé.", href: "/prix" },
+  { key: "90+", from: 90, to: Infinity, label: "Plus de 90 jours", advice: "Déstockez : lots groupés de 3 ou 4, ou dernière baisse.", href: "/prix" },
 ];
 
 export function aging(items: Enriched[], now: number): Aging {

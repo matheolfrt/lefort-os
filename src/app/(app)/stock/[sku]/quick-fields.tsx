@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Lightbulb } from "lucide-react";
 import { InlineEdit, StatusPicker } from "@/components/inline-edit";
 import { StatusChip } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -9,6 +11,9 @@ import { moveTo, parsePrice, restorePrice, restoreStatuses, setPrice, setStatus 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { errorMessage } from "@/lib/errors";
 import type { ItemStatus } from "@/lib/types";
+import { priceAdviceFor } from "./price-advice";
+
+const UNSOLD: ItemStatus[] = ["received", "sorted", "photographed", "measured", "listing_ready", "listed", "on_hold", "returned"];
 
 /** The fields changed most often, editable in place, each change with « Annuler » */
 export function QuickFields({ item, location, locations, editable }: {
@@ -19,6 +24,8 @@ export function QuickFields({ item, location, locations, editable }: {
 }) {
   const router = useRouter();
   const toast = useToast();
+  const [advice, setAdvice] = useState<{ price: number; text: string } | { none: string } | null>(null);
+  const [asking, ask] = useTransition();
 
   async function change(text: string, action: () => Promise<unknown>, undo?: () => Promise<unknown>) {
     try {
@@ -54,6 +61,27 @@ export function QuickFields({ item, location, locations, editable }: {
               () => restorePrice(item.id, item.list_price_cents, item.min_price_cents));
           }} /> : money(item.list_price_cents)}
       </Row>
+      {editable && UNSOLD.includes(item.status) && (
+        <div className="py-2 text-sm" data-testid="price-advice">
+          {advice == null ? (
+            <button type="button" disabled={asking} onClick={() => ask(async () => setAdvice(await priceAdviceFor(item.id)))}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-[var(--fill)] px-4 font-medium hover:bg-[var(--fill-hover)] disabled:opacity-50">
+              <Lightbulb size={15} /> {asking ? "Calcul…" : "Prix conseillé ?"}
+            </button>
+          ) : "none" in advice ? <p className="text-muted">{advice.none}</p> : (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="min-w-0 flex-1 text-muted"><strong className="text-fg">Prix conseillé : {money(advice.price)}</strong><br />{advice.text}</p>
+              {advice.price !== item.list_price_cents && (
+                <button type="button" className="inline-flex min-h-10 shrink-0 items-center rounded-full bg-accent px-4 font-semibold text-accent-fg"
+                  onClick={() => change(`Prix : ${money(item.list_price_cents)} → ${money(advice.price)}`, () => setPrice(item.id, advice.price, item.min_price_cents),
+                    () => restorePrice(item.id, item.list_price_cents, item.min_price_cents))}>
+                  Appliquer
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <Row label="Prix minimum accepté">
         {editable ? <InlineEdit value={eurosInput(item.min_price_cents)} display={money(item.min_price_cents)} label="Prix minimum" align="right" inputMode="decimal"
           onSave={(v) => {

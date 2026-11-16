@@ -83,7 +83,7 @@ export default async function Indicateurs({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-5">
       <PageHeader title="Indicateurs"
-        subtitle="Que racheter et à quel prix, ce qui dort, ton rythme, tes tailles et tes acheteurs. Calculé sur toutes tes ventes."
+        subtitle="Que racheter et à quel prix, ce qui dort, votre rythme, vos tailles et vos acheteurs. Calculé sur toutes vos ventes."
         actions={
           <nav aria-label="Période" className={seg.wrap}>
             <Link href={href({ p: undefined }, "types")} aria-current={!all ? "true" : undefined} className={seg.item(!all)}>12 mois</Link>
@@ -100,16 +100,16 @@ export default async function Indicateurs({ searchParams }: { searchParams: Prom
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <Stat label="Mises en ligne (7 jours)" value={p.listed7}
           hint={`${one(p.listedPerDay30)} par jour sur 30 j · ${one(p.soldPerDay30)} ventes par jour`}
-          help="Pièces passées en ligne ces 7 derniers jours. Ton chiffre d'affaires dépend surtout de ce rythme : si tu mets en ligne moins que tu ne vends, ton stock en ligne fond." />
+          help="Pièces passées en ligne ces 7 derniers jours. Votre chiffre d'affaires dépend surtout de ce rythme : si vous mettez en ligne moins que vous ne vendez, votre stock en ligne fond." />
         <Stat label="Stock en mois de ventes" value={p.cover.months == null ? "—" : `${one(p.cover.months)} mois`}
           hint={`${p.cover.stock} pièces en stock · ${Math.round(p.cover.perMonth)} vendues par mois`}
-          help="Combien de mois de ventes ton stock tient au rythme des 90 derniers jours. Moins d'un mois : rachète maintenant. Plus de 3 mois : écoule avant de racheter." />
+          help="Combien de mois de ventes votre stock tient au rythme des 90 derniers jours. Moins d'un mois : rachetez maintenant. Plus de 3 mois : écoulez avant de racheter." />
         <Stat label="Cycle de trésorerie" value={cycle.median == null ? "—" : `${Math.round(cycle.median)} j`}
           hint={cycle.n ? `de l'achat du lot à la vente (médiane de ${plural(cycle.n, "vente")})` : "pas encore de vente d'un lot acheté"}
-          help="Jours entre le paiement d'un lot et la vente de ses pièces, sur les lots achetés et les ventes des 12 derniers mois. Plus il est court, plus vite ton argent revient pour racheter." />
+          help="Jours entre le paiement d'un lot et la vente de ses pièces, sur les lots achetés et les ventes des 12 derniers mois. Plus il est court, plus vite votre argent revient pour racheter." />
         <Stat label="Marge par heure" value={eur(perHour(hourMargin, minutes))}
           hint={`90 derniers jours · ${minutes} min de travail par pièce`}
-          help="Marge des ventes des 90 derniers jours, divisée par le temps passé (tri, photo, mesures, annonce, colis). Change le temps par pièce dans « Par type »." />
+          help="Marge des ventes des 90 derniers jours, divisée par le temps passé (tri, photo, mesures, annonce, colis). Changez le temps par pièce dans « Par type »." />
       </div>
 
       <section id="types" aria-labelledby="types-h" className="scroll-mt-20">
@@ -189,8 +189,8 @@ export default async function Indicateurs({ searchParams }: { searchParams: Prom
           </div>
           <p className="mt-3 text-sm">
             {p.listedPerDay30 >= p.soldPerDay30
-              ? <>Tu mets en ligne <strong>{one(p.listedPerDay30)}</strong> pièces par jour et tu en vends <strong>{one(p.soldPerDay30)}</strong> : ton stock en ligne grossit.</>
-              : <>Tu vends <strong>{one(p.soldPerDay30)}</strong> pièces par jour mais n&apos;en mets en ligne que <strong>{one(p.listedPerDay30)}</strong> : ton stock en ligne fond, mets-en plus en ligne.</>}
+              ? <>Vous mettez en ligne <strong>{one(p.listedPerDay30)}</strong> pièces par jour et vous en vendez <strong>{one(p.soldPerDay30)}</strong> : votre stock en ligne grossit.</>
+              : <>Vous vendez <strong>{one(p.soldPerDay30)}</strong> pièces par jour mais n&apos;en mettez en ligne que <strong>{one(p.listedPerDay30)}</strong> : votre stock en ligne fond, mettez-en plus en ligne.</>}
             {p.cover.onlineMonths != null && <span className="text-muted"> En ligne : {p.cover.online} pièces, soit {one(p.cover.onlineMonths)} mois de ventes.</span>}
           </p>
         </Card>
@@ -256,7 +256,7 @@ export default async function Indicateurs({ searchParams }: { searchParams: Prom
                 </tbody>
               </table>
             </div>
-            <p className="mt-6 text-sm text-muted">Tes fidèles achètent ton style : préviens-les quand tu mets en ligne des pièces dans leur taille, et propose une remise dès 2 pièces pour augmenter le panier.</p>
+            <p className="mt-6 text-sm text-muted">Vos fidèles achètent votre style : prévenez-les quand vous mettez en ligne des pièces dans leur taille, et proposez une remise dès 2 pièces pour augmenter le panier.</p>
           </Card>
         )}
       </section>
@@ -267,20 +267,20 @@ export default async function Indicateurs({ searchParams }: { searchParams: Prom
           <ul className="divide-y divide-line">
             <Todo ok={dq.soldNoCost === 0 && dq.stockNoCost === 0}
               title={`Prix d'achat réels : ${int(dq.soldNoCost)} vente${dq.soldNoCost > 1 ? "s" : ""} sur ${int(dq.soldTotal)} (12 mois) et ${plural(dq.stockNoCost, "pièce")} en stock sans prix d'achat`}
-              detail="Les marges comptent pour l'instant 10 € par Harris, manteau ou costume et 4 € par autre pièce. Dans le Stock, cherche par exemple « harris », sélectionne tout et saisis le prix d'achat en une fois."
+              detail="Les marges comptent pour l'instant 10 € par Harris, manteau ou costume et 4 € par autre pièce. Dans le Stock, cherchez par exemple « harris », sélectionnez tout et saisissez le prix d'achat en une fois."
               action={dq.soldNoCost + dq.stockNoCost > 0 ? { href: "/stock?cout=inconnu", label: "Voir les pièces sans prix d'achat" } : undefined} />
             <Todo ok={dq.expenses90.n > 0}
               title={dq.expenses90.n ? `Dépenses : ${plural(dq.expenses90.n, "dépense")} enregistrée${dq.expenses90.n > 1 ? "s" : ""} en 90 jours (${eur(dq.expenses90.cents)})` : "Dépenses : aucune enregistrée ces 90 derniers jours"}
-              detail="Emballages, frais Fleek, essence, matériel : sans elles, ton bénéfice réel est surestimé."
+              detail="Emballages, frais Fleek, essence, matériel : sans elles, votre bénéfice réel est surestimé."
               action={{ href: "/finance/parametres", label: "Ajouter une dépense" }} />
             <Todo ok={dq.lotsNoFees.length === 0}
               title={dq.lotsNoFees.length ? `Frais des lots : ${plural(dq.lotsNoFees.length, "lot")} acheté${dq.lotsNoFees.length > 1 ? "s" : ""} sans transport, douane ni frais` : "Frais des lots : renseignés"}
-              detail={dq.lotsNoFees.length ? <>Ajoute le transport et la douane au coût du lot : {dq.lotsNoFees.slice(0, 8).map((l, n) => (
+              detail={dq.lotsNoFees.length ? <>Ajoutez le transport et la douane au coût du lot : {dq.lotsNoFees.slice(0, 8).map((l, n) => (
                 <span key={l.id}>{n ? ", " : ""}<Link href={`/lots/${l.id}`} className="font-mono underline underline-offset-2 hover:text-fg">{l.code}</Link></span>
               ))}{dq.lotsNoFees.length > 8 ? "…" : ""}.</> : "Le coût de chaque lot acheté comprend ses frais."} />
             <Todo ok={dq.onlineNoDate === 0}
               title={dq.onlineNoDate ? `Dates de mise en ligne : ${plural(dq.onlineNoDate, "annonce")} en ligne sur ${int(dq.online)} sans date` : "Dates de mise en ligne : connues"}
-              detail="Les pièces importées du dressing Vinted n'ont pas de date. Les nouvelles l'enregistrent toutes seules quand tu les passes en ligne : les délais de vente deviendront exacts au fil des lots." />
+              detail="Les pièces importées du dressing Vinted n'ont pas de date. Les nouvelles l'enregistrent toutes seules quand vous les passez en ligne : les délais de vente deviendront exacts au fil des lots." />
           </ul>
         </Card>
       </section>

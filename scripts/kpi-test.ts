@@ -3,6 +3,9 @@
 // Run: npm run test:kpi
 import assert from "node:assert/strict";
 import { designerOf, familyOf, sizeOf, estimatedCost, costUsed } from "../src/lib/kpi/classify";
+import { advisePrice, buildGuide, type SoldRow } from "../src/lib/kpi/price-guide";
+import { bundlePrice, proposeBundles } from "../src/lib/kpi/bundles";
+import { kpiSignals } from "../src/lib/kpi/signals";
 import {
   aging, buyers, byDesigner, byFamily, cashCycle, dataQuality, enrich, judgeLot, pace, perHour, sizes, suppliers, unbrandedByFamily,
   type KpiItem, type KpiOrder,
@@ -115,7 +118,7 @@ test("conseil : part en moins de 2 jours → monter le prix", () => {
   assert.equal(Math.round(g.fastShare! * 100), 67);
   assert.equal(g.medianDays, 1);
   assert.equal(g.advice.tone, "up");
-  assert.match(g.advice.text, /monte le prix/);
+  assert.match(g.advice.text, /montez le prix/);
 });
 
 test("% vendus : sur les lots achetés reçus il y a plus de 30 jours, sinon sur tout (approx)", () => {
@@ -269,6 +272,122 @@ test("données à compléter : coûts inconnus, dates, dépenses, frais des lots
   assert.equal(q.onlineNoDate, 1);
   assert.deepEqual(q.expenses90, { n: 1, cents: 1500 });
   assert.deepEqual(q.lotsNoFees.map((l) => l.code), ["LOT-A"]);
+});
+
+
+// ── prix conseillé
+const soldRow = (title: string, revenue: number, soldAt: string): SoldRow => ({ title, brand: null, category: null, revenue, soldAt: `${soldAt}T12:00:00Z` });
+const guide = buildGuide([
+  ...[3800, 4000, 4200, 4400, 4600].map((r, i) => soldRow("Blazer Harris Tweed chevrons", r, `2026-01-0${i + 1}`)),
+  ...[2400, 2600, 2800, 3000, 3200].map((r, i) => soldRow("Blazer Harris Tweed chevrons", r, `2026-06-0${i + 1}`)),
+  ...[7000, 8000, 9000].map((r, i) => soldRow("Blazer croisé Yves Saint Laurent", r, `2026-02-0${i + 1}`)),
+  ...[2000, 2200, 2400, 2600, 2800].map((r, i) => soldRow("Blazer croisé gris", r, `2026-05-0${i + 1}`)),
+  soldRow("Blazer Burberry", 7000, "2026-02-01"),
+]);
+
+test("prix conseillé : la médiane de la saison, affichée 8 % au-dessus", () => {
+  const a = advisePrice(guide, d("Blazer Harris Tweed vert – Taille EU 50 (L)"), NOW)!; // novembre : saison froide
+  assert.equal(a.sells, 4200);
+  assert.equal(a.n, 5);
+  assert.equal(a.season, "cold");
+  assert.equal(a.price, 4500, "42 € × 1,08 = 45,36 → 45 €");
+  assert.match(a.text, /sans marque : vendu 42 € en médiane d'octobre à mars \(5 ventes\)/);
+  const summer = advisePrice(guide, d("Blazer Harris Tweed vert"), Date.parse("2026-06-15T12:00:00Z"))!;
+  assert.equal(summer.sells, 2800);
+  assert.equal(summer.season, "warm");
+});
+
+test("prix conseillé : marque d'abord, puis type sans marque ; pas assez de ventes dans la saison → 12 mois", () => {
+  const ysl = advisePrice(guide, d("Blazer croisé bleu – Yves Saint Laurent"), NOW)!;
+  assert.equal(ysl.label, "Yves Saint Laurent");
+  assert.equal(ysl.sells, 8000);
+  assert.equal(ysl.season, null, "3 ventes : pas de prix de saison");
+  assert.equal(ysl.brandFallback, null);
+  const plain = advisePrice(guide, d("Blazer croisé marine"), NOW)!;
+  assert.equal(plain.label, "Blazer croisé sans marque");
+  assert.equal(plain.sells, 2400, "aucune vente en saison froide : la médiane des 12 mois");
+  assert.equal(plain.season, null);
+  assert.equal(plain.price, 2600);
+});
+
+test("prix conseillé : marque trop peu vendue → prix du type, et on le dit ; rien quand on ne sait pas", () => {
+  const b = advisePrice(guide, d("Blazer croisé Burberry"), NOW)!;
+  assert.equal(b.brandFallback, "Burberry");
+  assert.equal(b.label, "Blazer croisé");
+  assert.match(b.text, /Trop peu de ventes Burberry/);
+  assert.equal(advisePrice(guide, d("Manteau long laine"), NOW), null, "aucun manteau vendu");
+  assert.equal(advisePrice(guide, d(""), NOW), null);
+  assert.equal(advisePrice({}, d("Blazer Harris Tweed"), NOW), null);
+});
+
+// ── lots groupés
+const online = (p: Partial<KpiItem> & { days: number }) => item({ status: "listed", isSold: false, soldAt: null, listPrice: 3000, cost: 500, listedAt: daysAgo(p.days), receivedAt: daysAgo(p.days + 5), ...p });
+
+test("lots groupés : par type et taille, lots de 3, le 4e rejoint le dernier lot, 2 pièces attendent", () => {
+  const rows = enrich([
+    ...[100, 90, 80, 70].map((days, i) => online({ days, title: `Blazer tweed n°${i} – Taille EU 50 (L)`, sku: `T-${i}` })),
+    ...[95, 85].map((days, i) => online({ days, title: `Blazer laine – Taille EU 48 (M)`, sku: `M-${i}` })),
+    online({ days: 30, title: "Blazer tweed – Taille EU 50 (L)", sku: "JEUNE" }),
+    online({ days: 200, title: "Blazer Burberry – Taille EU 50 (L)", sku: "BURB" }),
+    online({ days: 70, title: "Blazer Harris Tweed – Taille EU 50 (L)", sku: "HARRIS-70" }),
+    online({ days: 200, title: "Blazer sans taille", sku: "SANS-TAILLE" }),
+  ]);
+  const p = proposeBundles(rows, NOW);
+  assert.equal(p.candidates, 6, "ni la pièce récente, ni la marque, ni le Harris de 70 jours, ni la pièce sans taille");
+  assert.equal(p.bundles.length, 1);
+  const b = p.bundles[0];
+  assert.deepEqual(b.pieces.map((x) => x.sku), ["T-0", "T-1", "T-2", "T-3"]);
+  assert.equal(b.size, "L");
+  assert.equal(b.title, "Lot de 4 blazers en tweed vintage – Taille L");
+  assert.equal(b.sumList, 12000);
+  assert.equal(b.price, 8000, "65 % de 120 € = 78 € → 80 €");
+  assert.equal(b.perPiece, 2000);
+  assert.equal(b.margin, 8000 - 2000);
+  assert.equal(b.oldest, 100);
+  assert.match(b.description, /Réf\. T-0 · T-1 · T-2 · T-3$/);
+  assert.match(b.description, /80 € le lot, soit 20 € la pièce/);
+  assert.equal(p.left, 2, "les deux M attendent une troisième");
+});
+
+test("lots groupés : jamais sous le coût + 5 € par pièce ; un Harris entre après 90 jours", () => {
+  assert.equal(bundlePrice([{ listPrice: 1500, cost: 1000 }, { listPrice: 1500, cost: 1000 }, { listPrice: 1500, cost: 1000 }]), 4500, "3 × (10 + 5) € plutôt que 65 % de 45 €");
+  assert.equal(bundlePrice([{ listPrice: 3000, cost: 400 }, { listPrice: 3000, cost: 400 }, { listPrice: 3000, cost: 400 }]), 6000);
+  const rows = enrich([100, 95, 91].map((days, i) => online({ days, title: "Blazer Harris Tweed – Taille EU 52 (L)", sku: `H-${i}`, listPrice: 4500, cost: 1000 })));
+  const p = proposeBundles(rows, NOW);
+  assert.equal(p.bundles.length, 1);
+  assert.equal(p.bundles[0].title, "Lot de 3 blazers Harris Tweed vintage – Taille L");
+  assert.equal(p.bundles[0].price, 9000, "65 % de 135 € = 87,75 € → 90 €");
+});
+
+// ── signaux
+test("signaux : stock bas, rythme, prix à monter, tailles, lots groupés, coûts inconnus", () => {
+  const fast = Array.from({ length: 18 }, (_, n) => item({ title: "Blazer croisé gris – Taille EU 48 (M)", listedAt: daysAgo(6), soldAt: daysAgo(n < 12 ? 5 : 1), revenue: 2600, cost: 100 }));
+  const stock = [online({ days: 3, title: "Blazer croisé – Taille EU 56 (XXL)" }), item({ status: "sorted", isSold: false, soldAt: null, receivedAt: daysAgo(20) })];
+  const rows = enrich([...fast, ...stock]);
+  const s = kpiSignals({
+    families: byFamily(rows, { now: NOW, periodDays: 365 }), pace: pace(rows, NOW), aging: aging(rows, NOW),
+    sizes: sizes(rows, NOW), quality: dataQuality(rows, [], [], NOW), bundles: { count: 2, pieces: 7, revenue: 14000 },
+  });
+  const ids = s.map((a) => a.id);
+  assert.ok(ids.includes("kpi-cover-low"), "2 pièces pour 6 ventes par mois");
+  assert.equal(s.find((a) => a.id === "kpi-cover-low")!.tone, "urgent", "moins de 15 jours de ventes");
+  assert.ok(!ids.includes("kpi-pace"), "19 mises en ligne en 30 jours pour 18 ventes : le rythme suit");
+  const up = s.find((a) => a.id === "kpi-price-up")!;
+  assert.match(up.title, /Montez le prix : Blazer croisé/);
+  assert.equal(up.impactCents, Math.round(2600 * 0.1 * (18 / 12)));
+  assert.ok(ids.includes("kpi-sizes-missing"));
+  assert.match(s.find((a) => a.id === "kpi-sizes-missing")!.title, /Taille à racheter : M/);
+  assert.equal(s.find((a) => a.id === "kpi-bundles")!.impactCents, 14000);
+  assert.ok(ids.includes("kpi-costs"));
+  assert.deepEqual(ids, [...ids].sort((a, b) => s.find((x) => x.id === b)!.score - s.find((x) => x.id === a)!.score), "du plus important au moins important");
+});
+
+test("signaux : rien à dire quand tout va bien", () => {
+  const rows = enrich([...Array.from({ length: 6 }, () => item({ sizeLabel: "M", soldAt: daysAgo(100), listedAt: daysAgo(130) })),
+    ...Array.from({ length: 3 }, () => online({ days: 5, sizeLabel: "M", title: "Blazer Harris Tweed" }))]);
+  const s = kpiSignals({ families: byFamily(rows, { now: NOW, periodDays: 365 }), pace: pace(rows, NOW), aging: aging(rows, NOW),
+    sizes: sizes(rows, NOW), quality: dataQuality(rows, [], [], NOW), bundles: { count: 0, pieces: 0, revenue: 0 } });
+  assert.deepEqual(s.map((a) => a.id), []);
 });
 
 console.log(`\n${passed} tests passés`);

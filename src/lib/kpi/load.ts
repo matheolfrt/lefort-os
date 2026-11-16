@@ -77,3 +77,21 @@ export async function loadKpi(supabase: SupabaseClient, now = Date.now()): Promi
     expenses: expenses.map((e) => ({ spentOn: e.spent_on, cents: Number(e.amount_cents) })),
   };
 }
+
+/** The sales of the last 12 months, as the price guide reads them (title, brand, category, price, day) */
+export async function loadSoldRows(supabase: SupabaseClient, now = Date.now()): Promise<import("./price-guide").SoldRow[]> {
+  const since = new Date(now - 365 * 86_400_000).toISOString();
+  const [eco, titles, brands, categories] = await Promise.all([
+    fetchAll<{ item_id: string; revenue_cents: number | string; sold_at: string; brand_id: string | null; category_id: string | null }>((a, b) =>
+      supabase.from("v_item_economics").select("item_id, revenue_cents, sold_at, brand_id, category_id").eq("is_sold", true).gte("sold_at", since).order("item_id").range(a, b)),
+    fetchAll<{ id: string; title: string | null }>((a, b) => supabase.from("items").select("id, title").gte("sold_at", since).order("id").range(a, b)),
+    fetchAll<{ id: string; name: string }>((a, b) => supabase.from("brands").select("id, name").order("id").range(a, b)),
+    fetchAll<{ id: string; name: string }>((a, b) => supabase.from("categories").select("id, name").order("id").range(a, b)),
+  ]);
+  const title = new Map(titles.map((t) => [t.id, t.title]));
+  const brand = new Map(brands.map((b) => [b.id, b.name])), category = new Map(categories.map((c) => [c.id, c.name]));
+  return eco.map((e) => ({
+    title: title.get(e.item_id) ?? null, brand: e.brand_id ? brand.get(e.brand_id) ?? null : null,
+    category: e.category_id ? category.get(e.category_id) ?? null : null, revenue: Number(e.revenue_cents), soldAt: e.sold_at,
+  }));
+}

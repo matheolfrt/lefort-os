@@ -6,6 +6,11 @@ import { requireManager } from "@/lib/session";
 import { MIN_SAMPLE, buildAdvice, eur, eur2, type Advice, type Ranked, type Verdict } from "@/lib/advisor";
 import type { Facts } from "@/lib/advisor";
 import { sellThroughAdvice, type SellThroughStats } from "@/lib/sellthrough";
+import { BLAZER_FAMILIES } from "@/lib/kpi/classify";
+import { aging, byFamily, dataQuality, enrich, pace, sizes } from "@/lib/kpi/compute";
+import { proposeBundles } from "@/lib/kpi/bundles";
+import { loadKpi } from "@/lib/kpi/load";
+import { kpiSignals } from "@/lib/kpi/signals";
 import { AddToTodos, Prioritize } from "./prioritize";
 
 export const metadata = { title: "Conseils" };
@@ -27,11 +32,13 @@ const VERDICT: Record<Verdict, { label: string; cls: string }> = {
 export default async function Conseils() {
   await requireManager();
   const supabase = await createClient();
-  const [{ data, error }, { data: org }, { data: st }] = await Promise.all([
+  const [{ data, error }, { data: org }, { data: st }, kpi] = await Promise.all([
     supabase.rpc("advisor_facts"),
     supabase.from("organizations").select("declaration_frequency").maybeSingle(),
     // missing until its migration has run: the page simply shows no sell-through advice
     supabase.rpc("sellthrough_stats"),
+    // buying and pricing signals from the indicators: the page works without them
+    loadKpi(supabase).catch(() => null),
   ]);
 
   if (error || !data) {
@@ -54,10 +61,20 @@ export default async function Conseils() {
     for (const a of sellThroughAdvice(st as SellThroughStats)) {
       (a.id.startsWith("st-risk") ? r.tasks : a.tone === "info" ? r.insights : r.advice).push(a);
     }
-    r.tasks.sort((a, b) => b.score - a.score);
-    r.advice.sort((a, b) => b.score - a.score);
-    r.insights.sort((a, b) => b.score - a.score);
   }
+  if (kpi) {
+    const now = Date.now(), items = enrich(kpi.items);
+    const b = proposeBundles(items, now);
+    const signals = kpiSignals({
+      families: byFamily(items, { now, periodDays: 365 }), pace: pace(items, now), aging: aging(items, now),
+      sizes: sizes(items, now, (i) => BLAZER_FAMILIES.includes(i.family)), quality: dataQuality(items, kpi.expenses, kpi.lots, now),
+      bundles: { count: b.bundles.length, pieces: b.bundles.reduce((s, x) => s + x.pieces.length, 0), revenue: b.bundles.reduce((s, x) => s + x.price, 0) },
+    });
+    for (const a of signals) (a.tone === "urgent" || a.tone === "high" ? r.tasks : a.tone === "info" ? r.insights : r.advice).push(a);
+  }
+  r.tasks.sort((a, b) => b.score - a.score);
+  r.advice.sort((a, b) => b.score - a.score);
+  r.insights.sort((a, b) => b.score - a.score);
 
   return (
     <div className="space-y-5">
